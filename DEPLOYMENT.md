@@ -79,7 +79,34 @@ You need this the moment you want prices that *accumulate* rather than being rec
 
 > Neon's free tier suspends a database that has been idle for a few minutes; the first query after that takes a second or two to wake it. Fine for this workload.
 
-## Step 5 — Import real TCGplayer prices
+## Step 5 — Turn on accounts (optional)
+
+Needs Step 4 done first — accounts store a `User` row, so there's nowhere to put one without a database. Until then `/login` and `/signup` render their forms disabled, same as every other feature below that needs a key.
+
+1. Add the tables:
+   ```bash
+   npm run db:push
+   ```
+2. Set a session secret in Vercel (Production, Preview and Development):
+   ```
+   AUTH_SECRET = <output of: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))">
+   ```
+   That alone is enough — email/password sign-up and login now work. Everything after this is optional on top of it.
+3. **Google sign-in** — [Google Cloud Console](https://console.cloud.google.com/) → APIs & Services → Credentials → **Create OAuth client ID** (Web application). Authorised redirect URI:
+   ```
+   https://riftboundstocks.com/api/auth/oauth/google/callback
+   ```
+   Add `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in Vercel.
+4. **Discord sign-in** — [Discord Developer Portal](https://discord.com/developers/applications) → New Application → OAuth2. Redirect:
+   ```
+   https://riftboundstocks.com/api/auth/oauth/discord/callback
+   ```
+   Scopes `identify` and `email`. Add `DISCORD_CLIENT_ID` and `DISCORD_CLIENT_SECRET` in Vercel.
+5. **Verification / password-reset emails** — [resend.com](https://resend.com) → API Keys → add `RESEND_API_KEY` in Vercel. Without it, sign-up and password reset still work, but the emails just log a warning instead of sending, which makes both flows unusable for anyone but you testing locally.
+
+**Redeploy after adding these.** A provider button (Google/Discord) only appears once *both* its env vars are set — a half-configured provider stays hidden rather than showing a button that fails.
+
+## Step 6 — Import real TCGplayer prices
 
 ```bash
 npm run prices:import
@@ -101,7 +128,7 @@ Add to `vercel.json`:
 
 …then write `src/app/api/cron/refresh-prices/route.ts` to call the same import logic, guarded by a `CRON_SECRET` check so the endpoint can't be triggered by anyone who guesses the path. (Vercel Cron is once-a-day on the Hobby plan, which is exactly what daily snapshots need.)
 
-## Step 6 — Switch the site off demo data
+## Step 7 — Switch the site off demo data
 
 Two changes, in this order:
 
@@ -130,4 +157,8 @@ A non-commercial deployment on your own domain costs about **$12/year**. Vercel'
 
 **Canonicals / sitemap point at `*.vercel.app`** — `NEXT_PUBLIC_SITE_URL` isn't set, or you didn't redeploy after setting it.
 
-**Prices look identical to yesterday** — expected on the demo generator, which advances one point per real day. Real movement needs steps 4–6.
+**Prices look identical to yesterday** — expected on the demo generator, which advances one point per real day. Real movement needs steps 4, 6 and 7.
+
+**`/login` and `/signup` show the disabled form** — `DATABASE_URL` isn't set (step 4), or you didn't redeploy after setting it. Email/password sign-in needs `DATABASE_URL` + `AUTH_SECRET` only; a Google or Discord button needs *both* of that provider's env vars, or it stays hidden rather than showing and failing.
+
+**Verification / reset emails never arrive** — `RESEND_API_KEY` isn't set, so the site is logging a warning and not sending instead of erroring. Accounts still work without it (you just can't complete email verification), but set it before pointing real users at sign-up.

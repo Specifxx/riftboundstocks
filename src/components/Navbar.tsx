@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { BrandLogo, BrandWordmark } from "./BrandLogo";
 import { SearchBox } from "./SearchBox";
 import { CurrencySelector, ThemeToggle } from "./Prefs";
+import { NavUser } from "./NavUser";
 
 interface NavItem {
   label: string;
@@ -152,15 +153,7 @@ export function Navbar() {
             <ThemeToggle />
           </div>
           <div className="hidden items-center gap-1.5 xl:flex">
-            <Link href="/login" className="rounded-md px-2.5 py-1.5 text-[13px] font-semibold text-ink-muted hover:text-ink">
-              Log In
-            </Link>
-            <Link
-              href="/signup"
-              className="rounded-md bg-accent px-3 py-1.5 text-[13px] font-semibold text-accent-ink hover:opacity-90"
-            >
-              Sign Up
-            </Link>
+            <NavUser />
           </div>
 
           <button
@@ -203,12 +196,7 @@ export function Navbar() {
           <div className="mt-3 flex items-center gap-2 border-t border-line pt-3">
             <CurrencySelector />
             <ThemeToggle />
-            <Link href="/login" className="ml-auto rounded-md px-2.5 py-1.5 text-[13px] font-semibold text-ink-muted">
-              Log In
-            </Link>
-            <Link href="/signup" className="rounded-md bg-accent px-3 py-1.5 text-[13px] font-semibold text-accent-ink">
-              Sign Up
-            </Link>
+            <NavUser mobile />
           </div>
         </div>
       )}

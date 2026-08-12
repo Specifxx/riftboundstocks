@@ -1,10 +1,10 @@
-// RiftboundStocks — price snapshot storage.
+// RiftboundStocks — price snapshot + account storage.
 //
 // OPTIONAL. The site runs entirely without a database: the card catalogue is a
 // bundled JSON file (src/data/riftbound-cards.json) and prices come from the
 // generator in src/lib/prices/synthetic.ts. This schema exists for the step
 // after that — persisting REAL daily TCGplayer snapshots so history accumulates
-// instead of being recomputed.
+// instead of being recomputed, and (below) real user accounts.
 //
 // Modelled on TCGEmpire's Card + PriceHistory tables so rows are portable
 // between the two projects, with two differences that matter for this site:
@@ -13,6 +13,11 @@
 //     five rows per card per day would quintuple the table for no gain;
 //   • prices are USD cents, because TCGplayer quotes USD. Converting on write
 //     would freeze one day's FX rate into permanent history.
+//
+// Accounts (User + AuthToken below) follow the same "optional" rule: nothing
+// in src/lib/auth.ts runs unless DATABASE_URL is set (see accountsEnabled() in
+// lib/site.ts) — a fresh clone with no env config still shows /login and
+// /signup, just disabled, exactly like the demo-price disclaimer.
 
 generator client {
   provider = "prisma-client-js"
@@ -86,4 +91,43 @@ model PriceSnapshot {
   @@index([cardId, day])
   /// Serves the movers queries, which read every card across a two-day window.
   @@index([day])
+}
+
+/// An account. Mirrors the shape of TCGEmpire's User model, minus everything
+/// this site has no feature for yet (wallet, marketplace, Premium billing) —
+/// just enough to sign in and prove an email address.
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  /// Optional — accounts created via Google/Discord sign-in have no password.
+  passwordHash  String?
+  displayName   String
+  avatarUrl     String?
+  /// Set when the email is confirmed (instantly for OAuth, which is pre-verified).
+  emailVerified DateTime?
+  /// OAuth identities (one per provider). Indexed rather than DB-unique so the
+  /// push stays additive; uniqueness is enforced in the OAuth callback (find by
+  /// provider id, then by email, then create).
+  googleId      String?
+  discordId     String?
+  createdAt     DateTime  @default(now())
+
+  authTokens AuthToken[]
+
+  @@index([googleId])
+  @@index([discordId])
+}
+
+/// One-time tokens for email verification / password reset. Same shape and
+/// purpose as TCGEmpire's AuthToken so the two are easy to keep in sync.
+model AuthToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  purpose   String // "verify" | "reset"
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }

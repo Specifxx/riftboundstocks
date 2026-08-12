@@ -28,6 +28,15 @@ export const PRICE_SOURCE_NOTE = "Prices sourced from TCGplayer.";
 // reads this, so the demo disclaimer can never be left off a build that is
 // showing generated figures.
 //
-// Derived from the DATA, not from an env var: a flag someone has to remember to
-// set is a flag that eventually disagrees with what is on screen.
+// Derived from the DATA, not from an env var. It was previously
+// `!process.env.TCGPLAYER_PUBLIC_KEY`, which is a flag someone has to remember
+// to set — and it was already wrong: real prices are imported by the public
+// endpoints, which need no key, so the disclaimers would have stayed up over
+// genuine market data.
 export { PRICES_ARE_DEMO } from "./prices/demo-flag";
+
+// Accounts (src/lib/auth.ts) need somewhere to put a User row, so the whole
+// feature is off — /login and /signup render their forms disabled, same
+// treatment as an unconfigured OAuth provider — until DATABASE_URL is set. A
+// fresh clone with zero env config must still build and run.
+export const ACCOUNTS_ENABLED = !!process.env.DATABASE_URL;

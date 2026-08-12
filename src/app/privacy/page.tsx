@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CURRENCY_STORAGE_KEY, THEME_STORAGE_KEY } from "@/lib/currency";
-import { CONTACT_EMAIL, SITE_NAME, SITE_URL } from "@/lib/site";
+import { ACCOUNTS_ENABLED, CONTACT_EMAIL, SITE_NAME, SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Privacy",
-  description: `What ${SITE_NAME} stores and what it doesn't. No cookies, no analytics, no ad networks and no third-party scripts — theme and currency live in your browser's local storage.`,
+  description: `What ${SITE_NAME} stores and what it doesn't. No tracking, no analytics, no ad networks and no third-party scripts — theme and currency live in your browser's local storage.`,
   alternates: { canonical: `${SITE_URL}/privacy` },
 };
 
@@ -32,20 +32,40 @@ export default function PrivacyPage() {
       <header className="mb-5">
         <h1 className="font-display text-3xl uppercase tracking-wide text-ink sm:text-4xl">Privacy</h1>
         <p className="mt-1.5 text-[14px] leading-relaxed text-ink-muted">
-          The short version: {SITE_NAME} sets no cookies, runs no analytics, loads no advertising and has no accounts.
-          Two preferences are kept in your own browser. The one thing worth knowing is that card images come from someone
-          else&apos;s server — details below.
+          The short version: {SITE_NAME} runs no analytics and loads no advertising.{" "}
+          {ACCOUNTS_ENABLED
+            ? "Two preferences are kept in your own browser, and the only cookie this site sets is the one that keeps you signed in if you create an account."
+            : "Two preferences are kept in your own browser, and this deployment has no accounts system configured, so it sets no cookies at all."}{" "}
+          The one thing worth knowing either way is that card images come from someone else&apos;s server — details
+          below.
         </p>
       </header>
 
       <div className="space-y-4">
         <Section id="cookies" title="Cookies">
-          <p>
-            <strong className="font-semibold text-ink">This site sets no cookies.</strong> Not for preferences, not for
-            sessions, not for measurement. There is no consent banner because there is nothing to consent to — the
-            notice you may have seen in the corner is a disclosure of the local storage below, and dismissing it is not
-            consent to anything.
-          </p>
+          {ACCOUNTS_ENABLED ? (
+            <>
+              <p>
+                <strong className="font-semibold text-ink">One cookie, and only if you create an account.</strong>{" "}
+                Signing in sets a single session cookie (<code className="font-mono text-[12px] text-ink">rbs_session</code>)
+                so the site remembers you&apos;re signed in. It is <code className="font-mono text-[12px] text-ink">httpOnly</code>{" "}
+                (invisible to page JavaScript), holds nothing but your account id, and is never used for tracking,
+                analytics or advertising. Nothing is set for anyone who doesn&apos;t sign in.
+              </p>
+              <p>
+                There is no consent banner because there is nothing to consent to <em>for tracking</em> — the notice you
+                may have seen in the corner discloses the local storage below plus this one functional cookie, and
+                dismissing it is not consent to anything.
+              </p>
+            </>
+          ) : (
+            <p>
+              <strong className="font-semibold text-ink">This site sets no cookies.</strong> Not for preferences, not
+              for sessions, not for measurement. There is no consent banner because there is nothing to consent to —
+              the notice you may have seen in the corner is a disclosure of the local storage below, and dismissing it
+              is not consent to anything.
+            </p>
+          )}
         </Section>
 
         <Section id="storage" title="Local storage">
@@ -121,18 +141,52 @@ export default function PrivacyPage() {
         </Section>
 
         <Section id="accounts" title="Accounts and data we hold">
-          <p>
-            There are no accounts. The{" "}
-            <Link href="/login" className="text-accent hover:underline">
-              log in
-            </Link>{" "}
-            and{" "}
-            <Link href="/signup" className="text-accent hover:underline">
-              sign up
-            </Link>{" "}
-            forms are disabled and accept nothing, so there is no email address, password or profile anywhere. No
-            newsletter, no mailing list.
-          </p>
+          {ACCOUNTS_ENABLED ? (
+            <>
+              <p>
+                Creating an account stores your <strong className="font-semibold text-ink">email address</strong>,{" "}
+                <strong className="font-semibold text-ink">display name</strong>, and — if you set one —{" "}
+                a <strong className="font-semibold text-ink">password</strong>, which is never stored in plain text
+                (it&apos;s hashed with bcrypt; we cannot read it back, and neither could anyone who obtained the
+                database). Nothing else is collected: no address, no payment details, no phone number.
+              </p>
+              <p>
+                Signing in with <strong className="font-semibold text-ink">Google or Discord</strong> instead means we
+                never see a password at all — that provider authenticates you and hands us only your email, display
+                name and avatar image (whatever their consent screen told you it would share), which we store the same
+                way as an email/password account. We don&apos;t receive your Google or Discord password, contacts, or
+                anything beyond that basic profile.
+              </p>
+              <p>
+                Verifying an email or resetting a password uses a one-time link that expires in 1 hour and is deleted
+                the moment it&apos;s used. Staying signed in uses the single functional cookie described above — see{" "}
+                <Link href="#cookies" className="text-accent hover:underline">
+                  Cookies
+                </Link>
+                .
+              </p>
+              <p className="text-[12.5px] text-ink-dim">
+                Want your account and its data deleted? Email{" "}
+                <a href={`mailto:${CONTACT_EMAIL}`} className="text-accent hover:underline">
+                  {CONTACT_EMAIL}
+                </a>{" "}
+                from the address on the account and we&apos;ll remove it — there&apos;s no self-serve delete button yet.
+              </p>
+            </>
+          ) : (
+            <p>
+              This deployment has no database configured, so accounts are switched off entirely — the{" "}
+              <Link href="/login" className="text-accent hover:underline">
+                log in
+              </Link>{" "}
+              and{" "}
+              <Link href="/signup" className="text-accent hover:underline">
+                sign up
+              </Link>{" "}
+              forms are disabled and accept nothing, so there is no email address, password or profile anywhere. No
+              newsletter, no mailing list.
+            </p>
+          )}
           <p>
             Card search runs against this site&apos;s own{" "}
             <code className="font-mono text-[12px] text-ink">/api/search</code> endpoint, which reads an in-memory
@@ -150,9 +204,9 @@ export default function PrivacyPage() {
             .
           </p>
           <p>
-            If this site ever adds analytics, advertising or accounts, this page changes first and the corner notice is
-            replaced with a real consent control that blocks those scripts until you choose. A dismissed disclosure is
-            not consent and will never be treated as one.
+            If this site ever adds analytics or advertising, this page changes first and the corner notice is replaced
+            with a real consent control that blocks those scripts until you choose. A dismissed disclosure is not
+            consent and will never be treated as one.
           </p>
         </Section>
       </div>
