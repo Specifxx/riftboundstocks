@@ -7,11 +7,13 @@ import { BrandLogo, BrandWordmark } from "./BrandLogo";
 import { SearchBox } from "./SearchBox";
 import { CurrencySelector, ThemeToggle } from "./Prefs";
 import { NavUser } from "./NavUser";
+import { riftcompareUrl } from "@/lib/affiliate";
 
 interface NavItem {
   label: string;
   href: string;
-  children?: { label: string; href: string; hint?: string }[];
+  external?: boolean;
+  children?: { label: string; href: string; hint?: string; external?: boolean }[];
 }
 
 // "Decks" is adapted to Riftbound's own vocabulary: the game's deckbuilding
@@ -45,6 +47,19 @@ const NAV: NavItem[] = [
       { label: "Deck Archetypes", href: "/decks", hint: "What a build costs to assemble" },
       { label: "Domains", href: "/domains", hint: "Fury, Calm, Mind, Body, Chaos, Order" },
       { label: "Legends", href: "/browse?type=Legend", hint: "Every Legend by price" },
+    ],
+  },
+  {
+    // Riftle and the pack simulator run against RiftCompare's live card database
+    // (the daily answer/pack pulls have to stay server-side to mean anything),
+    // so this links out to the sister site rather than duplicating that backend.
+    label: "Games",
+    href: riftcompareUrl("/games", "nav"),
+    external: true,
+    children: [
+      { label: "Riftle", href: riftcompareUrl("/riftle", "nav"), hint: "Daily card-guessing game on RiftCompare", external: true },
+      { label: "Pack Simulator", href: riftcompareUrl("/games/pack-sim", "nav"), hint: "Open packs, no money spent", external: true },
+      { label: "All games →", href: riftcompareUrl("/games", "nav"), hint: "The full arcade on RiftCompare", external: true },
     ],
   },
   { label: "Premium", href: "/premium" },
@@ -123,9 +138,14 @@ export function Navbar() {
                           key={c.href}
                           href={c.href}
                           role="menuitem"
+                          target={c.external ? "_blank" : undefined}
+                          rel={c.external ? "noopener" : undefined}
                           className="block rounded-md px-2.5 py-2 hover:bg-surface-2"
                         >
-                          <span className="block text-[13px] font-semibold text-ink">{c.label}</span>
+                          <span className="block text-[13px] font-semibold text-ink">
+                            {c.label}
+                            {c.external && <span className="ml-1 text-ink-dim">↗</span>}
+                          </span>
                           {c.hint && <span className="block text-[11px] text-ink-dim">{c.hint}</span>}
                         </Link>
                       ))}
@@ -176,14 +196,25 @@ export function Navbar() {
           <ul className="space-y-0.5">
             {NAV.map((item) => (
               <li key={item.label}>
-                <Link href={item.href} className="block rounded-md px-2 py-2 text-sm font-semibold text-ink hover:bg-surface-2">
+                <Link
+                  href={item.href}
+                  target={item.external ? "_blank" : undefined}
+                  rel={item.external ? "noopener" : undefined}
+                  className="block rounded-md px-2 py-2 text-sm font-semibold text-ink hover:bg-surface-2"
+                >
                   {item.label}
+                  {item.external && <span className="ml-1 text-ink-dim">↗</span>}
                 </Link>
                 {item.children && (
                   <ul className="ml-3 border-l border-line pl-2">
                     {item.children.map((c) => (
                       <li key={c.href}>
-                        <Link href={c.href} className="block rounded-md px-2 py-1.5 text-[13px] text-ink-muted hover:bg-surface-2">
+                        <Link
+                          href={c.href}
+                          target={c.external ? "_blank" : undefined}
+                          rel={c.external ? "noopener" : undefined}
+                          className="block rounded-md px-2 py-1.5 text-[13px] text-ink-muted hover:bg-surface-2"
+                        >
                           {c.label}
                         </Link>
                       </li>
