@@ -19,7 +19,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${SITE_URL}/decks`, changeFrequency: "weekly", priority: 0.6 },
     { url: `${SITE_URL}/sealed`, changeFrequency: "weekly", priority: 0.6 },
     { url: `${SITE_URL}/browse`, changeFrequency: "weekly", priority: 0.6 },
-    { url: `${SITE_URL}/premium`, changeFrequency: "monthly", priority: 0.4 },
     { url: `${SITE_URL}/about`, changeFrequency: "monthly", priority: 0.5 },
     { url: `${SITE_URL}/privacy`, changeFrequency: "yearly", priority: 0.3 },
   ] as const).map((e) => ({ ...e, lastModified: now }));
