@@ -47,7 +47,6 @@ const NAV: NavItem[] = [
       { label: "Legends", href: "/browse?type=Legend", hint: "Every Legend by price" },
     ],
   },
-  { label: "Premium", href: "/premium" },
 ];
 
 export function Navbar() {

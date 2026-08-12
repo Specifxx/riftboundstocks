@@ -1,18 +1,20 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 
 /**
  * Alert / Watch / Inventory / Share.
  *
- * Share genuinely works. The other three need an account and a database, which
- * this MVP has neither of, so they link to sign-up rather than pretending to
- * save something — a button that silently does nothing is worse than one that
- * says what it needs.
+ * Share genuinely works. The other three still have no backend — accounts
+ * exist now, but nothing persists a watchlist, an alert threshold or a
+ * collection yet, so they're shown honestly disabled rather than linking
+ * somewhere that can't fulfil them. A button that silently does nothing (or
+ * worse, redirects a signed-in user in a circle) is worse than one that says
+ * what it needs.
  *
- * TODO: wire Alert/Watch/Inventory to the user tables once auth exists
- * (TCGEmpire's PriceAlert + CollectionCard models are the shape to copy).
+ * TODO: wire these up (TCGEmpire's PriceAlert + CollectionCard models are the
+ * shape to copy) — needs new Prisma models on top of the User/AuthToken pair
+ * already in prisma/schema.prisma.
  */
 export function CardActions({ cardName }: { cardName: string }) {
   const [copied, setCopied] = useState(false);
@@ -44,9 +46,15 @@ export function CardActions({ cardName }: { cardName: string }) {
           ["Inventory", "Track copies you own"],
         ] as const
       ).map(([label, hint]) => (
-        <Link key={label} href="/signup" title={`${hint} — needs an account`} className={base}>
+        <button
+          key={label}
+          type="button"
+          disabled
+          title={`${hint} — not built yet`}
+          className={`${base} cursor-not-allowed opacity-60`}
+        >
           {label}
-        </Link>
+        </button>
       ))}
       <button type="button" onClick={share} className={base}>
         {copied ? "Copied" : "Share"}
