@@ -6,12 +6,11 @@ import { activeSource, cardStats, priceHistory, latestQuote } from "@/lib/prices
 import { tcgSearchUrl } from "@/lib/prices/tcgplayer";
 import { FORMATS, SET_BY_CODE, domainInfo } from "@/lib/riftbound";
 import { formatMoney, formatDate } from "@/lib/format";
-import { convert } from "@/lib/currency";
 import { OFFICIAL_CARD_DB_URL, SITE_NAME, SITE_URL } from "@/lib/site";
 import { CardImage } from "@/components/CardImage";
 import { PriceChart } from "@/components/PriceChart";
 import { CardActions } from "@/components/CardActions";
-import { Money } from "@/components/Prefs";
+import { AltCurrencyCell, AltCurrencyHeader, Money } from "@/components/Prefs";
 import { Delta, DemoPricesNotice, DomainPill, RarityPill } from "@/components/Bits";
 
 // Pre-render the most valuable cards at build time and stream the rest on first
@@ -324,7 +323,7 @@ export default function CardPage({ params }: { params: { slug: string } }) {
                       <th className="py-2 font-medium">Set</th>
                       <th className="py-2 font-medium">Number</th>
                       <th className="py-2 text-right font-medium">USD</th>
-                      <th className="py-2 text-right font-medium">EUR</th>
+                      <AltCurrencyHeader className="py-2 text-right font-medium" />
                     </tr>
                   </thead>
                   <tbody>
@@ -344,9 +343,7 @@ export default function CardPage({ params }: { params: { slug: string } }) {
                           </td>
                           <td className="py-2 font-mono text-[12px] text-ink-muted">{p.collectorLabel}</td>
                           <td className="num py-2 text-right font-semibold text-ink">{formatMoney(pq.market, "USD")}</td>
-                          <td className="num py-2 text-right text-ink-muted">
-                            {formatMoney(convert(pq.market, "EUR"), "EUR")}
-                          </td>
+                          <AltCurrencyCell cents={pq.market} className="num py-2 text-right text-ink-muted" />
                         </tr>
                       );
                     })}

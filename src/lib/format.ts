@@ -2,7 +2,18 @@
 // and converting on write would bake today's rate into history. EUR is a display
 // conversion applied at render time only (see currency.ts).
 
-const SYMBOL: Record<string, string> = { USD: "$", EUR: "€" };
+// Distinct symbols so every price is unambiguous about its currency — a plain
+// "$" could be USD, AUD, CAD, SGD or NZD, and the selector offers all five.
+// Same table as TCGEmpire's format.ts, for the same reason.
+const SYMBOL: Record<string, string> = {
+  USD: "US$",
+  EUR: "€",
+  GBP: "£",
+  AUD: "A$",
+  CAD: "C$",
+  SGD: "S$",
+  NZD: "NZ$",
+};
 
 export function formatMoney(cents: number, currency: string = "USD"): string {
   const n = new Intl.NumberFormat("en-US", {

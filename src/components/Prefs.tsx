@@ -91,6 +91,24 @@ export function Money({ cents, className }: { cents: number | null | undefined; 
   );
 }
 
+/**
+ * The card page's "Other printings" table shows a hard USD column (the stored,
+ * canonical price) plus a converted one. These two render the converted column's
+ * header and cells, and BOTH return null when USD is selected — which removes
+ * the whole column rather than printing the same figure twice.
+ */
+export function AltCurrencyHeader({ className }: { className?: string }) {
+  const { currency } = usePrefs();
+  if (currency === "USD") return null;
+  return <th className={className}>{currency}</th>;
+}
+
+export function AltCurrencyCell({ cents, className }: { cents: number; className?: string }) {
+  const { currency } = usePrefs();
+  if (currency === "USD") return null;
+  return <td className={className}>{formatMoney(convert(cents, currency), currency)}</td>;
+}
+
 export function CurrencySelector() {
   const { currency, setCurrency } = usePrefs();
   return (
