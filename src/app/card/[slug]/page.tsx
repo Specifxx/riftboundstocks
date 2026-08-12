@@ -110,41 +110,54 @@ export default function CardPage({ params }: { params: { slug: string } }) {
           </p>
         </div>
 
-        <dl className="flex flex-wrap gap-x-7 gap-y-2">
+        {/* Hidden on phones: the same four numbers sit beside the art below, and
+            showing both put one duplicate summary directly under the other in a
+            single viewport. Below `sm` the panel copy is the only one. */}
+        <dl className="hidden w-full gap-x-5 gap-y-1.5 sm:flex sm:w-auto sm:flex-wrap sm:gap-x-7 sm:gap-y-2">
           {summary.map((s) => (
-            <div key={s.label} className="text-right">
+            <div key={s.label} className="sm:text-right">
               <dt className="eyebrow">{s.label}</dt>
               <dd>
-                <Money cents={s.cents} className={`num text-xl font-bold sm:text-2xl ${s.tone}`} />
+                <Money cents={s.cents} className={`num text-[17px] font-bold sm:text-2xl ${s.tone}`} />
               </dd>
             </div>
           ))}
         </dl>
       </header>
 
+      {/* Two columns on desktop; on phones the wrappers go `display: contents`
+          so their panels become grid items directly and `order` can interleave
+          them. Without that the entire left column — art, actions, every card
+          detail, the rules text — would sit between the title and the chart,
+          and the chart is the reason the page exists. Phone order: art and
+          prices, chart, vendor prices and data, other printings, card details. */}
       <div className="grid gap-4 lg:grid-cols-[290px_minmax(0,1fr)]">
         {/* ── Left: art, quick prices, actions ─────────────────────────────── */}
-        <div className="lg:sticky lg:top-[72px] lg:self-start">
-          <div className="panel overflow-hidden p-3">
-            <div className="overflow-hidden rounded-lg bg-surface-2">
-              <CardImage card={card} full priority className="aspect-[5/7] w-full" />
-            </div>
+        <div className="contents lg:block lg:sticky lg:top-[72px] lg:self-start">
+          <div className="panel order-1 min-w-0 overflow-hidden p-3">
+            <div className="flex gap-3 sm:block">
+              <div className="w-[45%] shrink-0 overflow-hidden rounded-lg bg-surface-2 sm:w-full">
+                <CardImage card={card} full priority className="aspect-[5/7] w-full" />
+              </div>
 
-            <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1.5">
-              {summary.map((s) => (
-                <div key={s.label} className="flex items-baseline justify-between gap-2">
-                  <dt className="text-[11px] text-ink-dim">{s.label}</dt>
-                  <dd>
-                    <Money cents={s.cents} className={`num text-[13px] font-semibold ${s.tone}`} />
-                  </dd>
-                </div>
-              ))}
-            </dl>
+              {/* On phones this is the page's only price summary, so it is set
+                  larger than the desktop version tucked under the art. */}
+              <dl className="flex min-w-0 flex-1 flex-col justify-center gap-2 sm:mt-3 sm:grid sm:grid-cols-2 sm:gap-x-3 sm:gap-y-1.5">
+                {summary.map((s) => (
+                  <div key={s.label} className="flex items-baseline justify-between gap-2 border-b border-line pb-1.5 last:border-0 last:pb-0 sm:border-0 sm:pb-0">
+                    <dt className="text-[12px] text-ink-dim sm:text-[11px]">{s.label}</dt>
+                    <dd>
+                      <Money cents={s.cents} className={`num text-[15px] font-bold sm:text-[13px] sm:font-semibold ${s.tone}`} />
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
 
             <CardActions cardName={card.name} />
           </div>
 
-          <div className="panel mt-4 p-4">
+          <div className="panel order-5 min-w-0 p-4 lg:mt-4">
             <h2 className="eyebrow mb-2">Card details</h2>
             <dl className="text-[13px]">
               <StatRow label="Type">
@@ -218,8 +231,8 @@ export default function CardPage({ params }: { params: { slug: string } }) {
         </div>
 
         {/* ── Right: chart, prices, data ───────────────────────────────────── */}
-        <div className="min-w-0 space-y-4">
-          <section className="panel p-4">
+        <div className="contents lg:block lg:min-w-0 lg:space-y-4">
+          <section className="panel order-2 min-w-0 p-4">
             <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
               <h2 className="font-display text-lg uppercase tracking-wide text-ink">Price History</h2>
               <span className="text-[11px] text-ink-dim">{stats.points} daily points</span>
@@ -228,9 +241,9 @@ export default function CardPage({ params }: { params: { slug: string } }) {
             <DemoPricesNotice className="mt-3 border-t border-line pt-3" />
           </section>
 
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="order-3 grid min-w-0 gap-4 md:grid-cols-2">
             {/* Vendor prices */}
-            <section className="panel p-4">
+            <section className="panel min-w-0 p-4">
               <h2 className="eyebrow mb-3">Prices</h2>
               <ul className="space-y-2">
                 {(
@@ -366,19 +379,19 @@ export default function CardPage({ params }: { params: { slug: string } }) {
           </div>
 
           {/* Other printings */}
-          <section className="panel p-4">
+          <section className="panel order-4 min-w-0 p-4">
             <h2 className="eyebrow mb-3">Other printings</h2>
             {printings.length === 0 ? (
               <p className="text-[13px] text-ink-dim">
                 This is the only printing of {card.name} in the catalogue.
               </p>
             ) : (
-              <div className="-mx-4 overflow-x-auto px-4">
-                <table className="w-full min-w-[440px] text-[13px]">
+              <div className="w-full">
+                <table className="w-full table-fixed text-[13px]">
                   <thead>
                     <tr className="border-b border-line text-left text-ink-dim">
                       <th className="py-2 font-medium">Set</th>
-                      <th className="py-2 font-medium">Number</th>
+                      <th className="hidden py-2 font-medium sm:table-cell">Number</th>
                       <th className="py-2 text-right font-medium">USD</th>
                       <AltCurrencyHeader className="py-2 text-right font-medium" />
                     </tr>
@@ -397,8 +410,11 @@ export default function CardPage({ params }: { params: { slug: string } }) {
                                 {p.variant === "s" ? "Signature" : "Alt art"}
                               </span>
                             )}
+                            <span className="block font-mono text-[10.5px] text-ink-dim sm:hidden">
+                              {p.collectorLabel}
+                            </span>
                           </td>
-                          <td className="py-2 font-mono text-[12px] text-ink-muted">{p.collectorLabel}</td>
+                          <td className="hidden py-2 font-mono text-[12px] text-ink-muted sm:table-cell">{p.collectorLabel}</td>
                           {/* Headline price, so a foil-only printing shows its
                               foil market rather than an empty cell. */}
                           <td className="num py-2 text-right font-semibold text-ink">

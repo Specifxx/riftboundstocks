@@ -24,8 +24,8 @@ function CardBlock({ slug, note }: { slug: string; note?: string }) {
 
   return (
     <figure className="my-5 not-prose">
-      <div className="panel flex gap-3.5 p-3.5">
-        <Link href={`/card/${card.slug}`} className="w-[104px] shrink-0 sm:w-[132px]">
+      <div className="panel flex flex-col gap-3 p-3 sm:flex-row sm:gap-3.5 sm:p-3.5">
+        <Link href={`/card/${card.slug}`} className="w-[92px] shrink-0 sm:w-[132px]">
           <CardImage card={card} className="aspect-[5/7] w-full" />
         </Link>
         <div className="min-w-0 flex-1">
@@ -40,8 +40,8 @@ function CardBlock({ slug, note }: { slug: string; note?: string }) {
             <DomainPill domain={card.domain} />
           </div>
 
-          <div className="mt-3 flex flex-wrap items-end justify-between gap-3 border-t border-line pt-2.5">
-            <dl className="flex gap-4">
+          <div className="mt-3 flex flex-wrap items-end justify-between gap-x-3 gap-y-2 border-t border-line pt-2.5">
+            <dl className="flex flex-wrap gap-x-4 gap-y-1.5">
               {(
                 [
                   ["Market", q.market, "text-ink"],
@@ -97,9 +97,9 @@ function CardTableBlock({ title, slugs }: { title: string; slugs: string[] }) {
       <table className="w-full text-[13px]">
         <thead>
           <tr className="border-b border-line text-left text-[11px] uppercase tracking-wide text-ink-dim">
-            <th className="px-3.5 py-1.5 font-medium">Card</th>
-            <th className="px-2 py-1.5 text-right font-medium">Market</th>
-            <th className="px-3.5 py-1.5 text-right font-medium">7d</th>
+            <th className="px-2.5 py-1.5 font-medium sm:px-3.5">Card</th>
+            <th className="px-1.5 py-1.5 text-right font-medium sm:px-2">Market</th>
+            <th className="px-2.5 py-1.5 text-right font-medium sm:px-3.5">7d</th>
           </tr>
         </thead>
         <tbody>
@@ -107,7 +107,7 @@ function CardTableBlock({ title, slugs }: { title: string; slugs: string[] }) {
             const q = latestQuote(c);
             return (
               <tr key={c.id} className="border-b border-line last:border-0">
-                <td className="px-3.5 py-1.5">
+                <td className="px-2.5 py-1.5 sm:px-3.5">
                   <Link href={`/card/${c.slug}`} className="flex items-center gap-2">
                     <img src={c.imageThumbUrl} alt="" width={24} height={34} className="h-8 w-6 shrink-0 rounded object-cover" loading="lazy" />
                     <span className="min-w-0">
@@ -118,10 +118,10 @@ function CardTableBlock({ title, slugs }: { title: string; slugs: string[] }) {
                     </span>
                   </Link>
                 </td>
-                <td className="px-2 py-1.5 text-right">
+                <td className="px-1.5 py-1.5 text-right sm:px-2">
                   <Money cents={q.market} className="num font-semibold text-ink" />
                 </td>
-                <td className="px-3.5 py-1.5 text-right">
+                <td className="px-2.5 py-1.5 text-right sm:px-3.5">
                   <Delta pct={pctChange(q.market, quoteDaysAgo(c, 7).market)} className="text-[12px]" />
                 </td>
               </tr>

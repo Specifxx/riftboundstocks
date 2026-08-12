@@ -32,6 +32,12 @@ export type ColumnKey = "card" | "set" | "rarity" | "domain" | "type" | "now" | 
 
 type SortKey = "name" | "set" | "rarity" | "number" | "now" | "then" | "pct";
 
+const SM = "sm:table-cell";
+const MD = "md:table-cell";
+const LG = "lg:table-cell";
+const XL = "xl:table-cell";
+const NOW_W = "w-[30%] sm:w-[18%]";
+
 const RARITY_ORDER: Record<string, number> = { Common: 0, Uncommon: 1, Rare: 2, Epic: 3, Showcase: 4 };
 
 export function CardTable({
@@ -87,13 +93,25 @@ export function CardTable({
     }
   }
 
-  const Th = ({ label, sortKey, align = "left" }: { label: string; sortKey?: SortKey; align?: "left" | "right" }) => (
-    <th className={`whitespace-nowrap py-2 font-medium ${align === "right" ? "text-right" : "text-left"}`}>
+  const Th = ({
+    label,
+    sortKey,
+    align = "left",
+    cls = "",
+  }: {
+    label: string;
+    sortKey?: SortKey;
+    align?: "left" | "right";
+    cls?: string;
+  }) => (
+    <th className={`whitespace-nowrap py-2 font-medium ${align === "right" ? "text-right" : "text-left"} ${cls}`}>
       {sortKey ? (
         <button
           type="button"
           onClick={() => toggle(sortKey)}
-          className={`inline-flex items-center gap-1 hover:text-ink ${sort === sortKey ? "text-ink" : ""}`}
+          // Negative margin lets the hit area grow into the cell's own padding,
+          // so the header stays as tall as it looks but is thumb-sized.
+          className={`-my-1.5 inline-flex items-center gap-1 py-1.5 hover:text-ink ${sort === sortKey ? "text-ink" : ""}`}
         >
           {label}
           <span aria-hidden className={sort === sortKey ? "text-accent" : "opacity-0"}>
@@ -112,52 +130,68 @@ export function CardTable({
 
   return (
     <div>
-      <div className="-mx-4 overflow-x-auto px-4">
-        <table className="w-full min-w-[560px] text-[13px]">
+      {/* No min-width and no horizontal scroll. A phone-width table that has to
+          be swiped sideways hides exactly the column people came for — the price
+          — so secondary columns are dropped as the viewport narrows instead, and
+          the set name folds into the card cell where it would otherwise vanish. */}
+      <div className="w-full">
+        <table className="w-full table-fixed text-[13px]">
           <thead>
             <tr className="border-b border-line text-ink-dim">
               {columns.includes("card") && <Th label="Card" sortKey="name" />}
-              {columns.includes("set") && <Th label="Set" sortKey="set" />}
-              {columns.includes("rarity") && <Th label="Rarity" sortKey="rarity" />}
-              {columns.includes("domain") && <Th label="Domain" />}
-              {columns.includes("type") && <Th label="Type" />}
-              {columns.includes("then") && <Th label={thenLabel} sortKey="then" align="right" />}
-              {columns.includes("now") && <Th label={nowLabel} sortKey="now" align="right" />}
-              {columns.includes("pct") && <Th label="Change" sortKey="pct" align="right" />}
+              {columns.includes("set") && <Th label="Set" sortKey="set" cls={`hidden ${MD} w-[26%]`} />}
+              {columns.includes("rarity") && <Th label="Rarity" sortKey="rarity" cls={`hidden ${LG} w-[13%]`} />}
+              {columns.includes("domain") && <Th label="Domain" cls={`hidden ${LG} w-[13%]`} />}
+              {columns.includes("type") && <Th label="Type" cls={`hidden ${XL} w-[11%]`} />}
+              {columns.includes("then") && <Th label={thenLabel} sortKey="then" align="right" cls={`hidden ${SM} w-[18%]`} />}
+              {columns.includes("now") && <Th label={nowLabel} sortKey="now" align="right" cls={NOW_W} />}
+              {columns.includes("pct") && <Th label="Change" sortKey="pct" align="right" cls="w-[22%] sm:w-[16%]" />}
             </tr>
           </thead>
           <tbody>
             {sorted.slice(0, shown).map((r) => (
               <tr key={r.slug} className="border-b border-line last:border-0 hover:bg-surface-2">
                 {columns.includes("card") && (
-                  <td className="py-1.5">
-                    <Link href={`/card/${r.slug}`} className="flex items-center gap-2.5">
-                      <img src={r.thumb} alt="" width={28} height={39} className="h-9 w-7 shrink-0 rounded object-cover" loading="lazy" />
-                      <span className="min-w-0">
-                        <span className="block truncate font-medium text-ink hover:text-accent">{r.name}</span>
-                        <span className="block font-mono text-[10.5px] text-ink-dim">{r.collectorLabel}</span>
+                  <td className="py-1.5 pr-2">
+                    <Link href={`/card/${r.slug}`} className="flex items-center gap-2 sm:gap-2.5">
+                      <img
+                        src={r.thumb}
+                        alt=""
+                        width={28}
+                        height={39}
+                        className="h-8 w-[23px] shrink-0 rounded object-cover sm:h-9 sm:w-7"
+                        loading="lazy"
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-medium leading-tight text-ink hover:text-accent">{r.name}</span>
+                        <span className="block truncate font-mono text-[10.5px] leading-tight text-ink-dim">
+                          {/* The Set column is hidden on phones, so it rides
+                              along here rather than being lost. */}
+                          {columns.includes("set") && <span className="md:hidden">{r.setCode} </span>}
+                          {r.collectorLabel}
+                        </span>
                       </span>
                     </Link>
                   </td>
                 )}
                 {columns.includes("set") && (
-                  <td className="py-1.5 text-ink-muted">
-                    <span className="whitespace-nowrap">{r.setName}</span>
+                  <td className={`hidden ${MD} py-1.5 pr-2 text-ink-muted`}>
+                    <span className="block truncate">{r.setName}</span>
                   </td>
                 )}
                 {columns.includes("rarity") && (
-                  <td className="py-1.5">
+                  <td className={`hidden ${LG} py-1.5`}>
                     <RarityPill rarity={r.rarity} />
                   </td>
                 )}
                 {columns.includes("domain") && (
-                  <td className="py-1.5">
+                  <td className={`hidden ${LG} py-1.5`}>
                     <DomainPill domain={r.domain} />
                   </td>
                 )}
-                {columns.includes("type") && <td className="py-1.5 text-ink-muted">{r.type}</td>}
+                {columns.includes("type") && <td className={`hidden ${XL} py-1.5 text-ink-muted`}>{r.type}</td>}
                 {columns.includes("then") && (
-                  <td className="py-1.5 text-right">
+                  <td className={`hidden ${SM} py-1.5 text-right`}>
                     <Money cents={r.then} className="num text-ink-dim" />
                   </td>
                 )}

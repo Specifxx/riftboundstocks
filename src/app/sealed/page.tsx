@@ -142,7 +142,7 @@ function ProductCard({ product }: { product: SealedRow }) {
           href={affiliateUrl(product.url, "sealed", "/sealed")}
           target="_blank"
           rel={outboundRel()}
-          className="mt-2 inline-flex w-fit rounded-md border border-line px-2 py-1 text-[11px] font-semibold text-accent hover:border-accent"
+          className="mt-2 inline-flex min-h-[34px] w-fit items-center rounded-md border border-line px-2.5 py-1 text-[11px] font-semibold text-accent hover:border-accent sm:min-h-0 sm:px-2"
         >
           Buy on TCGplayer →
         </a>

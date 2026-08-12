@@ -33,12 +33,12 @@ export function FilterBar() {
   );
 
   const Select = ({ name, label, options }: { name: string; label: string; options: { value: string; label: string }[] }) => (
-    <label className="flex items-center gap-1.5 text-[11.5px] text-ink-dim">
-      {label}
+    <label className="flex flex-col gap-1 text-[11px] text-ink-dim sm:flex-row sm:items-center sm:gap-1.5 sm:text-[11.5px]">
+      <span className="uppercase tracking-wide sm:normal-case sm:tracking-normal">{label}</span>
       <select
         value={params.get(name) ?? "all"}
         onChange={(e) => setParam(name, e.target.value)}
-        className="h-8 rounded-md border border-line bg-surface-2 px-2 text-[12px] font-semibold text-ink-muted focus:border-accent"
+        className="h-9 w-full rounded-md border border-line bg-surface-2 px-2 text-[12px] font-semibold text-ink-muted focus:border-accent sm:h-8 sm:w-auto"
       >
         <option value="all">All</option>
         {options.map((o) => (
@@ -53,7 +53,7 @@ export function FilterBar() {
   const hasFilters = ["set", "setType", "rarity", "domain", "min"].some((k) => params.get(k));
 
   return (
-    <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-line bg-surface-1 p-2.5">
+    <div className="mb-4 grid grid-cols-2 gap-2 rounded-lg border border-line bg-surface-1 p-2.5 sm:flex sm:flex-wrap sm:items-center sm:gap-x-3 sm:gap-y-2">
       <Select name="set" label="Set" options={SETS.map((s) => ({ value: s.slug, label: s.name }))} />
       <Select name="setType" label="Set types" options={SET_TYPES.map((t) => ({ value: t, label: t }))} />
       <Select name="rarity" label="Rarity" options={RARITY_KEYS.map((r) => ({ value: r, label: r }))} />
@@ -64,7 +64,7 @@ export function FilterBar() {
         <button
           type="button"
           onClick={() => router.push(pathname, { scroll: false })}
-          className="ml-auto rounded-md border border-line px-2 py-1 text-[11.5px] font-semibold text-ink-dim hover:text-ink"
+          className="col-span-2 h-9 rounded-md border border-line px-2 text-[11.5px] font-semibold text-ink-dim hover:text-ink sm:ml-auto sm:h-auto sm:w-auto sm:py-1"
         >
           Clear
         </button>

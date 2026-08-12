@@ -52,6 +52,11 @@ html {
   /* Clip rather than hide: it opens no scroll container, so the sticky navbar
      keeps working, and a wide table can't drag the whole page sideways. */
   overflow-x: clip;
+  /* Mobile browsers "boost" text in wide blocks, inflating some paragraphs and
+     not others. Opting out means the type scale here is the type scale on the
+     device. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
@@ -72,6 +77,32 @@ h3 {
   font-family: var(--font-display), "Arial Narrow", sans-serif;
   font-weight: 600;
   letter-spacing: 0.01em;
+}
+
+/* Phone type scale.
+   The page headings are sized for a dashboard viewed at desk width; at 360px
+   the same values push a two-word title onto three lines and shove the content
+   below the fold. Scaling them here rather than adding `text-2xl sm:text-4xl`
+   to thirty call sites keeps every page consistent — and consistency is the
+   thing that reads as "aligned" on a small screen. */
+@media (max-width: 639px) {
+  h1 {
+    font-size: clamp(1.5rem, 7vw, 1.9rem);
+    line-height: 1.12;
+  }
+
+  h2 {
+    font-size: clamp(1.05rem, 5vw, 1.3rem);
+    line-height: 1.2;
+  }
+
+  /* Long unbroken card names ("Kai'Sa - Daughter of the Void (Metal)") must not
+     be able to widen a flex or grid track past the viewport. */
+  h1,
+  h2,
+  h3 {
+    overflow-wrap: anywhere;
+  }
 }
 
 ::selection {

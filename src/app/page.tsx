@@ -149,8 +149,8 @@ export default function HomePage() {
         <DemoPricesNotice className="mt-3" />
       </section>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <section>
+      <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <section className="min-w-0">
           <SectionTitle href="/news" linkLabel="All articles">
             News &amp; Articles
           </SectionTitle>
@@ -168,7 +168,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <aside>
+        <aside className="min-w-0">
           <SectionTitle href="/interests">{HAS_CHANGE_DATA ? "Today's Movers" : "Top by Market"}</SectionTitle>
           <div className="panel p-3.5">
             <CardTable
