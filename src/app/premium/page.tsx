@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { SITE_NAME, SITE_URL } from "@/lib/site";
+import { ACCOUNTS_ENABLED, SITE_NAME, SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Premium",
@@ -63,9 +63,8 @@ export default function PremiumPage() {
         </h2>
         <p className="mt-1.5 text-[13px] leading-relaxed text-ink-muted">
           There is <strong className="font-semibold text-ink">no payment processing, no billing and no subscription</strong>{" "}
-          behind this page, and no accounts system to attach one to. Nothing here can be bought, and the price shown
-          below is an illustration of what a tier like this might cost — not an offer. This page describes a feature set,
-          which is all it does.
+          behind this page. Nothing here can be bought, and the price shown below is an illustration of what a tier like
+          this might cost — not an offer. This page describes a feature set, which is all it does.
         </p>
       </div>
 
@@ -119,15 +118,24 @@ export default function PremiumPage() {
       </section>
 
       <p className="text-center text-[12px] leading-relaxed text-ink-dim">
-        The sign-up form is also inert in this build — see{" "}
-        <Link href="/signup" className="text-accent hover:underline">
-          /signup
-        </Link>{" "}
-        for what it does and does not do, and{" "}
+        {ACCOUNTS_ENABLED ? (
+          <>
+            Creating an account is free and takes a few seconds — it just doesn&apos;t unlock anything on this page yet.
+          </>
+        ) : (
+          <>
+            The sign-up form is disabled on this deployment — see{" "}
+            <Link href="/signup" className="text-accent hover:underline">
+              /signup
+            </Link>{" "}
+            for why.
+          </>
+        )}{" "}
+        See{" "}
         <Link href="/privacy" className="text-accent hover:underline">
           Privacy
         </Link>{" "}
-        for what this site stores about you (very little).
+        for what this site stores about you (still very little).
       </p>
     </div>
   );

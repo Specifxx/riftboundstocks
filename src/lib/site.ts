@@ -27,3 +27,9 @@ export const PRICE_SOURCE_NOTE = "Prices sourced from TCGplayer.";
 // this flag so the demo disclaimer can never be accidentally left off in a build
 // that is showing generated numbers.
 export const PRICES_ARE_DEMO = !process.env.TCGPLAYER_PUBLIC_KEY;
+
+// Accounts (src/lib/auth.ts) need somewhere to put a User row, so the whole
+// feature is off — /login and /signup render their forms disabled, same
+// treatment as an unconfigured OAuth provider — until DATABASE_URL is set. A
+// fresh clone with zero env config must still build and run.
+export const ACCOUNTS_ENABLED = !!process.env.DATABASE_URL;
