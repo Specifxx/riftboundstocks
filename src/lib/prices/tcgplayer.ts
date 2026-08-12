@@ -45,8 +45,9 @@ export interface TcgProduct {
 
 /**
  * Strip leading zeros and lowercase any letter suffix so "001" and "1" match, and
- * mark a Signature print ("*") with a trailing "s" so 223*/221 and 223/221 stay
- * distinct printings rather than collapsing onto one card.
+ * mark a Signature print (a "*" in the number) with a trailing "s" so the
+ * Signature and base prints of 223/221 stay distinct rather than collapsing
+ * onto one card.
  */
 export function numKey(seg: string): string {
   const m = seg.match(/^0*(\d+)([a-z]*)/i);

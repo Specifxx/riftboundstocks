@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96" role="img" aria-label="Abstract avatar for the fictional author Tobias Lindqvist">
+<title>Abstract avatar — Tobias Lindqvist is a fictional demo persona, not a real person</title>
+<defs>
+<linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+<stop offset="0" stop-color="hsl(224 58% 42%)"/>
+<stop offset="1" stop-color="hsl(250 62% 24%)"/>
+</linearGradient>
+<clipPath id="c"><circle cx="48" cy="48" r="48"/></clipPath>
+</defs>
+<g clip-path="url(#c)">
+<rect width="96" height="96" fill="url(#g)"/>
+<circle cx="24.3" cy="24.3" r="10.6" fill="#fff" opacity="0.21"/>
+<rect x="55.0" y="47.2" width="37.5" height="37.5" rx="8.3" fill="#fff" opacity="0.37" transform="rotate(68.8 73.8 66.0)"/>
+<path d="M55.1 82.7L64.6 63.8L74.0 82.7Z" fill="#fff" opacity="0.34"/>
+</g>
+<text x="48" y="49" text-anchor="middle" dominant-baseline="central" font-family="Oswald, Arial Narrow, sans-serif" font-size="30" font-weight="600" fill="#fff" opacity="0.92" letter-spacing="1">TL</text>
+</svg>

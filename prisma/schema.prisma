@@ -1,0 +1,89 @@
+// RiftboundStocks — price snapshot storage.
+//
+// OPTIONAL. The site runs entirely without a database: the card catalogue is a
+// bundled JSON file (src/data/riftbound-cards.json) and prices come from the
+// generator in src/lib/prices/synthetic.ts. This schema exists for the step
+// after that — persisting REAL daily TCGplayer snapshots so history accumulates
+// instead of being recomputed.
+//
+// Modelled on TCGEmpire's Card + PriceHistory tables so rows are portable
+// between the two projects, with two differences that matter for this site:
+//   • one row carries ALL FIVE series (low/mid/market/foil/foilMarket) rather
+//     than a single lowest price, because the card page plots all five and
+//     five rows per card per day would quintuple the table for no gain;
+//   • prices are USD cents, because TCGplayer quotes USD. Converting on write
+//     would freeze one day's FX rate into permanent history.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// A printing. Mirrors the bundled catalogue; `externalId` is the RiftScribe id
+/// ("ogn-007a-298") and is the join key on both sides.
+model Card {
+  id              String  @id @default(cuid())
+  externalId      String  @unique
+  slug            String  @unique
+  name            String
+  setCode         String
+  setName         String
+  collectorNumber Int
+  collectorLabel  String
+  /// "a" (alt art) or "s" (Signature); null for a base print. Without this an
+  /// alt art collides with the card it re-prints — they share a number.
+  variant         String?
+  rarity          String
+  domain          String
+  type            String
+  imageUrl        String?
+  imageThumbUrl   String?
+
+  /// Denormalised copy of the newest snapshot, so list pages (movers, set
+  /// grids, the ticker) sort and render without joining the history table.
+  marketCents     Int?
+  foilMarketCents Int?
+  lastPricedAt    DateTime?
+
+  /// TCGplayer product id, once matched by the importer. Null = never matched,
+  /// which is "we didn't find it", NOT "it is worthless".
+  tcgProductId Int?
+
+  snapshots PriceSnapshot[]
+
+  @@index([setCode, collectorNumber])
+  @@index([marketCents])
+  @@index([rarity])
+  @@index([domain])
+}
+
+/// One printing's prices on one UTC calendar day — a row of the price chart.
+model PriceSnapshot {
+  id     String   @id @default(cuid())
+  cardId String
+  day    DateTime @db.Date
+
+  /// All USD cents. Foil columns are null for printings with no foil treatment.
+  lowCents        Int
+  midCents        Int
+  marketCents     Int
+  foilCents       Int?
+  foilMarketCents Int?
+
+  /// Which adapter wrote this row ("tcgplayer", "demo"). Kept so a backfill from
+  /// one source can never be silently mistaken for another's data.
+  source     String   @default("tcgplayer")
+  recordedAt DateTime @default(now())
+
+  card Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  /// One row per card per day: a same-day re-run updates rather than duplicating.
+  @@unique([cardId, day])
+  @@index([cardId, day])
+  /// Serves the movers queries, which read every card across a two-day window.
+  @@index([day])
+}

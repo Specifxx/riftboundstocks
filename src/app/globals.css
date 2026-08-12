@@ -1,0 +1,126 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Dark is the default and the design's home state — the light palette is an
+   opt-in override on [data-theme="light"], set by ThemeToggle and applied before
+   first paint by the inline script in layout.tsx. Every colour the site uses is
+   declared here as an `R G B` triple so Tailwind's `<alpha-value>` syntax keeps
+   working (see tailwind.config.ts). */
+:root {
+  --surface-0: 13 27 42;
+  --surface-1: 18 34 51;
+  --surface-2: 24 43 63;
+  --surface-3: 31 54 78;
+  --line: 34 55 78;
+  --line-strong: 48 74 102;
+  --ink: 233 238 245;
+  --ink-muted: 158 176 196;
+  --ink-dim: 124 145 168;
+  --accent: 77 163 255;
+  --accent-soft: 24 58 96;
+  --accent-ink: 8 18 30;
+  --up: 63 185 80;
+  --down: 240 80 110;
+  --foil: 202 168 90;
+  color-scheme: dark;
+}
+
+[data-theme="light"] {
+  --surface-0: 245 247 251;
+  --surface-1: 255 255 255;
+  --surface-2: 239 243 249;
+  --surface-3: 228 235 244;
+  --line: 214 223 234;
+  --line-strong: 184 197 214;
+  --ink: 16 28 43;
+  --ink-muted: 71 90 113;
+  --ink-dim: 98 118 142;
+  --accent: 20 96 186;
+  --accent-soft: 219 233 250;
+  --accent-ink: 255 255 255;
+  /* Darkened from the dark-theme values: #3fb950 and #f0506e both fail contrast
+     on a white panel, and these two colours carry meaning (gain/loss) rather
+     than decoration, so they cannot be allowed to go unreadable. */
+  --up: 22 122 55;
+  --down: 199 32 62;
+  --foil: 146 112 30;
+  color-scheme: light;
+}
+
+html {
+  /* Clip rather than hide: it opens no scroll container, so the sticky navbar
+     keeps working, and a wide table can't drag the whole page sideways. */
+  overflow-x: clip;
+}
+
+body {
+  background-color: rgb(var(--surface-0));
+  color: rgb(var(--ink));
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  /* Tabular, lining figures everywhere — prices in a column should align like a
+     trading screen even when they aren't wrapped in .num. */
+  font-feature-settings: "tnum" 1, "lnum" 1;
+}
+
+/* Section titles: a condensed grotesque, set tight and upper-case at call sites.
+   Applied here rather than per-component so it lands sitewide in one place. */
+h1,
+h2,
+h3 {
+  font-family: var(--font-display), "Arial Narrow", sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+::selection {
+  background: rgb(var(--accent) / 0.3);
+}
+
+/* Keyboard focus must stay visible on both themes; the accent ring reads on
+   navy and on white. */
+:focus-visible {
+  outline: 2px solid rgb(var(--accent));
+  outline-offset: 2px;
+}
+
+@layer components {
+  /* The rounded card-based panel the whole dashboard is built from. */
+  .panel {
+    @apply rounded-xl border border-line bg-surface-1 shadow-card;
+  }
+
+  .num {
+    @apply font-mono tabular-nums;
+  }
+
+  /* Small upper-case condensed label above a panel's content. */
+  .eyebrow {
+    @apply font-display text-[11px] uppercase tracking-[0.14em] text-ink-dim;
+  }
+}
+
+/* The ticker pauses on hover so a moving row can actually be clicked, and stops
+   entirely for anyone who asked for less motion. */
+.ticker-track:hover {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* An infinite marquee is the one animation that can't simply be shortened —
+     collapsing its duration would leave the list scrolled off-screen. */
+  .ticker-track {
+    animation: none !important;
+    transform: none !important;
+  }
+}

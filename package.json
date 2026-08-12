@@ -8,17 +8,13 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
+    "postinstall": "prisma generate",
     "seed:catalog": "tsx scripts/build-catalog.ts",
     "seed:avatars": "tsx scripts/gen-avatars.ts",
     "prices:import": "tsx scripts/import-prices.ts",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
-    "db:seed": "tsx prisma/seed.ts",
-    "setup": "prisma generate && prisma db push && tsx prisma/seed.ts",
     "smoke": "tsx scripts/smoke-pages.ts"
-  },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

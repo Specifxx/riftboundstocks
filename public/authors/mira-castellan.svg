@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96" role="img" aria-label="Abstract avatar for the fictional author Mira Castellan">
+<title>Abstract avatar — Mira Castellan is a fictional demo persona, not a real person</title>
+<defs>
+<linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+<stop offset="0" stop-color="hsl(250 58% 42%)"/>
+<stop offset="1" stop-color="hsl(224 62% 24%)"/>
+</linearGradient>
+<clipPath id="c"><circle cx="48" cy="48" r="48"/></clipPath>
+</defs>
+<g clip-path="url(#c)">
+<rect width="96" height="96" fill="url(#g)"/>
+<circle cx="50.0" cy="50.0" r="17.0" fill="#fff" opacity="0.30"/>
+<rect x="26.0" y="10.4" width="43.2" height="43.2" rx="9.5" fill="#fff" opacity="0.29" transform="rotate(23.8 47.6 32.0)"/>
+<path d="M57.3 45.6L78.5 3.2L99.7 45.6Z" fill="#fff" opacity="0.39"/>
+<circle cx="61.6" cy="66.3" r="17.8" fill="#fff" opacity="0.33"/>
+</g>
+<text x="48" y="49" text-anchor="middle" dominant-baseline="central" font-family="Oswald, Arial Narrow, sans-serif" font-size="30" font-weight="600" fill="#fff" opacity="0.92" letter-spacing="1">MC</text>
+</svg>
