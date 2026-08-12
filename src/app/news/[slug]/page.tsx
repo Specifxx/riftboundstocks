@@ -4,8 +4,7 @@ import { notFound } from "next/navigation";
 import { ARTICLES, articleBySlug, sortedArticles } from "@/lib/content/articles";
 import { authorOr } from "@/lib/content/authors";
 import { cardBySlug } from "@/lib/catalog";
-import { formatDate } from "@/lib/format";
-import { SITE_NAME, SITE_URL } from "@/lib/site";
+import { SITE_URL } from "@/lib/site";
 import { ArticleBody } from "@/components/ArticleBody";
 import { ArticleCard, AuthorByline, CategoryLabel } from "@/components/ArticleCard";
 import { DemoPricesNotice } from "@/components/Bits";
@@ -62,9 +61,8 @@ export default function ArticlePage({ params }: { params: { slug: string } }) {
           {article.title}
         </h1>
         <p className="mt-3 max-w-[68ch] text-[15px] leading-relaxed text-ink-muted">{article.excerpt}</p>
-        <div className="mt-4 flex flex-wrap items-center gap-4">
+        <div className="mt-4">
           <AuthorByline authorSlug={article.author} date={article.publishedOn} size="lg" />
-          <span className="text-[12px] text-ink-dim">{formatDate(article.publishedOn)}</span>
         </div>
       </header>
 
