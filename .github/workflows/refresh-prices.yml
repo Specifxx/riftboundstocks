@@ -1,0 +1,59 @@
+name: Refresh TCGplayer prices
+
+# The repo IS the price database. There is no server-side store in the default
+# deployment, so this job fetches the day's prices, commits the diff, and lets
+# the commit trigger a Vercel redeploy. Each run appends one column to
+# src/data/price-history.json — which is how the charts get longer over time,
+# since TCGplayer publishes no historical prices to backfill from.
+
+on:
+  schedule:
+    # 06:10 UTC daily. Ten past the hour rather than on it: scheduled runs queue
+    # behind everyone else's on-the-hour jobs and can be delayed by 10+ minutes.
+    - cron: "10 6 * * *"
+  workflow_dispatch: {}
+
+# Never let two runs write the same day's column concurrently.
+concurrency:
+  group: refresh-prices
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # `npm ci` runs postinstall → prisma generate, which the importer needs
+      # only for the optional Postgres mirror. Harmless when DATABASE_URL is unset.
+      - run: npm ci
+
+      - name: Import prices
+        env:
+          # Optional. When set, the same snapshot is mirrored into Postgres as
+          # well as the repo — see scripts/prisma-sink.ts.
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npm run prices:import
+
+      - name: Commit the day's snapshot
+        run: |
+          git config user.name "riftboundstocks-bot"
+          git config user.email "actions@github.com"
+          git add src/data/prices.json src/data/price-history.json src/data/card-details.json
+          # The importer exits non-zero rather than writing a bad snapshot, so
+          # reaching here with no diff means prices genuinely didn't move.
+          if git diff --cached --quiet; then
+            echo "No price changes today."
+            exit 0
+          fi
+          git commit -m "chore(prices): snapshot $(date -u +%Y-%m-%d)"
+          git push

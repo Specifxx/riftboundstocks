@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { domainInfo, rarityInfo } from "@/lib/riftbound";
-import { formatPct } from "@/lib/format";
+import { formatPct, formatDate } from "@/lib/format";
 import { PRICES_ARE_DEMO, PRICE_SOURCE_NOTE } from "@/lib/site";
+import { HAS_CHANGE_DATA, HISTORY_START, LIVE_FETCHED_AT } from "@/lib/prices";
 
 /**
  * A percentage move. Green up, red down, neutral flat — this and the Sparkline
@@ -88,7 +89,13 @@ export function SectionTitle({
  */
 export function DemoPricesNotice({ className = "" }: { className?: string }) {
   if (!PRICES_ARE_DEMO) {
-    return <p className={`text-[11px] text-ink-dim ${className}`}>{PRICE_SOURCE_NOTE}</p>;
+    return (
+      <p className={`text-[11px] leading-relaxed text-ink-dim ${className}`}>
+        {PRICE_SOURCE_NOTE} Market and Median are TCGplayer&apos;s own figures per printing; Low is the lowest active
+        listing, which can be a damaged or non-English copy.
+        {LIVE_FETCHED_AT && <> Updated {formatDate(LIVE_FETCHED_AT)}.</>}
+      </p>
+    );
   }
   return (
     <p className={`text-[11px] leading-relaxed text-ink-dim ${className}`}>
@@ -100,6 +107,25 @@ export function DemoPricesNotice({ className = "" }: { className?: string }) {
       <Link href="/about" className="text-accent hover:underline">
         What this means
       </Link>
+    </p>
+  );
+}
+
+/**
+ * Shown wherever a surface would normally report price MOVEMENT but can't yet.
+ *
+ * TCGplayer publishes no historical prices, so this site's history genuinely
+ * starts at its first import and grows a day at a time. Saying so is better than
+ * a table of dashes, and far better than comparing against a fabricated baseline.
+ */
+export function HistoryNotice({ className = "" }: { className?: string }) {
+  if (HAS_CHANGE_DATA) return null;
+  return (
+    <p className={`rounded-lg border border-line bg-surface-2 px-3 py-2 text-[12px] leading-relaxed text-ink-muted ${className}`}>
+      <strong className="font-semibold text-ink">Daily movers start tomorrow.</strong> Prices are live from TCGplayer,
+      but percentage change needs two days to compare and history only began{" "}
+      {HISTORY_START ? <>on {formatDate(`${HISTORY_START}T00:00:00Z`)}</> : "with the first import"}. Showing the most
+      valuable cards until then.
     </p>
   );
 }

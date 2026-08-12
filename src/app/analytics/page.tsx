@@ -1,7 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CARDS, cardsInSet } from "@/lib/catalog";
-import { latestQuote, moverSplit, pctChange, priceHistory, quoteDaysAgo } from "@/lib/prices";
+import {
+  HAS_CHANGE_DATA,
+  HISTORY_LENGTH,
+  HISTORY_START,
+  latestQuote,
+  moverSplit,
+  pctChange,
+  priceHistory,
+  pricedCount,
+  quoteDaysAgo,
+  totalMarketValue,
+} from "@/lib/prices";
 import type { PriceSnapshot } from "@/lib/prices/source";
 import { SETS } from "@/lib/riftbound";
 import { formatDate } from "@/lib/format";
@@ -13,7 +24,7 @@ import { Delta, DeltaArrow, DemoPricesNotice, Panel, RarityPill, SectionTitle } 
 export const metadata: Metadata = {
   title: "Market Analytics",
   description:
-    "The RiftboundStocks Index — a 150-card basket tracking the Riftbound TCG singles market over 120 days — plus per-set performance, median card values and the week's biggest gainers and losers.",
+    "The RiftboundStocks Index — a basket tracking the Riftbound TCG singles market — plus per-set performance and median card values across every priced printing, and the week's biggest gainers and losers once enough daily history exists.",
   alternates: { canonical: `${SITE_URL}/analytics` },
 };
 
@@ -21,8 +32,9 @@ const DAY_MS = 86_400_000;
 const WINDOW_DAYS = 120;
 const BASKET_SIZE = 150;
 
-function median(values: number[]): number {
-  if (values.length === 0) return 0;
+/** Median of the priced cards only; null when a set has no prices at all. */
+function median(values: number[]): number | null {
+  if (values.length === 0) return null;
   const s = [...values].sort((a, b) => a - b);
   const mid = Math.floor(s.length / 2);
   return s.length % 2 ? s[mid] : Math.round((s[mid - 1] + s[mid]) / 2);
@@ -55,8 +67,13 @@ interface IndexSeries {
 
 function buildIndex(): IndexSeries {
   const eligible = eligibleSetCodes();
+  // Only cards TCGplayer prices can join the basket — an unpriced constituent
+  // would either drop the level to zero or fail the full-coverage filter below.
   const basket = CARDS.filter((c) => eligible.has(c.setCode))
-    .map((card) => ({ card, market: latestQuote(card).market }))
+    .flatMap((card) => {
+      const market = latestQuote(card).market;
+      return market == null ? [] : [{ card, market }];
+    })
     .sort((a, b) => b.market - a.market)
     .slice(0, BASKET_SIZE)
     .map((x) => x.card);
@@ -64,6 +81,7 @@ function buildIndex(): IndexSeries {
   const byDay = new Map<string, { total: number; n: number }>();
   for (const card of basket) {
     for (const p of priceHistory(card).slice(-WINDOW_DAYS)) {
+      if (p.market == null) continue;
       const entry = byDay.get(p.day) ?? { total: 0, n: 0 };
       entry.total += p.market;
       entry.n += 1;
@@ -94,7 +112,8 @@ interface SetPerformance {
   setType: string;
   releasedOn: string;
   cards: number;
-  medianCents: number;
+  priced: number;
+  medianCents: number | null;
   totalCents: number;
   pct7: number | null;
   pct30: number | null;
@@ -103,11 +122,16 @@ interface SetPerformance {
 function setPerformance(): SetPerformance[] {
   return SETS.map((set) => {
     const cards = cardsInSet(set.code);
-    const prices = cards.map((c) => latestQuote(c).market);
+    const prices = cards.flatMap((c) => {
+      const m = latestQuote(c).market;
+      return m == null ? [] : [m];
+    });
     const changes = (days: number) =>
-      cards
-        .map((c) => pctChange(latestQuote(c).market, quoteDaysAgo(c, days).market))
-        .filter((p): p is number => p != null && isFinite(p));
+      HAS_CHANGE_DATA
+        ? cards
+            .map((c) => pctChange(latestQuote(c).market, quoteDaysAgo(c, days).market))
+            .filter((p): p is number => p != null && isFinite(p))
+        : [];
 
     return {
       code: set.code,
@@ -116,8 +140,9 @@ function setPerformance(): SetPerformance[] {
       setType: set.setType,
       releasedOn: set.releasedOn,
       cards: cards.length,
+      priced: pricedCount(cards),
       medianCents: median(prices),
-      totalCents: prices.reduce((a, b) => a + b, 0),
+      totalCents: totalMarketValue(cards),
       pct7: mean(changes(7)),
       pct30: mean(changes(30)),
     };
@@ -172,12 +197,15 @@ function MoverList({ title, rows, tone }: { title: string; rows: ReturnType<type
 }
 
 export default function AnalyticsPage() {
-  const { points, constituents } = buildIndex();
+  // A one-day series can't be plotted, so the whole basket build is skipped and
+  // the section reports today's level instead of an empty chart.
+  const { points, constituents } = HAS_CHANGE_DATA ? buildIndex() : { points: [], constituents: 0 };
+  const hasSeries = points.length >= 2;
   const latest = points[points.length - 1];
   const first = points[0];
 
   const headline = [
-    { label: "Index level", value: <Money cents={latest?.market ?? 0} className="num text-2xl font-bold text-accent" /> },
+    { label: "Index level", value: <Money cents={latest?.market ?? null} className="num text-2xl font-bold text-accent" /> },
     { label: "7 days", value: <Delta pct={indexChange(points, 7)} className="text-2xl" /> },
     { label: "30 days", value: <Delta pct={indexChange(points, 30)} className="text-2xl" /> },
     {
@@ -185,6 +213,10 @@ export default function AnalyticsPage() {
       value: <Delta pct={first && latest ? pctChange(latest.market, first.market) : null} className="text-2xl" />,
     },
   ];
+
+  const marketTotal = totalMarketValue();
+  const priced = pricedCount();
+  const historyStarted = HISTORY_START ? formatDate(`${HISTORY_START}T00:00:00Z`) : null;
 
   const sets = setPerformance();
   const { gainers, losers } = moverSplit("market", 7, 10, 300);
@@ -194,46 +226,91 @@ export default function AnalyticsPage() {
       <header className="mb-5">
         <h1 className="font-display text-3xl uppercase tracking-wide text-ink sm:text-4xl">Market Analytics</h1>
         <p className="mt-1.5 max-w-3xl text-[14px] leading-relaxed text-ink-muted">
-          One line for the whole singles market, then a breakdown of where the value actually sits — by set, and by the
-          cards that moved this week.
+          One figure for the whole singles market, then a breakdown of where the value actually sits — by
+          set{HAS_CHANGE_DATA ? ", and by the cards that moved this week." : "."}
         </p>
       </header>
 
       <section className="panel mb-4 p-4">
-        <div className="mb-4 flex flex-wrap items-end justify-between gap-x-8 gap-y-3 border-b border-line pb-4">
-          <div>
-            <h2 className="font-display text-lg uppercase tracking-wide text-ink">RiftboundStocks Index</h2>
-            <p className="mt-1 max-w-xl text-[12px] leading-relaxed text-ink-dim">
-              The combined market price of the {constituents} most valuable cards in the catalogue, one point per day.
-              Constituents are fixed for the whole window and must have priced on every day in it, so the line moves only
-              when prices move.
-            </p>
-          </div>
-          <dl className="flex flex-wrap gap-x-7 gap-y-2">
-            {headline.map((h) => (
-              <div key={h.label} className="text-right">
-                <dt className="eyebrow">{h.label}</dt>
-                <dd>{h.value}</dd>
+        {hasSeries ? (
+          <>
+            <div className="mb-4 flex flex-wrap items-end justify-between gap-x-8 gap-y-3 border-b border-line pb-4">
+              <div>
+                <h2 className="font-display text-lg uppercase tracking-wide text-ink">RiftboundStocks Index</h2>
+                <p className="mt-1 max-w-xl text-[12px] leading-relaxed text-ink-dim">
+                  The combined market price of the {constituents} most valuable cards in the catalogue, one point per
+                  day. Constituents are fixed for the whole window and must have priced on every day in it, so the line
+                  moves only when prices move.
+                </p>
               </div>
-            ))}
-          </dl>
-        </div>
+              <dl className="flex flex-wrap gap-x-7 gap-y-2">
+                {headline.map((h) => (
+                  <div key={h.label} className="text-right">
+                    <dt className="eyebrow">{h.label}</dt>
+                    <dd>{h.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
 
-        {points.length < 2 ? (
-          <p className="py-8 text-center text-sm text-ink-dim">Not enough overlapping history to build the index.</p>
+            <PriceChart
+              points={points}
+              sources={[{ id: "index", label: "RiftboundStocks Index" }]}
+              activeSourceId="index"
+            />
+
+            <p className="mt-3 border-t border-line pt-3 text-[11px] leading-relaxed text-ink-dim">
+              The index is a basket total, not a rebased score: the y-axis is what the {constituents} cards would cost
+              together on that day. Low and Average are drawn on the same value as Market because a basket has one
+              figure — the per-series split only exists on individual cards.
+            </p>
+          </>
         ) : (
-          <PriceChart
-            points={points}
-            sources={[{ id: "index", label: "RiftboundStocks Index" }]}
-            activeSourceId="index"
-          />
-        )}
+          <>
+            <div className="mb-4 flex flex-wrap items-end justify-between gap-x-8 gap-y-3 border-b border-line pb-4">
+              <div>
+                <h2 className="font-display text-lg uppercase tracking-wide text-ink">RiftboundStocks Index</h2>
+                <p className="mt-1 max-w-xl text-[12px] leading-relaxed text-ink-dim">
+                  Every printing TCGplayer prices, added together at market price. That is where the market stands
+                  today; the tracked line starts once there is a second day to plot it against.
+                </p>
+              </div>
+              <dl className="flex flex-wrap gap-x-7 gap-y-2">
+                <div className="text-right">
+                  <dt className="eyebrow">Index level</dt>
+                  <dd>
+                    <Money cents={marketTotal} className="num text-2xl font-bold text-accent" />
+                  </dd>
+                </div>
+                <div className="text-right">
+                  <dt className="eyebrow">Cards priced</dt>
+                  <dd className="num text-2xl font-bold text-ink">
+                    {priced}
+                    <span className="text-[13px] font-normal text-ink-dim"> / {CARDS.length}</span>
+                  </dd>
+                </div>
+                <div className="text-right">
+                  <dt className="eyebrow">History</dt>
+                  <dd className="num text-2xl font-bold text-ink">
+                    {HISTORY_LENGTH} day{HISTORY_LENGTH === 1 ? "" : "s"}
+                  </dd>
+                </div>
+              </dl>
+            </div>
 
-        <p className="mt-3 border-t border-line pt-3 text-[11px] leading-relaxed text-ink-dim">
-          The index is a basket total, not a rebased score: the y-axis is what the {constituents} cards would cost
-          together on that day. Low and Average are drawn on the same value as Market because a basket has one figure —
-          the per-series split only exists on individual cards.
-        </p>
+            <p className="py-6 text-center text-[13px] leading-relaxed text-ink-dim">
+              The index chart needs at least two days of prices to draw a line. TCGplayer publishes no price history, so
+              this series is not backfilled — it starts at the first
+              snapshot{historyStarted ? `, taken ${historyStarted},` : ""} and gains a point every day from here.
+            </p>
+
+            <p className="mt-3 border-t border-line pt-3 text-[11px] leading-relaxed text-ink-dim">
+              The level above is a basket total, not a rebased score: it is what one of every priced printing in the
+              catalogue would cost today. The {CARDS.length - priced} printings TCGplayer has no price for are left out
+              rather than counted as zero.
+            </p>
+          </>
+        )}
         <DemoPricesNotice className="mt-2" />
       </section>
 
@@ -251,8 +328,12 @@ export default function AnalyticsPage() {
                   <th className="py-2 text-right font-medium">Cards</th>
                   <th className="py-2 text-right font-medium">Median</th>
                   <th className="py-2 text-right font-medium">Set value</th>
-                  <th className="py-2 text-right font-medium">7d</th>
-                  <th className="py-2 text-right font-medium">30d</th>
+                  {HAS_CHANGE_DATA && (
+                    <>
+                      <th className="py-2 text-right font-medium">7d</th>
+                      <th className="py-2 text-right font-medium">30d</th>
+                    </>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -268,44 +349,69 @@ export default function AnalyticsPage() {
                     <td className="whitespace-nowrap py-2 text-ink-muted">
                       {formatDate(`${s.releasedOn}T00:00:00Z`)}
                     </td>
-                    <td className="num py-2 text-right text-ink-muted">{s.cards}</td>
+                    <td className="num py-2 text-right text-ink-muted">
+                      {s.cards}
+                      {s.priced < s.cards && (
+                        <span className="block text-[10.5px] text-ink-dim">{s.priced} priced</span>
+                      )}
+                    </td>
                     <td className="py-2 text-right">
                       <Money cents={s.medianCents} className="num text-ink-muted" />
                     </td>
                     <td className="py-2 text-right">
                       <Money cents={s.totalCents} className="num font-semibold text-ink" />
                     </td>
-                    <td className="py-2 text-right">
-                      <DeltaArrow pct={s.pct7} />
-                    </td>
-                    <td className="py-2 text-right">
-                      <DeltaArrow pct={s.pct30} />
-                    </td>
+                    {HAS_CHANGE_DATA && (
+                      <>
+                        <td className="py-2 text-right">
+                          <DeltaArrow pct={s.pct7} />
+                        </td>
+                        <td className="py-2 text-right">
+                          <DeltaArrow pct={s.pct30} />
+                        </td>
+                      </>
+                    )}
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
           <p className="mt-3 border-t border-line pt-3 text-[11px] leading-relaxed text-ink-dim">
-            Set value is every printing in the catalogue added together at market price — a completionist&apos;s bill,
-            not the cost of a playset. The 7d and 30d columns average the percentage change of each card in the set, so
-            every card counts once regardless of price.
+            Set value is every printing TCGplayer prices added together at market price — a completionist&apos;s bill,
+            not the cost of a playset. Printings with no TCGplayer price are excluded from both the value and the
+            median, and the Cards column shows how many of the set that leaves.{" "}
+            {HAS_CHANGE_DATA
+              ? "The 7d and 30d columns average the percentage change of each card in the set, so every card counts once regardless of price."
+              : `Change columns start once a second day of prices exists${historyStarted ? ` — the first was collected ${historyStarted}` : ""}.`}
           </p>
           <DemoPricesNotice className="mt-2" />
         </Panel>
       </section>
 
       <section>
-        <SectionTitle href="/interests" linkLabel="All movers">
+        <SectionTitle href={HAS_CHANGE_DATA ? "/interests" : undefined} linkLabel="All movers">
           Weekly Movers
         </SectionTitle>
-        <div className="grid gap-4 lg:grid-cols-2">
-          <MoverList title="Top gainers · 7 days" rows={gainers} tone="up" />
-          <MoverList title="Top losers · 7 days" rows={losers} tone="down" />
-        </div>
-        <p className="mt-3 text-[11px] leading-relaxed text-ink-dim">
-          Cards under $3.00 are excluded: a bulk common drifting a few cents is a large percentage and no information.
-        </p>
+        {HAS_CHANGE_DATA ? (
+          <>
+            <div className="grid gap-4 lg:grid-cols-2">
+              <MoverList title="Top gainers · 7 days" rows={gainers} tone="up" />
+              <MoverList title="Top losers · 7 days" rows={losers} tone="down" />
+            </div>
+            <p className="mt-3 text-[11px] leading-relaxed text-ink-dim">
+              Cards under $3.00 are excluded: a bulk common drifting a few cents is a large percentage and no
+              information.
+            </p>
+          </>
+        ) : (
+          <Panel>
+            <p className="text-[13px] leading-relaxed text-ink-muted">
+              Daily movers begin once a second day of prices has been collected. Only one day exists so
+              far{historyStarted ? `, collected ${historyStarted}` : ""}, and there is no earlier price to measure it
+              against — so there are no gainers or losers to report yet.
+            </p>
+          </Panel>
+        )}
         <DemoPricesNotice className="mt-2" />
       </section>
     </div>

@@ -36,8 +36,14 @@ export interface RiftCard {
   setCode: string;
   setName: string;
   collectorNumber: number;
-  /** Display form with the set total, e.g. "001/298" or "007a/298". */
+  /** Display form, e.g. "001/298", "007a/298", "R01", "T03". */
   collectorLabel: string;
+  /**
+   * The collector number exactly as TCGplayer writes it ("001", "007a", "299*",
+   * "R01", "T03", "SP1"). This — not `collectorNumber` — is the pricing join key.
+   */
+  numberToken: string;
+  kind: "base" | "token" | "rune" | "special";
   /**
    * Alt-art / Showcase suffix from the printing's id ("a" in "ogn-007a-298"),
    * null for the base art. The raw feed's `collector_number` drops this letter,
@@ -70,44 +76,91 @@ function slugify(s: string): string {
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
 
 /**
- * The printing's variant token, parsed out of the RiftScribe id.
+ * Everything the RiftScribe id encodes about a printing.
  *
- * Two forms exist and BOTH share their base card's `collector_number`, so
- * without this every alt art and every Signature print would slug-collide with
- * the card it re-prints (156 cards in this catalogue):
- *   "ogn-007a-298"     → "a"  alt art / Showcase
- *   "ogn-299-star-298" → "s"  Signature print, written "299*" by TCGplayer
- * Normalised to a single letter so it matches the numKey() convention the
- * TCGplayer importer uses on the other side (see lib/prices/tcgplayer.ts).
+ * THE ID IS AUTHORITATIVE, NOT `collector_number`. The feed's numeric field is
+ * lossy: it strips the R/T/SP prefix from runes, tokens and special printings,
+ * so Vendetta's "Fury Rune" (R01) and "Baccai Sandspinner" (001/166) both arrive
+ * as collector_number 1. Keying on that number matched the rune to the unit's
+ * TCGplayer product and would have published one card's price on another's page.
+ *
+ * Six id shapes exist in the catalogue:
+ *   ogn-001-298      base printing        → "001"
+ *   ogn-007a-298     alt art / Showcase   → "007a"
+ *   ogn-299-star-298 Signature            → "299*"   (TCGplayer writes "299*")
+ *   unl-t01          token                → "T01"
+ *   ven-r01          rune                 → "R01"
+ *   ven-sp1-006      special printing     → "SP1"
  */
-function variantFromId(id: string): string | null {
-  const m = id.match(/^[a-z]+-\d+([a-z]*)(?:-(star))?-\d+$/i);
-  if (!m) return null;
-  if (m[2]) return "s";
-  return m[1] ? m[1].toLowerCase() : null;
+interface ParsedId {
+  /** Canonical number as TCGplayer writes it — the join key for pricing. */
+  token: string;
+  /** "a" (alt art) or "s" (Signature); null for a base print. */
+  variant: string | null;
+  kind: "base" | "token" | "rune" | "special";
+  total: number | null;
+}
+
+function parseId(id: string, fallbackNumber: number): ParsedId {
+  const body = id.replace(/^[a-z]+-/i, "");
+
+  let m = body.match(/^(\d+)-star-(\d+)$/i);
+  if (m) return { token: `${m[1]}*`, variant: "s", kind: "base", total: Number(m[2]) };
+
+  m = body.match(/^(\d+)([a-z]+)-(\d+)$/i);
+  if (m) return { token: `${m[1]}${m[2].toLowerCase()}`, variant: m[2].toLowerCase(), kind: "base", total: Number(m[3]) };
+
+  m = body.match(/^(\d+)-(\d+)$/);
+  if (m) return { token: m[1], variant: null, kind: "base", total: Number(m[2]) };
+
+  m = body.match(/^t(\d+)$/i);
+  if (m) return { token: `T${m[1]}`, variant: null, kind: "token", total: null };
+
+  m = body.match(/^r(\d+)([a-z]*)$/i);
+  if (m) {
+    const v = m[2] ? m[2].toLowerCase() : null;
+    return { token: `R${m[1]}${v ?? ""}`, variant: v, kind: "rune", total: null };
+  }
+
+  m = body.match(/^sp(\d+)-(\d+)$/i);
+  if (m) return { token: `SP${m[1]}`, variant: null, kind: "special", total: Number(m[2]) };
+
+  // Unknown shape — fall back to the numeric field rather than dropping the card,
+  // but it will not price (no TCGplayer product keys to it) and that is visible.
+  return { token: String(fallbackNumber), variant: null, kind: "base", total: null };
 }
 
 function normalise(c: RawCard): RiftCard {
   const set = SET_BY_CODE[c.set_id];
-  const total = set?.totalCards ?? 0;
-  const variant = variantFromId(c.id);
-  const num = `${c.collector_number}${variant ?? ""}`;
+  const parsed = parseId(c.id, c.collector_number);
+  const variant = parsed.variant;
+  const total = parsed.total ?? set?.totalCards ?? 0;
+  // Base printings keep the plain number in the slug (so /card/blazing-scorcher-ogn-1
+  // stays stable); runes, tokens and specials use their prefixed token, because
+  // their numbers collide with base cards in the same set.
+  const slugNum =
+    parsed.kind === "base" ? `${c.collector_number}${variant ?? ""}` : parsed.token.toLowerCase();
   return {
     id: c.id,
-    // Set code + collector number + variant is what makes this unique. Card NAMES
-    // repeat across sets (every set reprints the runes) and the alt-art print
-    // shares its base card's number, so neither name nor number alone is enough.
-    slug: `${slugify(c.name)}-${c.set_id.toLowerCase()}-${num}`,
+    // Set code + number token is what makes this unique. Card NAMES repeat across
+    // sets (every set reprints the runes) and an alt-art print shares its base
+    // card's number, so neither name nor number alone is enough.
+    slug: `${slugify(c.name)}-${c.set_id.toLowerCase()}-${slugNum}`,
     name: c.name,
     nameNormalized: normalizeSearch(c.name),
     setCode: c.set_id,
     setName: set?.name ?? c.set_id,
     collectorNumber: c.collector_number,
-    // Signature prints render with TCGplayer's "*" so the two catalogues read
-    // the same; alt arts keep their letter.
-    collectorLabel: total
-      ? `${String(c.collector_number).padStart(3, "0")}${variant === "s" ? "*" : (variant ?? "")}/${total}`
-      : num,
+    // Base printings show "007a/298"; runes and tokens have no set total and
+    // show their bare token ("R01", "T03"), exactly as TCGplayer prints them.
+    collectorLabel:
+      parsed.kind === "base" && total
+        ? `${parsed.token.padStart(parsed.token.includes("*") ? 4 : 3, "0")}/${total}`
+        : parsed.total
+          ? `${parsed.token}/${String(parsed.total).padStart(3, "0")}`
+          : parsed.token,
+    numberToken: parsed.token,
+    kind: parsed.kind,
     variant,
     rarity: cap(c.rarity) as RarityKey,
     domain: cap(c.faction) as DomainKey,

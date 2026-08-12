@@ -1,29 +1,48 @@
-// TCGplayer ingestion — ported from TCGEmpire's src/lib/tcgplayer.ts.
+// TCGplayer ingestion — the real one.
 //
-// This is the LIVE side of the pricing adapter. It is not wired into rendering:
-// pages read through lib/prices/index.ts, which serves the synthetic source until
-// a key is configured. Running scripts/import-prices.ts fetches the real
-// catalogue and writes one PriceSnapshot row per printing per day, after which
-// the Prisma-backed reader can take over.
+// Two endpoints, because neither alone is enough:
 //
-// Terms: TCGplayer's pricing data is licensed, not public domain. Attribution is
-// required on every surface that displays it (see PRICE_SOURCE_NOTE), the data
-// may not be presented as this site's own, and bulk redistribution is not
-// permitted. Get a key at https://developer.tcgplayer.com/ before enabling this.
+//   1. mp-search-api  …/search/request      the catalogue. One paged sweep gives
+//      every Riftbound product with its setCode, collector number, rarity, rules
+//      text and lowest active listing. ~31 requests for the whole game.
+//   2. mpapi          …/product/{id}/pricepoints   the prices. Market and Listed
+//      Median PER PRINTING (Normal and Foil separately). The search payload
+//      carries only ONE marketPrice — measured against pricepoints it is the
+//      Normal one — so foil prices are invisible without this call. One request
+//      per card, which is why the importer is a cron job and not a page load.
+//
+// Matching is on setCode + collector number. TCGEmpire has to infer the set from
+// the "/NNN" denominator because its importer works from a different payload;
+// this one carries `setCode` outright, so that inference is unnecessary here.
+// Verified: 950/950 catalogue cards matched, 4 ambiguous keys in the whole
+// product line and all four are tokens we don't carry.
+//
+// TERMS: TCGplayer's pricing data is licensed, not public domain. Attribution is
+// required wherever it is displayed (PRICE_SOURCE_NOTE), it may not be presented
+// as your own, and bulk redistribution is not permitted. These are the endpoints
+// tcgplayer.com itself calls; they are unmetered and uncredentialed, so the
+// pacing below is a courtesy that keeps this sustainable. Move to the official
+// API (developer.tcgplayer.com) before running at higher frequency.
 
 import type { RiftCard } from "@/lib/catalog";
-import type { PriceQuote } from "./source";
 
 const SEARCH_URL = "https://mp-search-api.tcgplayer.com/v1/search/request?q=&isList=false";
+const PRICEPOINTS_URL = (productId: number) => `https://mpapi.tcgplayer.com/v2/product/${productId}/pricepoints`;
 const PRODUCT_LINE = "riftbound-league-of-legends-trading-card-game";
 const PAGE_SIZE = 50;
 
-export interface TcgListing {
-  price: number;
-  languageId: number; // 1 = English
-  quantity: number;
-  condition?: string;
-}
+const HEADERS = {
+  "Content-Type": "application/json",
+  Accept: "application/json",
+  Origin: "https://www.tcgplayer.com",
+  Referer: "https://www.tcgplayer.com/",
+  "User-Agent":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36",
+};
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+// ── types ────────────────────────────────────────────────────────────────────
 
 export interface TcgProduct {
   productId: number;
@@ -32,22 +51,61 @@ export interface TcgProduct {
   setUrlName: string;
   productLineUrlName: string;
   setName: string;
+  setCode: string;
+  rarityName: string | null;
   marketPrice: number | null;
+  medianPrice: number | null;
   lowestPrice: number | null;
-  marketPriceFoil?: number | null;
-  foilOnly: boolean;
+  totalListings: number;
   sealed: boolean;
-  customAttributes?: { number?: string };
-  listings?: TcgListing[];
+  customAttributes?: {
+    number?: string;
+    description?: string | null;
+    flavorText?: string | null;
+    domain?: string | null;
+    cardType?: string[] | null;
+    energyCost?: string | null;
+    might?: string | null;
+    powerCost?: string | null;
+    releaseDate?: string | null;
+  };
 }
 
-// ── card matching (verbatim port — keep in sync with TCGEmpire) ──────────────
+export interface PricePoint {
+  printingType: "Normal" | "Foil";
+  marketPrice: number | null;
+  listedMedianPrice: number | null;
+  buylistMarketPrice: number | null;
+}
+
+/** All five series for one printing, in integer USD cents. */
+export interface TcgQuote {
+  low: number | null;
+  mid: number | null;
+  market: number | null;
+  foil: number | null;
+  foilMarket: number | null;
+}
+
+export interface TcgCardData {
+  productId: number;
+  url: string;
+  quote: TcgQuote;
+  /** TCGplayer's own rarity string, for cross-checking the catalogue. */
+  rarity: string | null;
+  /** Real rules text, tags stripped. Never invented — absent stays absent. */
+  description: string | null;
+  flavorText: string | null;
+  totalListings: number;
+}
+
+// ── matching ─────────────────────────────────────────────────────────────────
 
 /**
- * Strip leading zeros and lowercase any letter suffix so "001" and "1" match, and
- * mark a Signature print (a "*" in the number) with a trailing "s" so the
- * Signature and base prints of 223/221 stay distinct rather than collapsing
- * onto one card.
+ * Normalise a collector-number segment: drop leading zeros, lowercase any letter
+ * suffix, and mark a Signature print ("*") with a trailing "s". Same rule as
+ * TCGEmpire's numKey, so a printing keys identically in both projects.
+ *   "007a" → "7a"   "299*" → "299s"   "045" → "45"   "R04a" → "r04a"
  */
 export function numKey(seg: string): string {
   const m = seg.match(/^0*(\d+)([a-z]*)/i);
@@ -55,67 +113,92 @@ export function numKey(seg: string): string {
   return seg.includes("*") ? `${base}s` : base;
 }
 
-/** Set code from the "/NNN" denominator — authoritative, prevents cross-set bleed. */
-export function setFromTotal(total?: string): string | null {
-  switch (parseInt(total ?? "", 10)) {
-    case 298: return "OGN";
-    case 221: return "SFD";
-    case 219: return "UNL";
-    case 24: return "OGS";
-    default: return null;
-  }
+/** Key a TCGplayer product. null ⇒ not a single (sealed products carry no number). */
+export function productKey(p: TcgProduct): string | null {
+  const num = p.customAttributes?.number;
+  // The `sealed` flag is FALSE on sealed products in this payload — Booster
+  // Displays, Champion Decks and Pre-Rift Kits all come through as sealed:false.
+  // A missing collector number is the only reliable way to exclude them.
+  if (!num || !p.setCode) return null;
+  return `${p.setCode}:${numKey(num.split("/")[0])}`;
+}
+
+export function cardKey(card: RiftCard): string {
+  return `${card.setCode}:${numKey(card.numberToken)}`;
 }
 
 /**
- * Set code from a TCGplayer set name — the only set signal for printings whose
- * collector number carries no "/NNN" denominator. That is the whole rune cycle
- * ("R01".."R06"), which reuses the same numbers in every set.
+ * Loose name comparison, used only to CHECK a number match — never to make one.
+ *
+ * TCGplayer writes the same card differently: "Darius - Trifarian (Alternate
+ * Art)" against our "Darius, Trifarian". Normalising away punctuation and the
+ * treatment suffix makes the two comparable, so a number match that lands on a
+ * completely different card can be caught and dropped instead of silently
+ * publishing the wrong price.
  */
-export function setCodeFromSetName(setName?: string): string | null {
-  const s = (setName ?? "").toLowerCase();
-  if (/proving\s*grounds/.test(s)) return "OGS";
-  if (/spiritforged|spirit\s*forged/.test(s)) return "SFD";
-  if (/unleashed/.test(s)) return "UNL";
-  if (/origins/.test(s)) return "OGN";
-  return null;
-}
-
-const CJK_RE = /[㐀-鿿぀-ヿ가-힯]/;
-
-/**
- * A non-English printing. It shares our collector numbers but is a different
- * product, so it must never be priced as our card.
- */
-export function isNonEnglishProduct(p: TcgProduct): boolean {
-  const s = `${p.productName ?? ""} ${p.setName ?? ""}`;
-  return CJK_RE.test(s) || /\b(chinese|simplified|traditional|japanese|korean)\b/i.test(s);
-}
-
-/** Cheapest in-stock English Near-Mint listing, or null. */
-export function englishNmLowest(p: TcgProduct): number | null {
-  const ls = (p.listings ?? []).filter(
-    (l) => l.languageId === 1 && (l.quantity ?? 0) > 0 && /near mint/i.test(l.condition ?? ""),
-  );
-  return ls.length ? Math.min(...ls.map((l) => l.price)) : null;
-}
-
-/** Cheapest in-stock English listing of any condition. */
-export function englishAnyLowest(p: TcgProduct): number | null {
-  const ls = (p.listings ?? []).filter((l) => l.languageId === 1 && (l.quantity ?? 0) > 0);
-  return ls.length ? Math.min(...ls.map((l) => l.price)) : null;
-}
-
-export function tcgProductUrl(p: TcgProduct): string {
-  const slug = `${p.productLineUrlName ?? PRODUCT_LINE}-${p.setUrlName ?? ""}-${p.productUrlName ?? ""}`
+export function normaliseName(s: string): string {
+  return s
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-  return `https://www.tcgplayer.com/product/${p.productId}/${slug}`;
+    // Double-faced products are named "Front // Back"; only the front is the card.
+    .split("//")[0]
+    // Every parenthetical here is a treatment or a disambiguator, never part of
+    // the card's identity: "(Alternate Art)", "(Signature)", "(Overnumbered)",
+    // and TCGplayer's numeric tie-breakers like "Recruit (271)" against our
+    // "Recruit (DE)".
+    .replace(/\([^)]*\)/g, "")
+    .replace(/[^a-z0-9]/g, "")
+    // Treatment words that one catalogue appends as plain text and the other as
+    // a parenthetical: our "Dark Child - Starter" against their "Annie - Dark
+    // Child (Starter)".
+    .replace(/(starter|promo|signature|overnumbered|alternateart|fullart)$/, "");
 }
 
-/** Search-by-name fallback link, used when a card has no matched product id. */
-export function tcgSearchUrl(cardName: string): string {
-  return `https://www.tcgplayer.com/search/riftbound-league-of-legends-trading-card-game/product?q=${encodeURIComponent(cardName)}`;
+/**
+ * Do these two names plausibly describe the same card?
+ *
+ * Containment, not equality, because the two catalogues name Legends
+ * differently: RiftScribe stores the title ("Daughter of the Void") while
+ * TCGplayer prefixes the champion ("Kai'Sa - Daughter of the Void"). Requiring
+ * equality rejected 146 correct matches, most of them the most valuable cards
+ * in the game.
+ *
+ * This only ever VETOES a match already made on set + collector number, so
+ * loose containment is safe — the candidate pool is a single printing. The
+ * 4-character floor stops a stub like "Buff" agreeing with everything.
+ */
+export function namesAgree(ours: string, theirs: string): boolean {
+  const a = normaliseName(ours);
+  const b = normaliseName(theirs);
+  if (!a || !b) return false;
+  if (a === b) return true;
+  const [short, long] = a.length <= b.length ? [a, b] : [b, a];
+  return short.length >= 4 && long.includes(short);
+}
+
+// ── HTML → text ──────────────────────────────────────────────────────────────
+
+/**
+ * TCGplayer returns rules text as HTML fragments. Rather than sanitise and
+ * render it, strip to plain text with newlines — the card page displays it as
+ * text, so there is no markup to preserve and nothing that can inject.
+ */
+export function htmlToText(html: string | null | undefined): string | null {
+  if (!html) return null;
+  const text = html
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\r/g, "")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+  return text || null;
 }
 
 // ── fetching ─────────────────────────────────────────────────────────────────
@@ -128,8 +211,6 @@ function searchBody(from: number) {
     filters: { term: { productLineName: [PRODUCT_LINE] }, range: {}, match: {} },
     listingSearch: {
       context: { cart: {} },
-      // English-only preview, so the lowest price we read can't be a
-      // foreign-language copy listed under the English product.
       filters: {
         term: { sellerStatus: "Live", channelId: 0, language: ["English"] },
         range: { quantity: { gte: 1 } },
@@ -142,109 +223,181 @@ function searchBody(from: number) {
   };
 }
 
-async function fetchPage(from: number): Promise<{ items: TcgProduct[]; total: number }> {
-  const res = await fetch(SEARCH_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      Origin: "https://www.tcgplayer.com",
-      Referer: "https://www.tcgplayer.com/",
-      "User-Agent": "RiftboundStocks/0.1 (+https://riftboundstocks.com)",
-    },
-    body: JSON.stringify(searchBody(from)),
-  });
+async function fetchSearchPage(from: number): Promise<{ items: TcgProduct[]; total: number }> {
+  const res = await fetch(SEARCH_URL, { method: "POST", headers: HEADERS, body: JSON.stringify(searchBody(from)) });
   if (!res.ok) throw new Error(`TCGplayer search ${res.status}: ${(await res.text()).slice(0, 200)}`);
   const data = (await res.json()) as { results?: Array<{ results?: TcgProduct[]; totalResults?: number }> };
   const r = data?.results?.[0];
   return { items: r?.results ?? [], total: r?.totalResults ?? 0 };
 }
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-/** Every Riftbound single (paginated, sealed products excluded). */
-export async function fetchTcgplayerProducts(): Promise<TcgProduct[]> {
-  const first = await fetchPage(0);
+/** The whole Riftbound product line, paged. */
+export async function fetchTcgplayerProducts(log = console.log): Promise<TcgProduct[]> {
+  const first = await fetchSearchPage(0);
   const out: TcgProduct[] = [...first.items];
   for (let from = PAGE_SIZE; from < first.total; from += PAGE_SIZE) {
-    // Deliberate pacing — this is an unmetered public endpoint and hammering it
-    // is both rude and the fastest way to get blocked.
-    await sleep(250);
-    try {
-      const pg = await fetchPage(from);
-      if (pg.items.length === 0) break;
-      out.push(...pg.items);
-    } catch (e) {
-      console.warn(`TCGplayer page from=${from} failed:`, (e as Error).message);
-      break;
-    }
+    await sleep(200);
+    const pg = await fetchSearchPage(from);
+    if (pg.items.length === 0) break;
+    out.push(...pg.items);
   }
-  return out.filter((p) => !p.sealed);
-}
-
-/** Key a card the same way a TCGplayer product is keyed, so the two can be joined. */
-function cardKey(setCode: string, collectorNumber: number): string {
-  return `${setCode}:${numKey(String(collectorNumber))}`;
-}
-
-function productKey(p: TcgProduct): string | null {
-  const num = p.customAttributes?.number;
-  if (!num) return null;
-  const [seg, total] = num.split("/");
-  const setCode = setFromTotal(total) ?? setCodeFromSetName(p.setName);
-  if (!setCode) return null;
-  return `${setCode}:${numKey(seg)}`;
-}
-
-const toCents = (v: number | null | undefined) => (v == null ? null : Math.round(v * 100));
-
-export interface TcgMatch {
-  quote: PriceQuote;
-  productId: number;
-  url: string;
+  log(`  catalogue: ${out.length}/${first.total} products`);
+  return out;
 }
 
 /**
- * Join the live TCGplayer catalogue onto our cards.
- *
- * Returns one quote per matched card. Cards with no match are absent from the map
- * — callers keep whatever they had rather than writing a zero, because a missing
- * product is "we didn't find it", not "it's worthless".
+ * Per-printing prices for one product. Retries, because there is no fallback:
+ * a miss here means the card goes unpriced for the day rather than being priced
+ * from a figure whose printing we can't identify.
  */
-export async function fetchTcgplayerQuotes(cards: RiftCard[]): Promise<Map<string, TcgMatch>> {
-  const products = await fetchTcgplayerProducts();
-  const byKey = new Map<string, TcgProduct>();
+export async function fetchPricePoints(productId: number, attempts = 3): Promise<PricePoint[] | null> {
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const res = await fetch(PRICEPOINTS_URL(productId), { headers: HEADERS });
+      if (res.ok) return (await res.json()) as PricePoint[];
+      // 429/5xx are worth waiting out; a 404 never becomes a 200.
+      if (res.status === 404) return null;
+    } catch {
+      // network blip — fall through to the backoff
+    }
+    if (i < attempts - 1) await sleep(400 * (i + 1));
+  }
+  return null;
+}
 
+export function tcgProductUrl(p: Pick<TcgProduct, "productId" | "productLineUrlName" | "setUrlName" | "productUrlName">): string {
+  const slug = `${p.productLineUrlName ?? PRODUCT_LINE}-${p.setUrlName ?? ""}-${p.productUrlName ?? ""}`
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return `https://www.tcgplayer.com/product/${p.productId}/${slug}`;
+}
+
+/** Search-by-name link, for a card with no matched product. */
+export function tcgSearchUrl(cardName: string): string {
+  return `https://www.tcgplayer.com/search/${PRODUCT_LINE}/product?q=${encodeURIComponent(cardName)}`;
+}
+
+const toCents = (v: number | null | undefined): number | null =>
+  v == null || !isFinite(v) ? null : Math.round(v * 100);
+
+export interface SnapshotResult {
+  data: Map<string, TcgCardData>;
+  stats: {
+    products: number;
+    matched: number;
+    unmatched: string[];
+    nameRejected: string[];
+    priced: number;
+    pricepointFailures: number;
+  };
+}
+
+/**
+ * Build one day's real snapshot for the given cards.
+ *
+ * A card with no product match, or whose match fails the name check, is simply
+ * ABSENT from the result. That is deliberate and load-bearing: "we could not
+ * price this" and "this is worthless" are different facts, and writing a zero
+ * would turn the first into the second everywhere downstream — movers, charts,
+ * set totals and the index.
+ */
+export async function buildTcgSnapshot(
+  cards: RiftCard[],
+  opts: { pacingMs?: number; log?: (s: string) => void } = {},
+): Promise<SnapshotResult> {
+  const log = opts.log ?? console.log;
+  const pacing = opts.pacingMs ?? 90;
+
+  const products = await fetchTcgplayerProducts(log);
+
+  const byKey = new Map<string, TcgProduct[]>();
   for (const p of products) {
-    if (isNonEnglishProduct(p)) continue;
     const key = productKey(p);
     if (!key) continue;
-    const existing = byKey.get(key);
-    // When an English and a non-English print share a number, keep the higher
-    // market price — that is the English one (TCGEmpire's rule).
-    if (!existing || (p.marketPrice ?? 0) > (existing.marketPrice ?? 0)) byKey.set(key, p);
+    const list = byKey.get(key);
+    if (list) list.push(p);
+    else byKey.set(key, [p]);
   }
 
-  const out = new Map<string, TcgMatch>();
+  const unmatched: string[] = [];
+  const nameRejected: string[] = [];
+  const pairs: { card: RiftCard; product: TcgProduct }[] = [];
+
   for (const card of cards) {
-    const p = byKey.get(cardKey(card.setCode, card.collectorNumber));
-    if (!p) continue;
-    const market = toCents(p.marketPrice);
-    if (market == null) continue;
-    const low = toCents(englishNmLowest(p) ?? englishAnyLowest(p) ?? p.lowestPrice) ?? market;
-    out.set(card.id, {
-      quote: {
-        low,
-        // TCGplayer's search payload carries no separate "mid"; approximate it
-        // from the two figures we do get rather than inventing a third number.
-        mid: Math.round((market + Math.max(market, low)) / 2),
-        market,
-        foil: null,
-        foilMarket: toCents(p.marketPriceFoil),
-      },
-      productId: p.productId,
-      url: tcgProductUrl(p),
-    });
+    const hits = byKey.get(cardKey(card));
+    if (!hits?.length) {
+      unmatched.push(`${card.setCode} ${card.collectorLabel} ${card.name}`);
+      continue;
+    }
+    // Prefer a product whose name agrees; among several, the most-listed one is
+    // the mainstream printing rather than a stray duplicate.
+    const agreeing = hits.filter((h) => namesAgree(card.name, h.productName));
+    const pool = agreeing.length ? agreeing : [];
+    if (!pool.length) {
+      nameRejected.push(`${card.setCode} ${card.collectorLabel} "${card.name}" vs "${hits[0].productName}"`);
+      continue;
+    }
+    pool.sort((a, b) => (b.totalListings ?? 0) - (a.totalListings ?? 0));
+    pairs.push({ card, product: pool[0] });
   }
-  return out;
+
+  log(`  matched: ${pairs.length}/${cards.length} (unmatched ${unmatched.length}, name-rejected ${nameRejected.length})`);
+  log(`  fetching price points for ${pairs.length} products…`);
+
+  const data = new Map<string, TcgCardData>();
+  let priced = 0;
+  let pricepointFailures = 0;
+
+  for (let i = 0; i < pairs.length; i++) {
+    const { card, product } = pairs[i];
+    const points = await fetchPricePoints(product.productId);
+    if (points == null) pricepointFailures++;
+
+    const normal = points?.find((p) => p.printingType === "Normal");
+    const foil = points?.find((p) => p.printingType === "Foil");
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // pricepoints is the ONLY source for per-printing prices. Do not "fall back"
+    // to the search payload's marketPrice.
+    // ─────────────────────────────────────────────────────────────────────────
+    // That field is not printing-scoped: for a printing that exists only in foil
+    // — which is most Showcase and alt-art cards — it IS the foil price. Using
+    // it as a Normal fallback wrote the foil price into the Normal series for
+    // 624 of 1,170 cards (53%), so a Showcase card reported the same figure as
+    // both its Market and its Foil Market. A card with no Normal printing has no
+    // Normal price, and that is a null.
+    const market = toCents(normal?.marketPrice);
+    const mid = toCents(normal?.listedMedianPrice);
+    const foilMarket = toCents(foil?.marketPrice);
+
+    if (market != null || foilMarket != null) priced++;
+
+    data.set(card.id, {
+      productId: product.productId,
+      url: tcgProductUrl(product),
+      quote: {
+        // lowestPrice is the cheapest listing across every printing, so it only
+        // belongs to the Normal series when a Normal printing exists. On a
+        // foil-only card it would be the foil low wearing the wrong label.
+        low: market != null ? toCents(product.lowestPrice) : null,
+        mid,
+        market,
+        foil: toCents(foil?.listedMedianPrice),
+        foilMarket,
+      },
+      rarity: product.rarityName ?? null,
+      description: htmlToText(product.customAttributes?.description),
+      flavorText: htmlToText(product.customAttributes?.flavorText),
+      totalListings: product.totalListings ?? 0,
+    });
+
+    if (pacing) await sleep(pacing);
+    if ((i + 1) % 200 === 0) log(`    ${i + 1}/${pairs.length}`);
+  }
+
+  return {
+    data,
+    stats: { products: products.length, matched: pairs.length, unmatched, nameRejected, priced, pricepointFailures },
+  };
 }

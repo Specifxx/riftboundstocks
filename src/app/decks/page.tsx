@@ -1,8 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CARDS, type RiftCard } from "@/lib/catalog";
-import { latestQuote, pctChange, quoteDaysAgo } from "@/lib/prices";
+import {
+  HAS_CHANGE_DATA,
+  HISTORY_START,
+  latestQuote,
+  pctChange,
+  quoteDaysAgo,
+  totalMarketValue,
+} from "@/lib/prices";
 import { DOMAINS, type CardType, type DomainKey, type RarityKey } from "@/lib/riftbound";
+import { formatDate } from "@/lib/format";
 import { SITE_URL } from "@/lib/site";
 import { CardGridTile } from "@/components/CardTile";
 import { Money } from "@/components/Prefs";
@@ -11,7 +19,7 @@ import { Delta, DemoPricesNotice, DomainPill, RarityPill } from "@/components/Bi
 export const metadata: Metadata = {
   title: "Deck Archetypes",
   description:
-    "What a Riftbound basket costs to assemble. Six illustrative 12-card baskets — one per domain, spread across every rarity tier — with total market cost and 7-day price movement.",
+    "What a Riftbound basket costs to assemble. Six illustrative 12-card baskets — one per domain, spread across every rarity tier — with total market cost, and 7-day price movement once enough daily history exists.",
   alternates: { canonical: `${SITE_URL}/decks` },
 };
 
@@ -52,13 +60,36 @@ interface Basket extends ArchetypeSpec {
 }
 
 /**
+ * The basket's change, measured over the cards priced on BOTH days. Comparing a
+ * total against a differently-composed total would report a change in coverage
+ * as a change in price.
+ */
+function basketChange(cards: RiftCard[], days: number): number | null {
+  if (!HAS_CHANGE_DATA) return null;
+  let now = 0;
+  let then = 0;
+  for (const c of cards) {
+    const a = latestQuote(c).market;
+    const b = quoteDaysAgo(c, days).market;
+    if (a == null || b == null) continue;
+    now += a;
+    then += b;
+  }
+  return pctChange(now, then);
+}
+
+/**
  * Deterministic pick: highest market price first, slug breaking ties, so the same
  * catalogue always yields the same basket. Short tiers are topped up from what is
- * left rather than shrinking the basket.
+ * left rather than shrinking the basket. The pool is priced cards only, so the
+ * basket cost is the cost of exactly the twelve cards shown.
  */
 function build(spec: ArchetypeSpec): Basket {
   const pool = CARDS.filter((c) => c.domain === spec.domain && spec.types.includes(c.type))
-    .map((card) => ({ card, market: latestQuote(card).market }))
+    .flatMap((card) => {
+      const market = latestQuote(card).market;
+      return market == null ? [] : [{ card, market }];
+    })
     .sort((a, b) => b.market - a.market || a.card.slug.localeCompare(b.card.slug))
     .map((x) => x.card);
 
@@ -76,17 +107,14 @@ function build(spec: ArchetypeSpec): Basket {
     if (!picked.includes(card)) picked.push(card);
   }
 
-  const totalCents = picked.reduce((sum, c) => sum + latestQuote(c).market, 0);
-  const thenCents = picked.reduce((sum, c) => sum + quoteDaysAgo(c, 7).market, 0);
-
   const counts = new Map<RarityKey, number>();
   for (const c of picked) counts.set(c.rarity, (counts.get(c.rarity) ?? 0) + 1);
 
   return {
     ...spec,
     cards: picked,
-    totalCents,
-    pct7: pctChange(totalCents, thenCents),
+    totalCents: totalMarketValue(picked),
+    pct7: basketChange(picked, 7),
     rarityMix: RARITY_PLAN.map((t) => ({ rarity: t.rarity, count: counts.get(t.rarity) ?? 0 })).filter((t) => t.count > 0),
   };
 }
@@ -99,9 +127,16 @@ export default function DecksPage() {
       <header className="mb-4">
         <h1 className="font-display text-3xl uppercase tracking-wide text-ink sm:text-4xl">Deck Archetypes</h1>
         <p className="mt-1.5 max-w-3xl text-[14px] leading-relaxed text-ink-muted">
-          Six themed baskets of twelve cards each, priced as a group so you can see what a domain costs to buy into and
-          how that number is moving.
+          Six themed baskets of twelve cards each, priced as a group so you can see what a domain costs to buy
+          into{HAS_CHANGE_DATA ? " and how that number is moving." : "."}
         </p>
+        {!HAS_CHANGE_DATA && (
+          <p className="mt-2 max-w-3xl text-[11px] leading-relaxed text-ink-dim">
+            Basket movement begins once a second day of prices has been collected — price history
+            starts{HISTORY_START ? ` ${formatDate(`${HISTORY_START}T00:00:00Z`)}` : " with the first import"}, so there
+            is nothing yet to measure today&apos;s cost against.
+          </p>
+        )}
       </header>
 
       {/* This has to be unmissable: these are price baskets, and presenting them
@@ -112,7 +147,8 @@ export default function DecksPage() {
         </h2>
         <p className="mt-1.5 max-w-4xl text-[13px] leading-relaxed text-ink-muted">
           Each basket is assembled mechanically from this catalogue — the highest-priced cards of a single domain and
-          card type, taken one tier at a time so every rarity is represented. They are{" "}
+          card type, taken one tier at a time so every rarity is represented. Only cards TCGplayer actually prices are
+          eligible, so the basket cost is the cost of exactly the cards shown. They are{" "}
           <strong className="font-semibold text-ink">not real competitive decklists</strong>, not tested builds, and not
           legal deck constructions. Nobody plays these. They exist to answer one question: what does a slice of a domain
           cost right now, and which way is it going? For actual deckbuilding rules and card text, use{" "}
@@ -155,13 +191,16 @@ export default function DecksPage() {
                     <dd>
                       <Money cents={b.totalCents} className="num text-xl font-bold text-accent sm:text-2xl" />
                     </dd>
+                    <dd className="text-[10.5px] text-ink-dim">all {b.cards.length} cards priced</dd>
                   </div>
-                  <div className="text-right">
-                    <dt className="eyebrow">7 days</dt>
-                    <dd>
-                      <Delta pct={b.pct7} className="text-xl sm:text-2xl" />
-                    </dd>
-                  </div>
+                  {HAS_CHANGE_DATA && (
+                    <div className="text-right">
+                      <dt className="eyebrow">7 days</dt>
+                      <dd>
+                        <Delta pct={b.pct7} className="text-xl sm:text-2xl" />
+                      </dd>
+                    </div>
+                  )}
                 </dl>
               </header>
 

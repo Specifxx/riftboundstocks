@@ -1,22 +1,23 @@
 // The public pricing API. Pages import from here and never from a specific
-// source, so switching to live TCGplayer data is a change to activeSource() alone.
+// source, so the demo/live switch happens in one place.
 
 import { CARDS, type RiftCard } from "@/lib/catalog";
-import { syntheticSource, syntheticQuoteDaysAgo, todayIndex } from "./synthetic";
+import { syntheticSource, syntheticQuoteDaysAgo } from "./synthetic";
+import { HAS_LIVE_PRICES, HISTORY_DAYS, LIVE_FETCHED_AT, liveSource, liveQuoteDaysAgo, EMPTY_QUOTE } from "./live";
 import type { PriceQuote, PriceSnapshot, PriceSource, SeriesKey } from "./source";
 
 export * from "./source";
+export { HAS_LIVE_PRICES, HISTORY_DAYS, LIVE_FETCHED_AT } from "./live";
 
 /**
  * The source backing every price on the site.
  *
- * Returns the demo generator until TCGPLAYER_PUBLIC_KEY is set. Wiring the live
- * reader in is deliberately left as the one edit needed here: run
- * `npm run prices:import` to populate snapshots, then return the Prisma-backed
- * source. Nothing outside this file has to change.
+ * Live TCGplayer data as soon as a snapshot has been imported; the demo
+ * generator only when the data files are still empty, so a fresh clone renders
+ * something before the first `npm run prices:import`.
  */
 export function activeSource(): PriceSource {
-  return syntheticSource;
+  return HAS_LIVE_PRICES ? liveSource : syntheticSource;
 }
 
 export function priceHistory(card: RiftCard): PriceSnapshot[] {
@@ -28,16 +29,42 @@ export function latestQuote(card: RiftCard): PriceQuote {
 }
 
 export function quoteDaysAgo(card: RiftCard, daysAgo: number): PriceQuote {
-  // The demo source can answer any single day without building a series; a
-  // database-backed source would query one day's rows here instead.
-  return syntheticQuoteDaysAgo(card, daysAgo);
+  return HAS_LIVE_PRICES ? liveQuoteDaysAgo(card, daysAgo) : syntheticQuoteDaysAgo(card, daysAgo);
 }
 
 export function seriesValue(q: PriceQuote, key: SeriesKey): number | null {
   return q[key];
 }
 
-/** Percentage change between two prices; null when the baseline is missing or zero. */
+/**
+ * The card's headline price.
+ *
+ * Normal market price, falling back to FOIL market for a printing that only
+ * exists in foil — which is most Showcase and alt-art cards, and includes the
+ * most valuable cards in the game. Ranking on `market` alone silently dropped
+ * all of them.
+ *
+ * This is a DISPLAY/RANKING concept only. It is never written into the stored
+ * series, so the card page still shows an honest "—" for a Normal price that
+ * doesn't exist.
+ */
+export function primaryPrice(q: PriceQuote): number | null {
+  return q.market ?? q.foilMarket;
+}
+
+/**
+ * How many days of real history exist.
+ *
+ * There is no public TCGplayer endpoint for historical prices, so the series
+ * genuinely begins at the first import — it is not backfilled. Surfaces that
+ * compare two days (movers, the ticker, % change columns) have nothing to say
+ * until this reaches 2, and they say so rather than inventing a baseline.
+ */
+export const HISTORY_LENGTH = HAS_LIVE_PRICES ? HISTORY_DAYS.length : 400;
+export const HAS_CHANGE_DATA = HISTORY_LENGTH >= 2;
+export const HISTORY_START: string | null = HAS_LIVE_PRICES ? (HISTORY_DAYS[0] ?? null) : null;
+
+/** Percentage change; null when either side is missing. */
 export function pctChange(now: number | null, then: number | null): number | null {
   if (now == null || then == null || then === 0) return null;
   return ((now - then) / then) * 100;
@@ -52,17 +79,11 @@ export interface Extreme {
 
 export interface CardStats {
   latest: PriceQuote;
-  allTimeHigh: Extreme;
-  allTimeLow: Extreme;
-  /** Foil market ÷ non-foil market. null when the card has no foil printing. */
+  /** null until at least one day of history carries a market price. */
+  allTimeHigh: Extreme | null;
+  allTimeLow: Extreme | null;
   foilMultiplier: number | null;
-  /** (Mid − Low) ÷ Mid, as a percentage — how wide the bid/ask sits. */
-  spreadPct: number;
-  /**
-   * Indicative buylist (what a shop pays). Vendors buy well under market; this is
-   * a flat fraction, NOT a quoted offer from any real buyer.
-   */
-  buylistCents: number;
+  spreadPct: number | null;
   deltas: {
     day: { regular: number | null; foil: number | null };
     week: { regular: number | null; foil: number | null };
@@ -73,13 +94,17 @@ export interface CardStats {
 
 export function cardStats(card: RiftCard): CardStats {
   const history = priceHistory(card);
-  const latest = history[history.length - 1];
+  const latest = history.length ? history[history.length - 1] : latestQuote(card);
 
-  let hi = history[0];
-  let lo = history[0];
+  // Tracked on the headline price, so a foil-only printing (which has no Normal
+  // market price at all) still gets a high/low rather than a pair of dashes.
+  let hi: Extreme | null = null;
+  let lo: Extreme | null = null;
   for (const p of history) {
-    if (p.market > hi.market) hi = p;
-    if (p.market < lo.market) lo = p;
+    const v = primaryPrice(p);
+    if (v == null) continue;
+    if (!hi || v > hi.cents) hi = { cents: v, day: p.day };
+    if (!lo || v < lo.cents) lo = { cents: v, day: p.day };
   }
 
   const delta = (days: number) => {
@@ -90,19 +115,25 @@ export function cardStats(card: RiftCard): CardStats {
     };
   };
 
+  const foilMult =
+    latest.foilMarket != null && latest.market != null && latest.market > 0
+      ? latest.foilMarket / latest.market
+      : null;
+
   return {
     latest,
-    allTimeHigh: { cents: hi.market, day: hi.day },
-    allTimeLow: { cents: lo.market, day: lo.day },
-    foilMultiplier: latest.foilMarket == null ? null : latest.foilMarket / latest.market,
-    spreadPct: latest.mid > 0 ? ((latest.mid - latest.low) / latest.mid) * 100 : 0,
-    buylistCents: Math.round(latest.market * 0.55),
+    allTimeHigh: hi,
+    allTimeLow: lo,
+    foilMultiplier: foilMult,
+    spreadPct: latest.mid != null && latest.low != null && latest.mid > 0 ? ((latest.mid - latest.low) / latest.mid) * 100 : null,
     deltas: { day: delta(1), week: delta(7), month: delta(30) },
-    points: history.length,
+    // Any priced day counts — a foil-only printing has data even though its
+    // Normal series is empty throughout.
+    points: history.filter((p) => primaryPrice(p) != null).length,
   };
 }
 
-// ── movers (the ticker, the homepage and /interests) ─────────────────────────
+// ── movers ───────────────────────────────────────────────────────────────────
 
 export interface Mover {
   card: RiftCard;
@@ -112,32 +143,34 @@ export interface Mover {
 }
 
 /**
- * Cards whose price moved most over `days`, on the given series.
+ * Cards whose price moved most over `days`.
  *
- * `minCents` keeps the lists signal-rich: a bulk common going from $0.10 to $0.14
- * is a 40% "gain" that tells nobody anything, and without a floor those dominate
- * every percentage-ranked table.
+ * Returns EMPTY until two days of history exist — there is no baseline to
+ * compare against, and manufacturing one is how a price site starts lying.
+ * Callers check HAS_CHANGE_DATA and show a fallback instead.
+ *
+ * `minCents` keeps the list signal-rich: a bulk common going from $0.10 to $0.14
+ * is a 40% "gain" that tells nobody anything.
  */
 function computeMovers(series: SeriesKey, days: number, minCents: number): Mover[] {
+  if (!HAS_CHANGE_DATA) return [];
   const out: Mover[] = [];
   for (const card of CARDS) {
     const now = seriesValue(latestQuote(card), series);
     const then = seriesValue(quoteDaysAgo(card, days), series);
     if (now == null || then == null || now < minCents) continue;
     const pct = pctChange(now, then);
-    if (pct == null || !isFinite(pct)) continue;
+    if (pct == null || !isFinite(pct) || pct === 0) continue;
     out.push({ card, now, then, pct });
   }
   out.sort((a, b) => b.pct - a.pct);
   return out;
 }
 
-// Movers only change when the day does, and several surfaces ask for the same
-// window on one render, so key the memo by day.
 const MOVER_CACHE = new Map<string, Mover[]>();
 
 export function movers(series: SeriesKey = "market", days = 1, minCents = 100): Mover[] {
-  const key = `${series}:${days}:${minCents}:${todayIndex()}`;
+  const key = `${series}:${days}:${minCents}`;
   const hit = MOVER_CACHE.get(key);
   if (hit) return hit;
   const built = computeMovers(series, days, minCents);
@@ -154,20 +187,55 @@ export function moverSplit(series: SeriesKey = "market", days = 1, limit = 25, m
   const all = movers(series, days, minCents);
   return {
     gainers: all.filter((m) => m.pct > 0).slice(0, limit),
-    losers: all
-      .filter((m) => m.pct < 0)
-      .slice(-limit)
-      .reverse(),
+    losers: all.filter((m) => m.pct < 0).slice(-limit).reverse(),
   };
 }
 
-/** The ticker's payload: the day's largest absolute moves, gainers and losers mixed. */
+// ── value rankings (always available, no history required) ───────────────────
+
+export interface Ranked {
+  card: RiftCard;
+  cents: number;
+}
+
+/** Most valuable priced cards. Works on day one, unlike anything change-based. */
+export function topByMarket(limit = 12, series?: SeriesKey): Ranked[] {
+  const out: Ranked[] = [];
+  for (const card of CARDS) {
+    const q = latestQuote(card);
+    const v = series ? seriesValue(q, series) : primaryPrice(q);
+    if (v == null) continue;
+    out.push({ card, cents: v });
+  }
+  out.sort((a, b) => b.cents - a.cents);
+  return out.slice(0, limit);
+}
+
+/** Sum across every priced card. Unpriced cards are excluded, never counted as zero. */
+export function totalMarketValue(cards: RiftCard[] = CARDS, series?: SeriesKey): number {
+  let sum = 0;
+  for (const c of cards) {
+    const q = latestQuote(c);
+    const v = series ? seriesValue(q, series) : primaryPrice(q);
+    if (v != null) sum += v;
+  }
+  return sum;
+}
+
+export function pricedCount(cards: RiftCard[] = CARDS): number {
+  return cards.reduce((n, c) => n + (primaryPrice(latestQuote(c)) != null ? 1 : 0), 0);
+}
+
+/**
+ * The ticker's payload: the day's biggest absolute moves, gainers and losers
+ * interleaved. Falls back to the most valuable cards while history is too short,
+ * so the bar shows real prices rather than nothing.
+ */
 export function tickerMovers(limit = 28): Mover[] {
   const all = movers("market", 1, 200);
+  if (all.length === 0) return [];
   const top = all.slice(0, Math.ceil(limit / 2));
   const bottom = all.slice(-Math.floor(limit / 2));
-  // Interleave so the bar doesn't read as a block of green followed by a block
-  // of red — a real ticker mixes them.
   const mixed: Mover[] = [];
   for (let i = 0; i < Math.max(top.length, bottom.length); i++) {
     if (top[i]) mixed.push(top[i]);
@@ -176,22 +244,12 @@ export function tickerMovers(limit = 28): Mover[] {
   return mixed;
 }
 
-/** Highest-value cards — the homepage's "Trending" tiles draw from these. */
-export function topByMarket(limit = 12): RiftCard[] {
-  return [...CARDS]
-    .map((card) => ({ card, v: latestQuote(card).market }))
-    .sort((a, b) => b.v - a.v)
-    .slice(0, limit)
-    .map((x) => x.card);
-}
-
-/**
- * Homepage "Trending": cards that are both valuable and moving, so the tiles show
- * something with a story rather than the same four chase cards every day.
- */
+/** Homepage "Trending": valuable cards that are also moving. */
 export function trendingCards(limit = 4): Mover[] {
   return movers("market", 7, 500)
     .filter((m) => Math.abs(m.pct) > 1)
     .sort((a, b) => Math.abs(b.pct) - Math.abs(a.pct))
     .slice(0, limit);
 }
+
+export { EMPTY_QUOTE };

@@ -16,14 +16,25 @@ import type { RiftCard } from "@/lib/catalog";
  * damaged or foreign-language copy, which is why TCGEmpire's lib/tcgplayer.ts
  * records market price too (see its Dazzling Aurora note).
  */
+/**
+ * EVERY FIELD IS NULLABLE, and that is the whole point.
+ *
+ * With real data, "TCGplayer has no price for this printing" is a routine fact —
+ * a card too new to have sold, a token nobody lists, a printing the matcher
+ * couldn't confidently identify. null means exactly that. It does NOT mean zero:
+ * a zero would sort to the top of "cheapest", drag down set totals and the market
+ * index, and read as a real valuation. Callers must render null as "—".
+ */
 export interface PriceQuote {
-  low: number;
-  /** TCGplayer "Mid" — the average of listed prices. */
-  mid: number;
-  market: number;
-  /** Average foil price. null when a card has no foil printing. */
+  /** Lowest active listing. Any condition and language, so it can sit well under market. */
+  low: number | null;
+  /** TCGplayer "Listed Median" — the average of current asking prices. */
+  mid: number | null;
+  /** TCGplayer Market Price for the Normal printing — the headline figure. */
+  market: number | null;
+  /** Listed Median for the Foil printing. */
   foil: number | null;
-  /** Market price of the foil printing — the headline foil figure. */
+  /** Market Price for the Foil printing. */
   foilMarket: number | null;
 }
 

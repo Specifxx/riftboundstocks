@@ -13,8 +13,8 @@ export const metadata: Metadata = {
   alternates: { canonical: `${SITE_URL}/sets` },
 };
 
-function median(values: number[]): number {
-  if (values.length === 0) return 0;
+function median(values: number[]): number | null {
+  if (values.length === 0) return null;
   const s = [...values].sort((a, b) => a - b);
   const mid = Math.floor(s.length / 2);
   return s.length % 2 ? s[mid] : Math.round((s[mid - 1] + s[mid]) / 2);
@@ -23,7 +23,9 @@ function median(values: number[]): number {
 export default function SetsPage() {
   const summaries: SetSummary[] = SETS.map((set) => {
     const cards = cardsInSet(set.code);
-    const prices = cards.map((c) => latestQuote(c).market);
+    // Unpriced cards are dropped, never counted as zero — a set total that
+    // silently includes $0 for cards TCGplayer has no price for is wrong.
+    const prices = cards.map((c) => latestQuote(c).market).filter((v): v is number => v != null);
     const changes = cards
       .map((c) => pctChange(latestQuote(c).market, quoteDaysAgo(c, 30).market))
       .filter((p): p is number => p != null);
@@ -35,9 +37,10 @@ export default function SetsPage() {
       setType: set.setType,
       releasedOn: set.releasedOn,
       cardCount: cards.length,
+      pricedCount: prices.length,
       totalCents: prices.reduce((a, b) => a + b, 0),
       medianCents: median(prices),
-      topCents: prices.length ? Math.max(...prices) : 0,
+      topCents: prices.length ? Math.max(...prices) : null,
       pct30: changes.length ? changes.reduce((a, b) => a + b, 0) / changes.length : null,
     };
   });

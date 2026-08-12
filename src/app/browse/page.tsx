@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CARDS, type RiftCard } from "@/lib/catalog";
-import { latestQuote, pctChange, quoteDaysAgo } from "@/lib/prices";
+import { HAS_CHANGE_DATA, HISTORY_START, latestQuote, pctChange, pricedCount, quoteDaysAgo } from "@/lib/prices";
 import { CARD_TYPES, DOMAIN_KEYS, RARITY_KEYS, SETS } from "@/lib/riftbound";
-import { normalizeSearch } from "@/lib/format";
+import { formatDate, normalizeSearch } from "@/lib/format";
 import { SITE_URL } from "@/lib/site";
-import { CardTable, type CardRow } from "@/components/CardTable";
+import { CardTable, type CardRow, type ColumnKey } from "@/components/CardTable";
 import { DemoPricesNotice } from "@/components/Bits";
 
 export const metadata: Metadata = {
@@ -26,7 +26,12 @@ const SORTS = {
 } as const;
 
 type SortId = keyof typeof SORTS;
-const SORT_IDS = Object.keys(SORTS) as SortId[];
+/** Sorting by change needs a baseline day, so that chip only exists once one does. */
+const SORT_IDS = (Object.keys(SORTS) as SortId[]).filter((id) => id !== "change" || HAS_CHANGE_DATA);
+
+const TABLE_COLUMNS: ColumnKey[] = HAS_CHANGE_DATA
+  ? ["card", "set", "rarity", "domain", "type", "now", "pct"]
+  : ["card", "set", "rarity", "domain", "type", "now"];
 
 type SearchParams = { [key: string]: string | string[] | undefined };
 
@@ -74,6 +79,13 @@ function hrefWith(f: Filters, key: keyof Filters, value: string | undefined): st
   else next[key] = value;
   const qs = new URLSearchParams(next).toString();
   return qs ? `/browse?${qs}` : "/browse";
+}
+
+/** Descending, with unpriced/unknown rows last in either case — null is missing, not zero. */
+function desc(a: number | null, b: number | null): number {
+  if (a == null) return b == null ? 0 : 1;
+  if (b == null) return -1;
+  return b - a;
 }
 
 function matches(card: RiftCard, f: Filters, term: string): boolean {
@@ -132,15 +144,16 @@ export default function BrowsePage({ searchParams }: { searchParams: SearchParam
   const f = readFilters(searchParams);
   const term = f.q ? normalizeSearch(f.q) : "";
 
-  const matched = CARDS.filter((c) => matches(c, f, term)).map((card) => {
+  const matchedCards = CARDS.filter((c) => matches(c, f, term));
+  const matched = matchedCards.map((card) => {
     const now = latestQuote(card).market;
-    const then = quoteDaysAgo(card, 7).market;
+    const then = HAS_CHANGE_DATA ? quoteDaysAgo(card, 7).market : null;
     return { card, now, then, pct: pctChange(now, then) };
   });
 
   switch (f.sort) {
-    case "value": matched.sort((a, b) => b.now - a.now); break;
-    case "change": matched.sort((a, b) => (b.pct ?? 0) - (a.pct ?? 0)); break;
+    case "value": matched.sort((a, b) => desc(a.now, b.now)); break;
+    case "change": matched.sort((a, b) => desc(a.pct, b.pct)); break;
     case "name": matched.sort((a, b) => a.card.name.localeCompare(b.card.name)); break;
     case "number":
       matched.sort((a, b) => a.card.setCode.localeCompare(b.card.setCode) || a.card.collectorNumber - b.card.collectorNumber);
@@ -159,18 +172,21 @@ export default function BrowsePage({ searchParams }: { searchParams: SearchParam
     thumb: card.imageThumbUrl,
     now,
     then,
-    pct: pct ?? undefined,
+    pct,
   }));
 
   const activeCount = [f.domain, f.type, f.rarity, f.set, f.q].filter(Boolean).length;
+  const priced = pricedCount(matchedCards);
 
   return (
     <div>
       <header className="mb-4">
         <h1 className="font-display text-3xl uppercase tracking-wide text-ink sm:text-4xl">Browse Cards</h1>
         <p className="mt-1.5 max-w-3xl text-[14px] leading-relaxed text-ink-muted">
-          Every printing in the catalogue, filtered on the server and sortable in the table. Market price and 7-day
-          change on each row.
+          Every printing in the catalogue, filtered on the server and sortable in the table.{" "}
+          {HAS_CHANGE_DATA
+            ? "Market price and 7-day change on each row."
+            : "Market price on each row; a card TCGplayer does not price shows a dash rather than a zero."}
         </p>
       </header>
 
@@ -249,20 +265,35 @@ export default function BrowsePage({ searchParams }: { searchParams: SearchParam
             {matched.length} card{matched.length === 1 ? "" : "s"}
             {f.q && <span className="ml-2 text-[13px] font-normal normal-case text-ink-dim">matching “{f.q}”</span>}
           </h2>
-          {matched.length > MAX_ROWS && (
-            <span className="text-[11px] text-ink-dim">
-              Showing the top {MAX_ROWS} by {SORTS[f.sort].label.toLowerCase()} — narrow the filters to see the rest.
-            </span>
-          )}
+          <span className="flex flex-wrap gap-x-3 text-[11px] text-ink-dim">
+            {priced < matched.length && (
+              <span>
+                {priced} of {matched.length} priced — TCGplayer lists no price for the rest.
+              </span>
+            )}
+            {matched.length > MAX_ROWS && (
+              <span>
+                Showing the top {MAX_ROWS} by {SORTS[f.sort].label.toLowerCase()} — narrow the filters to see the rest.
+              </span>
+            )}
+          </span>
         </div>
 
         <CardTable
           rows={rows}
-          columns={["card", "set", "rarity", "domain", "type", "now", "pct"]}
+          columns={TABLE_COLUMNS}
           nowLabel="Market"
           initialSort={SORTS[f.sort].key}
           initialDir={SORTS[f.sort].dir}
         />
+
+        {!HAS_CHANGE_DATA && (
+          <p className="mt-3 border-t border-line pt-3 text-[11px] leading-relaxed text-ink-dim">
+            No change column yet: price history begins
+            {HISTORY_START ? ` ${formatDate(`${HISTORY_START}T00:00:00Z`)}` : " with the first import"}, and a 7-day
+            move needs a second day of prices to compare against.
+          </p>
+        )}
 
         <DemoPricesNotice className="mt-3 border-t border-line pt-3" />
       </section>

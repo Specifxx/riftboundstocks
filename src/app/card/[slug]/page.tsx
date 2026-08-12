@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CARDS, cardBySlug, otherPrintings } from "@/lib/catalog";
-import { activeSource, cardStats, priceHistory, latestQuote } from "@/lib/prices";
+import { activeSource, cardStats, priceHistory, latestQuote, topByMarket, primaryPrice } from "@/lib/prices";
+import { cardDetail } from "@/lib/card-details";
 import { tcgSearchUrl } from "@/lib/prices/tcgplayer";
 import { affiliateUrl, outboundRel, riftcompareCardUrl } from "@/lib/affiliate";
 import { FORMATS, SET_BY_CODE, domainInfo } from "@/lib/riftbound";
@@ -16,12 +17,9 @@ import { Delta, DemoPricesNotice, DomainPill, RarityPill } from "@/components/Bi
 import { AffiliateDisclosure } from "@/components/AffiliateDisclosure";
 
 // Pre-render the most valuable cards at build time and stream the rest on first
-// request. Building all 950 would triple build time for pages nobody opens.
+// request. Building all 1,180 would multiply build time for pages nobody opens.
 export function generateStaticParams() {
-  return [...CARDS]
-    .sort((a, b) => latestQuote(b).market - latestQuote(a).market)
-    .slice(0, 120)
-    .map((c) => ({ slug: c.slug }));
+  return topByMarket(120).map(({ card }) => ({ slug: card.slug }));
 }
 
 export const dynamicParams = true;
@@ -32,7 +30,13 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
   if (!card) return { title: "Card not found" };
   const q = latestQuote(card);
   const title = `${card.name} (${card.setCode} ${card.collectorLabel}) Price History`;
-  const description = `${card.name} from ${card.setName} — ${card.rarity} ${card.domain} ${card.type}. Market price ${formatMoney(q.market)}, low ${formatMoney(q.low)}. Daily price history and market data on ${SITE_NAME}.`;
+  // An unpriced card gets a description with no price claim in it, rather than
+  // "$0.00" in a search result.
+  const priceLine =
+    q.market != null
+      ? `TCGplayer market price ${formatMoney(q.market)}${q.low != null ? `, from ${formatMoney(q.low)}` : ""}.`
+      : "Live TCGplayer pricing and daily history.";
+  const description = `${card.name} from ${card.setName} — ${card.rarity} ${card.domain} ${card.type}. ${priceLine} Price history and market data on ${SITE_NAME}.`;
   return {
     title,
     description,
@@ -66,6 +70,7 @@ export default function CardPage({ params }: { params: { slug: string } }) {
   const printings = otherPrintings(card);
   const set = SET_BY_CODE[card.setCode];
   const source = activeSource();
+  const detail = cardDetail(card.id);
   const domain = domainInfo(card.domain);
 
   const summary = [
@@ -180,11 +185,25 @@ export default function CardPage({ params }: { params: { slug: string } }) {
               </StatRow>
             </dl>
 
-            {/* This site tracks prices, not rules. Inventing ability text or an
-                artist credit for a real card would be fabrication, so the card's
-                own database is linked instead. */}
+            {/* Real rules text, from TCGplayer's product data. Rendered as plain
+                text (the importer strips their HTML), so there is no markup to
+                trust. Absent stays absent — nothing here is generated. */}
+            {detail?.description && (
+              <div className="mt-3 border-t border-line pt-3">
+                <h3 className="eyebrow mb-1.5">Card text</h3>
+                <p className="whitespace-pre-line text-[13px] leading-relaxed text-ink-muted">{detail.description}</p>
+                {detail.flavorText && (
+                  <p className="mt-2 whitespace-pre-line border-l-2 border-line pl-2.5 text-[12.5px] italic leading-relaxed text-ink-dim">
+                    {detail.flavorText}
+                  </p>
+                )}
+              </div>
+            )}
+
             <p className="mt-3 border-t border-line pt-3 text-[12px] leading-relaxed text-ink-dim">
-              Ability text and artist credits aren&apos;t part of this dataset. Check{" "}
+              {detail?.description ? "Card text via TCGplayer. " : "Card text isn't published for this printing. "}
+              Artist credits aren&apos;t available from either source and are not guessed at. For authoritative rules
+              and legality see{" "}
               <a
                 href={OFFICIAL_CARD_DB_URL}
                 target="_blank"
@@ -192,8 +211,8 @@ export default function CardPage({ params }: { params: { slug: string } }) {
                 className="text-accent hover:underline"
               >
                 Riot&apos;s official Riftbound card database
-              </a>{" "}
-              for the authoritative card text.
+              </a>
+              .
             </p>
           </div>
         </div>
@@ -236,7 +255,7 @@ export default function CardPage({ params }: { params: { slug: string } }) {
                         className={`num text-[15px] font-bold ${isFoil ? "text-foil" : "text-ink"}`}
                       />
                       <a
-                        href={affiliateUrl(tcgSearchUrl(card.name), "card-prices", `/card/${card.slug}`)}
+                        href={affiliateUrl(detail?.url ?? tcgSearchUrl(card.name), "card-prices", `/card/${card.slug}`)}
                         target="_blank"
                         rel={outboundRel()}
                         className="shrink-0 rounded-md border border-line px-2 py-1 text-[11px] font-semibold text-accent hover:border-accent"
@@ -271,25 +290,48 @@ export default function CardPage({ params }: { params: { slug: string } }) {
             <section className="panel p-4">
               <h2 className="eyebrow mb-3">Data</h2>
               <dl className="text-[13px]">
-                <StatRow label="All-Time High">
-                  <Money cents={stats.allTimeHigh.cents} className="num font-semibold text-up" />
-                  <span className="ml-2 text-[11px] text-ink-dim">{formatDate(`${stats.allTimeHigh.day}T00:00:00Z`)}</span>
+                {/* "Since <date>", not "All-Time": the series starts at the first
+                    import because TCGplayer publishes no price history, and
+                    calling one week's high an all-time high would be a lie. */}
+                <StatRow label={`High${stats.points > 1 ? ` (${stats.points}d)` : ""}`}>
+                  {stats.allTimeHigh ? (
+                    <>
+                      <Money cents={stats.allTimeHigh.cents} className="num font-semibold text-up" />
+                      <span className="ml-2 text-[11px] text-ink-dim">
+                        {formatDate(`${stats.allTimeHigh.day}T00:00:00Z`)}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-ink-dim">—</span>
+                  )}
                 </StatRow>
-                <StatRow label="All-Time Low">
-                  <Money cents={stats.allTimeLow.cents} className="num font-semibold text-down" />
-                  <span className="ml-2 text-[11px] text-ink-dim">{formatDate(`${stats.allTimeLow.day}T00:00:00Z`)}</span>
+                <StatRow label={`Low${stats.points > 1 ? ` (${stats.points}d)` : ""}`}>
+                  {stats.allTimeLow ? (
+                    <>
+                      <Money cents={stats.allTimeLow.cents} className="num font-semibold text-down" />
+                      <span className="ml-2 text-[11px] text-ink-dim">
+                        {formatDate(`${stats.allTimeLow.day}T00:00:00Z`)}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-ink-dim">—</span>
+                  )}
                 </StatRow>
                 <StatRow label="Foil Multiplier">
                   <span className="num font-semibold text-foil">
                     {stats.foilMultiplier ? `${stats.foilMultiplier.toFixed(2)}×` : "—"}
                   </span>
                 </StatRow>
-                <StatRow label="Spread">
-                  <span className="num font-semibold text-ink">{stats.spreadPct.toFixed(1)}%</span>
+                <StatRow label="Spread (Median − Low)">
+                  <span className="num font-semibold text-ink">
+                    {stats.spreadPct != null ? `${stats.spreadPct.toFixed(1)}%` : "—"}
+                  </span>
                 </StatRow>
-                <StatRow label="Buy List (indicative)">
-                  <Money cents={stats.buylistCents} className="num font-semibold text-ink" />
-                </StatRow>
+                {detail && (
+                  <StatRow label="Active listings">
+                    <span className="num font-semibold text-ink">{detail.listings.toLocaleString("en-US")}</span>
+                  </StatRow>
+                )}
               </dl>
 
               <table className="mt-3 w-full border-t border-line pt-2 text-[12px]">
@@ -357,8 +399,15 @@ export default function CardPage({ params }: { params: { slug: string } }) {
                             )}
                           </td>
                           <td className="py-2 font-mono text-[12px] text-ink-muted">{p.collectorLabel}</td>
-                          <td className="num py-2 text-right font-semibold text-ink">{formatMoney(pq.market, "USD")}</td>
-                          <AltCurrencyCell cents={pq.market} className="num py-2 text-right text-ink-muted" />
+                          {/* Headline price, so a foil-only printing shows its
+                              foil market rather than an empty cell. */}
+                          <td className="num py-2 text-right font-semibold text-ink">
+                            {primaryPrice(pq) != null ? formatMoney(primaryPrice(pq)!, "USD") : "—"}
+                            {pq.market == null && pq.foilMarket != null && (
+                              <span className="ml-1 text-[10px] font-normal text-foil">foil</span>
+                            )}
+                          </td>
+                          <AltCurrencyCell cents={primaryPrice(pq)} className="num py-2 text-right text-ink-muted" />
                         </tr>
                       );
                     })}

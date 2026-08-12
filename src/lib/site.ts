@@ -22,8 +22,12 @@ export const OFFICIAL_CARD_DB_URL = "https://riftbound.leagueoflegends.com/en-us
 // forbid presenting their data as your own, so this string is not decorative.
 export const PRICE_SOURCE_NOTE = "Prices sourced from TCGplayer.";
 
-// This build ships a SYNTHETIC price history (see lib/prices/synthetic.ts) because
-// no TCGplayer API key is wired up yet. Every surface that prints a number reads
-// this flag so the demo disclaimer can never be accidentally left off in a build
-// that is showing generated numbers.
-export const PRICES_ARE_DEMO = !process.env.TCGPLAYER_PUBLIC_KEY;
+// True only when the site is falling back to the generator in
+// lib/prices/synthetic.ts — i.e. the price data files are empty because
+// `npm run prices:import` has never run. Every surface that prints a number
+// reads this, so the demo disclaimer can never be left off a build that is
+// showing generated figures.
+//
+// Derived from the DATA, not from an env var: a flag someone has to remember to
+// set is a flag that eventually disagrees with what is on screen.
+export { PRICES_ARE_DEMO } from "./prices/demo-flag";

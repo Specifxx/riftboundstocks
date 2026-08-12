@@ -20,11 +20,11 @@ export interface CardRow {
   domain: string;
   type: string;
   thumb: string;
-  /** Current price on whichever series the table is showing. */
-  now: number;
+  /** Current price on the series the table is showing. null = TCGplayer has no price. */
+  now: number | null;
   /** The comparison baseline. Omit on tables that aren't showing a change. */
-  then?: number;
-  /** null when a baseline is missing (a card too new to compare). */
+  then?: number | null;
+  /** null when there is no baseline to compare against. */
   pct?: number | null;
 }
 
@@ -63,8 +63,10 @@ export function CardTable({
         case "set": return `${r.setCode}${r.collectorLabel}`;
         case "rarity": return RARITY_ORDER[r.rarity] ?? 0;
         case "number": return parseInt(r.collectorLabel, 10) || 0;
-        case "now": return r.now;
-        case "then": return r.then ?? 0;
+        // Unpriced rows sort to the bottom in either direction rather than
+        // pretending to be worth zero.
+        case "now": return r.now ?? -1;
+        case "then": return r.then ?? -1;
         case "pct": return r.pct ?? 0;
       }
     };

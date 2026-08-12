@@ -1,109 +1,137 @@
 /**
- * Fetch live TCGplayer prices and write one snapshot per printing per day.
+ * Fetch real TCGplayer prices and write them into the repo.
  *
- * Usage: npm run prices:import
- * Requires DATABASE_URL. Safe to run repeatedly — a same-day re-run updates the
- * day's row rather than adding a second one.
+ *   npm run prices:import
  *
- * This is the bridge between the demo build and a real one. Once snapshots
- * exist, point activeSource() in src/lib/prices/index.ts at a Prisma-backed
- * reader and set TCGPLAYER_PUBLIC_KEY so the demo disclaimers come off.
+ * Writes three files, split by how often each actually changes:
+ *   src/data/card-details.json   product id, URL, rules text, flavour — static
+ *                                per printing, so it is not rewritten daily
+ *   src/data/prices.json         today's quote for every priced card
+ *   src/data/price-history.json  one appended column per day, the chart series
  *
- * TCGplayer's data is licensed. Attribution is required wherever it is shown,
- * it may not be presented as your own, and bulk redistribution is not
- * permitted — read their API terms before running this at any volume.
+ * There is no database in the default deployment, so the repo IS the store: a
+ * scheduled GitHub Action runs this, commits the diff, and the commit triggers a
+ * redeploy. When DATABASE_URL is set the same snapshot is also written to
+ * Postgres (see prisma/schema.prisma), which is the better home once history
+ * gets long.
+ *
+ * Re-running on the same day REPLACES that day's column rather than appending a
+ * second one, so the job is safe to retry.
+ *
+ * TCGplayer's data is licensed — see the terms note in src/lib/prices/tcgplayer.ts.
  */
-import { PrismaClient } from "@prisma/client";
+import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { CARDS } from "../src/lib/catalog";
-import { fetchTcgplayerQuotes } from "../src/lib/prices/tcgplayer";
+import { buildTcgSnapshot, type TcgCardData } from "../src/lib/prices/tcgplayer";
+import { SERIES_ORDER, type PriceFile, type HistoryFile, type DetailsFile } from "../src/lib/prices/store";
 
-const prisma = new PrismaClient();
+const path = (name: string) => fileURLToPath(new URL(`../src/data/${name}`, import.meta.url));
 
-/** UTC calendar day, matching the day index the chart's x-axis uses. */
-function today(): Date {
-  return new Date(`${new Date().toISOString().slice(0, 10)}T00:00:00Z`);
+function readJson<T>(name: string, fallback: T): T {
+  const p = path(name);
+  if (!existsSync(p)) return fallback;
+  try {
+    return JSON.parse(readFileSync(p, "utf8")) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+function today(): string {
+  return new Date().toISOString().slice(0, 10);
 }
 
 async function main() {
-  if (!process.env.DATABASE_URL) {
-    console.error("DATABASE_URL is not set — see .env.example.");
-    process.exit(1);
-  }
+  const started = Date.now();
+  console.log(`Importing TCGplayer prices for ${CARDS.length} cards…`);
 
-  console.log(`Matching ${CARDS.length} cards against the TCGplayer catalogue…`);
-  const quotes = await fetchTcgplayerQuotes(CARDS);
-  console.log(`Matched ${quotes.size} of ${CARDS.length}.`);
+  const { data, stats } = await buildTcgSnapshot(CARDS);
 
-  if (quotes.size === 0) {
-    // Writing nothing is right: an empty match set means the fetch or the
-    // matcher broke, and zeroing every price would corrupt the history.
-    console.error("No products matched. Not writing anything.");
+  console.log(`\n  products seen      ${stats.products}`);
+  console.log(`  matched            ${stats.matched}`);
+  console.log(`  priced             ${stats.priced}`);
+  console.log(`  unmatched          ${stats.unmatched.length}`);
+  console.log(`  name-rejected      ${stats.nameRejected.length}`);
+  console.log(`  pricepoint misses  ${stats.pricepointFailures}`);
+
+  if (stats.unmatched.length) console.log(`\n  unmatched sample:\n    ${stats.unmatched.slice(0, 10).join("\n    ")}`);
+  if (stats.nameRejected.length) console.log(`\n  name-rejected sample:\n    ${stats.nameRejected.slice(0, 10).join("\n    ")}`);
+
+  // A collapsed match rate means the endpoint changed shape or the matcher
+  // broke. Overwriting good prices with near-nothing is worse than doing
+  // nothing, so bail out and leave the last good files in place.
+  const rate = stats.priced / CARDS.length;
+  if (rate < 0.5) {
+    console.error(`\nOnly ${(rate * 100).toFixed(1)}% of cards priced — refusing to write. Existing data left untouched.`);
     process.exit(1);
   }
 
   const day = today();
-  let written = 0;
 
-  for (const card of CARDS) {
-    const match = quotes.get(card.id);
-    if (!match) continue;
-    const q = match.quote;
-
-    const row = await prisma.card.upsert({
-      where: { externalId: card.id },
-      create: {
-        externalId: card.id,
-        slug: card.slug,
-        name: card.name,
-        setCode: card.setCode,
-        setName: card.setName,
-        collectorNumber: card.collectorNumber,
-        collectorLabel: card.collectorLabel,
-        variant: card.variant,
-        rarity: card.rarity,
-        domain: card.domain,
-        type: card.type,
-        imageUrl: card.imageUrl,
-        imageThumbUrl: card.imageThumbUrl,
-        marketCents: q.market,
-        foilMarketCents: q.foilMarket,
-        lastPricedAt: new Date(),
-        tcgProductId: match.productId,
-      },
-      update: {
-        marketCents: q.market,
-        foilMarketCents: q.foilMarket,
-        lastPricedAt: new Date(),
-        tcgProductId: match.productId,
-      },
-      select: { id: true },
-    });
-
-    const values = {
-      lowCents: q.low,
-      midCents: q.mid,
-      marketCents: q.market,
-      foilCents: q.foil,
-      foilMarketCents: q.foilMarket,
-      source: "tcgplayer",
+  // ── details (static per printing) ──────────────────────────────────────────
+  const details: DetailsFile = { updatedAt: new Date().toISOString(), cards: {} };
+  for (const [cardId, d] of data) {
+    details.cards[cardId] = {
+      productId: d.productId,
+      url: d.url,
+      rarity: d.rarity,
+      description: d.description,
+      flavorText: d.flavorText,
+      listings: d.totalListings,
     };
-
-    await prisma.priceSnapshot.upsert({
-      where: { cardId_day: { cardId: row.id, day } },
-      create: { cardId: row.id, day, ...values },
-      update: values,
-    });
-
-    written++;
-    if (written % 100 === 0) process.stdout.write(`\rWrote ${written} snapshots…`);
   }
+  writeFileSync(path("card-details.json"), JSON.stringify(details));
 
-  console.log(`\nWrote ${written} snapshots for ${day.toISOString().slice(0, 10)}.`);
+  // ── latest prices ──────────────────────────────────────────────────────────
+  const prices: PriceFile = { day, fetchedAt: new Date().toISOString(), source: "tcgplayer", cards: {} };
+  const quoteTuple = (d: TcgCardData) => SERIES_ORDER.map((k) => d.quote[k]);
+  for (const [cardId, d] of data) {
+    // A foil-only printing has no Normal market price but is still priced —
+    // requiring `market` would have dropped every Showcase card.
+    if (d.quote.market == null && d.quote.foilMarket == null) continue;
+    prices.cards[cardId] = quoteTuple(d);
+  }
+  writeFileSync(path("prices.json"), JSON.stringify(prices));
+
+  // ── history (append or replace today's column) ─────────────────────────────
+  const history = readJson<HistoryFile>("price-history.json", { days: [], cards: {} });
+  let col = history.days.indexOf(day);
+  if (col === -1) {
+    history.days.push(day);
+    col = history.days.length - 1;
+  }
+  const width = history.days.length;
+
+  for (const cardId of Object.keys(prices.cards)) {
+    const row = (history.cards[cardId] ??= []);
+    // Pad with nulls for days before this card was first priced, so every row
+    // stays index-aligned with `days`.
+    while (row.length < width) row.push(null);
+    row[col] = prices.cards[cardId];
+  }
+  // Cards that dropped out today get an explicit null rather than a stale value
+  // carried forward — a gap is a fact, a repeated price is a fiction.
+  for (const [cardId, row] of Object.entries(history.cards)) {
+    while (row.length < width) row.push(null);
+    if (!(cardId in prices.cards)) row[col] = null;
+  }
+  writeFileSync(path("price-history.json"), JSON.stringify(history));
+
+  console.log(
+    `\nWrote ${Object.keys(prices.cards).length} prices for ${day}. ` +
+      `History now spans ${history.days.length} day(s): ${history.days[0]} → ${history.days[history.days.length - 1]}.`,
+  );
+  console.log(`Done in ${((Date.now() - started) / 1000).toFixed(0)}s.`);
+
+  if (process.env.DATABASE_URL) {
+    console.log("\nDATABASE_URL is set — mirroring the snapshot to Postgres…");
+    const { writeSnapshotToPrisma } = await import("./prisma-sink");
+    await writeSnapshotToPrisma(day, data);
+  }
 }
 
-main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(() => prisma.$disconnect());
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});

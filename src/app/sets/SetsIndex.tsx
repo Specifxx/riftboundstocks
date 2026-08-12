@@ -14,9 +14,12 @@ export interface SetSummary {
   setType: string;
   releasedOn: string;
   cardCount: number;
+  /** How many of cardCount TCGplayer actually prices. */
+  pricedCount: number;
   totalCents: number;
-  medianCents: number;
-  topCents: number;
+  /** null when nothing in the set is priced. */
+  medianCents: number | null;
+  topCents: number | null;
   pct30: number | null;
 }
 
@@ -112,7 +115,11 @@ export function SetsIndex({ sets }: { sets: SetSummary[] }) {
                     <Delta pct={s.pct30} className="shrink-0 text-[11px]" />
                   </div>
                   <p className="mt-0.5 text-[11px] text-ink-dim">
-                    {s.setType} · {s.cardCount} cards · {formatDate(`${s.releasedOn}T00:00:00Z`)}
+                    {s.setType} · {s.cardCount} cards
+                    {s.pricedCount < s.cardCount && (
+                      <span title="TCGplayer has no price for the remainder"> ({s.pricedCount} priced)</span>
+                    )}{" "}
+                    · {formatDate(`${s.releasedOn}T00:00:00Z`)}
                   </p>
                   <dl className="mt-2.5 grid grid-cols-3 gap-2 border-t border-line pt-2">
                     {(

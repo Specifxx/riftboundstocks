@@ -17,7 +17,10 @@ function CardBlock({ slug, note }: { slug: string; note?: string }) {
 
   const q = latestQuote(card);
   const pct = pctChange(q.market, quoteDaysAgo(card, 7).market);
-  const spark = priceHistory(card).slice(-60).map((p) => p.market);
+  const spark = priceHistory(card)
+    .slice(-60)
+    .map((p) => p.market)
+    .filter((v): v is number => v != null);
 
   return (
     <figure className="my-5 not-prose">

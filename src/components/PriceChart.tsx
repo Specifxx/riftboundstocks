@@ -172,12 +172,17 @@ export function PriceChart({ points, sources, activeSourceId }: Props) {
   // Navigator geometry, drawn against the FULL series so the window shows where
   // the visible slice sits in the card's whole history.
   const navX = (i: number) => NAV_PAD.l + (i / (n - 1)) * (W - NAV_PAD.l - NAV_PAD.r);
-  const navMarket = points.map((p) => p.market);
-  const navMin = Math.min(...navMarket);
-  const navMax = Math.max(...navMarket);
+  const navMarket = points.map((p) => p.market).filter((v): v is number => v != null);
+  const navMin = navMarket.length ? Math.min(...navMarket) : 0;
+  const navMax = navMarket.length ? Math.max(...navMarket) : 1;
   const navSpan = Math.max(1, navMax - navMin);
   const navY = (v: number) => NAV_PAD.t + (1 - (v - navMin) / navSpan) * (NAV_H - NAV_PAD.t - NAV_PAD.b);
-  const navLine = points.map((p, i) => `${navX(i).toFixed(1)},${navY(p.market).toFixed(1)}`).join(" ");
+  // A day the importer missed leaves a gap rather than a straight line through
+  // it — the polyline simply omits that point.
+  const navLine = points
+    .map((p, i) => (p.market == null ? null : `${navX(i).toFixed(1)},${navY(p.market).toFixed(1)}`))
+    .filter(Boolean)
+    .join(" ");
 
   const fmtDate = (day: string) =>
     new Date(`${day}T00:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });

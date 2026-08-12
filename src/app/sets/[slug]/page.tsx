@@ -50,7 +50,9 @@ export default function SetPage({ params }: { params: { slug: string } }) {
     };
   });
 
-  const prices = rows.map((r) => r.now);
+  // Unpriced cards drop out of the aggregates entirely rather than counting as
+  // zero, which is why the header reports the priced count alongside the total.
+  const prices = rows.map((r) => r.now).filter((v): v is number => v != null);
   const total = prices.reduce((a, b) => a + b, 0);
   const changes = rows.map((r) => r.pct).filter((p): p is number => p != null);
   const avg30 = (() => {
@@ -61,9 +63,12 @@ export default function SetPage({ params }: { params: { slug: string } }) {
   })();
 
   const stats = [
-    { label: "Cards", value: String(cards.length) },
+    {
+      label: "Cards",
+      value: prices.length === cards.length ? String(cards.length) : `${prices.length} / ${cards.length}`,
+    },
     { label: "Set value", cents: total },
-    { label: "Most valuable", cents: prices.length ? Math.max(...prices) : 0 },
+    { label: "Most valuable", cents: prices.length ? Math.max(...prices) : null },
     { label: "7d average", pct: changes.length ? changes.reduce((a, b) => a + b, 0) / changes.length : null },
     { label: "30d average", pct: avg30 },
   ];

@@ -103,10 +103,10 @@ export function AltCurrencyHeader({ className }: { className?: string }) {
   return <th className={className}>{currency}</th>;
 }
 
-export function AltCurrencyCell({ cents, className }: { cents: number; className?: string }) {
+export function AltCurrencyCell({ cents, className }: { cents: number | null; className?: string }) {
   const { currency } = usePrefs();
   if (currency === "USD") return null;
-  return <td className={className}>{formatMoney(convert(cents, currency), currency)}</td>;
+  return <td className={className}>{cents == null ? "—" : formatMoney(convert(cents, currency), currency)}</td>;
 }
 
 export function CurrencySelector() {

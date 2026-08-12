@@ -144,20 +144,28 @@ export function Footer() {
             purchases made through them — at no extra cost to you. Commission never influences which prices are shown
             or how cards are ranked; the figures come from the pricing data, not from what pays.
           </p>
+          {/* Two SEPARATE disclosures, because the two facts became independent
+              the day real prices landed. Bundling them meant switching prices to
+              live would have silently removed the fictional-author disclosure
+              along with the demo-price one — and the articles are still invented. */}
           {PRICES_ARE_DEMO && (
             <p>
-              <strong className="font-semibold text-down">Demo content.</strong> This build ships{" "}
-              <strong className="font-semibold text-ink-muted">generated sample prices</strong>, not live market data,
-              and every article and author on the site is{" "}
-              <strong className="font-semibold text-ink-muted">fictional demo content written to fill the templates</strong>.
-              The authors are invented personas, not real people, and nothing published here is real analysis, a real
-              tournament result or financial advice. See{" "}
-              <Link href="/about" className="text-accent hover:underline">
-                About &amp; Disclaimers
-              </Link>
-              .
+              <strong className="font-semibold text-down">Demo prices.</strong> This build ships{" "}
+              <strong className="font-semibold text-ink-muted">generated sample prices</strong>, not live market data.
+              Do not make a buying or selling decision on them.
             </p>
           )}
+          <p>
+            <strong className="font-semibold text-down">Editorial is demo content.</strong> Every article on this site
+            is illustrative, and its byline is an{" "}
+            <strong className="font-semibold text-ink-muted">invented persona, not a real person</strong>. The analysis,
+            results and market events described in them did not happen. Nothing published here is journalism or
+            financial advice. See{" "}
+            <Link href="/about" className="text-accent hover:underline">
+              About &amp; Disclaimers
+            </Link>
+            .
+          </p>
           <p className="pt-1.5">
             © {new Date().getUTCFullYear()} {SITE_NAME} ·{" "}
             <a href={`mailto:${CONTACT_EMAIL}`} className="hover:text-accent">

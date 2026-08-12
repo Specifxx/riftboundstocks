@@ -64,6 +64,7 @@ export const SETS: SetInfo[] = [
   { code: "OGS", name: "Origins: Proving Grounds", slug: "proving-grounds", setType: "Starter", releasedOn: "2025-10-31", totalCards: 24 },
   { code: "SFD", name: "Spirit Forged", slug: "spiritforged", setType: "Expansion", releasedOn: "2026-02-27", totalCards: 221 },
   { code: "UNL", name: "Unleashed", slug: "unleashed", setType: "Expansion", releasedOn: "2026-05-15", totalCards: 219 },
+  { code: "VEN", name: "Vendetta", slug: "vendetta", setType: "Expansion", releasedOn: "2026-07-31", totalCards: 166 },
 ];
 
 export const SET_BY_CODE: Record<string, SetInfo> = Object.fromEntries(SETS.map((s) => [s.code, s]));

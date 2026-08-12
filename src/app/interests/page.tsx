@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { movers, type Mover } from "@/lib/prices";
+import { movers, topByMarket, HAS_CHANGE_DATA, type Mover } from "@/lib/prices";
 import { SERIES_META, type SeriesKey } from "@/lib/prices/source";
 import { setBySlug, SET_BY_CODE } from "@/lib/riftbound";
 import { SITE_URL } from "@/lib/site";
 import { formatDate } from "@/lib/format";
 import { CardTable, type CardRow } from "@/components/CardTable";
-import { DemoPricesNotice } from "@/components/Bits";
+import { DemoPricesNotice, HistoryNotice } from "@/components/Bits";
 import { FilterBar } from "./FilterBar";
 
 export const metadata: Metadata = {
@@ -161,6 +161,33 @@ export default function InterestsPage({ searchParams }: { searchParams: Query })
 
       <FilterBar />
 
+      {!HAS_CHANGE_DATA && (
+        <div className="mt-6">
+          <HistoryNotice />
+          <div className="panel mt-4 p-4">
+            <h2 className="eyebrow mb-2">Most valuable cards today</h2>
+            <CardTable
+              rows={topByMarket(50).map(({ card, cents }) => ({
+                slug: card.slug,
+                name: card.name,
+                setName: card.setName,
+                setCode: card.setCode,
+                collectorLabel: card.collectorLabel,
+                rarity: card.rarity,
+                domain: card.domain,
+                type: card.type,
+                thumb: card.imageThumbUrl,
+                now: cents,
+              }))}
+              columns={["card", "set", "rarity", "now"]}
+              nowLabel="Market"
+              initialSort="now"
+            />
+          </div>
+        </div>
+      )}
+
+      {HAS_CHANGE_DATA && (
       <MoverSection
         title="Since yesterday"
         subtitle={`${seriesLabel} price, 24-hour change`}
@@ -168,7 +195,9 @@ export default function InterestsPage({ searchParams }: { searchParams: Query })
         losers={daily.losers}
         seriesLabel={seriesLabel}
       />
+      )}
 
+      {HAS_CHANGE_DATA && (
       <MoverSection
         title="Since last week"
         subtitle={`${seriesLabel} price, 7-day change`}
@@ -176,6 +205,7 @@ export default function InterestsPage({ searchParams }: { searchParams: Query })
         losers={weekly.losers}
         seriesLabel={seriesLabel}
       />
+      )}
 
       <DemoPricesNotice className="mt-6" />
     </div>
