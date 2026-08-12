@@ -102,6 +102,14 @@ function DesktopMenu({ user }: { user: MeUser }) {
             >
               Profile
             </Link>
+            <Link
+              href="/portfolio"
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className="block px-3.5 py-2 text-[13px] font-semibold text-ink hover:bg-surface-2"
+            >
+              Portfolio
+            </Link>
           </div>
           <div className="border-t border-line py-1">
             <button
@@ -131,6 +139,9 @@ function MobileSignedIn({ user }: { user: MeUser }) {
           <Avatar user={user} />
         </span>
         Profile
+      </Link>
+      <Link href="/portfolio" className="rounded-md px-2.5 py-1.5 text-[13px] font-semibold text-ink-muted">
+        Portfolio
       </Link>
       <button onClick={signOut} className="rounded-md px-2.5 py-1.5 text-[13px] font-semibold text-ink-muted">
         Sign out

@@ -112,10 +112,59 @@ model User {
   discordId     String?
   createdAt     DateTime  @default(now())
 
-  authTokens AuthToken[]
+  authTokens  AuthToken[]
+  priceAlerts PriceAlert[]
+  collection  CollectionCard[]
 
   @@index([googleId])
   @@index([discordId])
+}
+
+/// A "notify me when this card's price drops" watch. Compared against the
+/// live headline price (lib/prices' activeSource — real TCGplayer data once
+/// imported) by the daily /api/cron/price-alerts job. lastPriceCents is the
+/// baseline a drop is measured against, advanced every run so a later dip is
+/// compared to the most recent price, not a stale one.
+model PriceAlert {
+  id             String    @id @default(cuid())
+  userId         String
+  /// RiftScribe id — the same join key as Card.externalId above, matching the
+  /// in-memory catalogue (lib/catalog.ts's RiftCard.id) rather than a foreign
+  /// key into the Card model, since every page already resolves a card that way.
+  cardId         String
+  lastPriceCents Int?
+  unsubToken     String    @unique
+  createdAt      DateTime  @default(now())
+  lastNotifiedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, cardId])
+  @@index([cardId])
+  @@index([unsubToken])
+}
+
+/// A card a user owns ("My Cards" / Portfolio). One row per (user, card,
+/// condition, foil); quantity aggregates duplicates. costBasisCents powers the
+/// unrealised-gain/loss view against the live market price — null = unknown, no
+/// P&L computed for that row rather than assuming a cost of zero.
+model CollectionCard {
+  id             String   @id @default(cuid())
+  userId         String
+  cardId         String // RiftScribe id — see PriceAlert.cardId above
+  condition      String   @default("NM") // NM, LP, MP, HP, DMG
+  isFoil         Boolean  @default(false)
+  quantity       Int      @default(1)
+  costBasisCents Int?
+  note           String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, cardId, condition, isFoil])
+  @@index([userId])
+  @@index([cardId])
 }
 
 /// One-time tokens for email verification / password reset. Same shape and
