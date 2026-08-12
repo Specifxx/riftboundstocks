@@ -108,9 +108,37 @@ export interface TcgCardData {
  *   "007a" → "7a"   "299*" → "299s"   "045" → "45"   "R04a" → "r04a"
  */
 export function numKey(seg: string): string {
+  // Trim first: a double-faced number splits as "T02 // T05" → "T02 " with a
+  // trailing space, and the regex below can't strip it because it never matches
+  // a leading letter.
+  seg = seg.trim();
   const m = seg.match(/^0*(\d+)([a-z]*)/i);
   const base = m ? m[1] + m[2].toLowerCase() : seg.toLowerCase();
   return seg.includes("*") ? `${base}s` : base;
+}
+
+/**
+ * Base set from a collector number's "/NNN" denominator.
+ *
+ * Only needed for PROMOS. A promo's own setCode says how it was distributed
+ * (OPP, JDG…), not which set the card belongs to — an OPP card numbered 013/298
+ * is an Origins card. The denominator is what places it, and what lets it borrow
+ * the base card's art.
+ *
+ * Extends TCGEmpire's table (lib/tcgplayer.ts) with 166, 003 (Secret Garden) and
+ * 006 (Vendetta's SP specials), which it lacks.
+ */
+export function setFromTotal(total?: string): string | null {
+  switch (parseInt(total ?? "", 10)) {
+    case 298: return "OGN";
+    case 221: return "SFD";
+    case 219: return "UNL";
+    case 166: return "VEN";
+    case 24: return "OGS";
+    case 3: return "SGN";
+    case 6: return "VEN";
+    default: return null;
+  }
 }
 
 /** Key a TCGplayer product. null ⇒ not a single (sealed products carry no number). */
@@ -203,12 +231,17 @@ export function htmlToText(html: string | null | undefined): string | null {
 
 // ── fetching ─────────────────────────────────────────────────────────────────
 
-function searchBody(from: number) {
+function searchBody(from: number, productTypeName?: string[]) {
+  // TCGplayer will split cards from sealed server-side, which beats every
+  // client-side heuristic: the `sealed` boolean is false on all 1,533 products,
+  // and "no collector number" quietly misfiles two real promo cards as boxes.
+  const term: Record<string, string[]> = { productLineName: [PRODUCT_LINE] };
+  if (productTypeName) term.productTypeName = productTypeName;
   return {
     algorithm: "sales_synonym_v2",
     from,
     size: PAGE_SIZE,
-    filters: { term: { productLineName: [PRODUCT_LINE] }, range: {}, match: {} },
+    filters: { term, range: {}, match: {} },
     listingSearch: {
       context: { cart: {} },
       filters: {
@@ -223,27 +256,37 @@ function searchBody(from: number) {
   };
 }
 
-async function fetchSearchPage(from: number): Promise<{ items: TcgProduct[]; total: number }> {
-  const res = await fetch(SEARCH_URL, { method: "POST", headers: HEADERS, body: JSON.stringify(searchBody(from)) });
+async function fetchSearchPage(from: number, productTypeName?: string[]): Promise<{ items: TcgProduct[]; total: number }> {
+  const res = await fetch(SEARCH_URL, {
+    method: "POST",
+    headers: HEADERS,
+    body: JSON.stringify(searchBody(from, productTypeName)),
+  });
   if (!res.ok) throw new Error(`TCGplayer search ${res.status}: ${(await res.text()).slice(0, 200)}`);
   const data = (await res.json()) as { results?: Array<{ results?: TcgProduct[]; totalResults?: number }> };
   const r = data?.results?.[0];
   return { items: r?.results ?? [], total: r?.totalResults ?? 0 };
 }
 
-/** The whole Riftbound product line, paged. */
-export async function fetchTcgplayerProducts(log = console.log): Promise<TcgProduct[]> {
-  const first = await fetchSearchPage(0);
+/** Every product of a given type, paged. Omit the type for the whole line. */
+export async function fetchTcgplayerProducts(
+  log: (s: string) => void = console.log,
+  productTypeName?: string[],
+): Promise<TcgProduct[]> {
+  const first = await fetchSearchPage(0, productTypeName);
   const out: TcgProduct[] = [...first.items];
   for (let from = PAGE_SIZE; from < first.total; from += PAGE_SIZE) {
     await sleep(200);
-    const pg = await fetchSearchPage(from);
+    const pg = await fetchSearchPage(from, productTypeName);
     if (pg.items.length === 0) break;
     out.push(...pg.items);
   }
-  log(`  catalogue: ${out.length}/${first.total} products`);
+  log(`  ${productTypeName?.[0] ?? "all"}: ${out.length}/${first.total} products`);
   return out;
 }
+
+export const fetchTcgplayerCards = (log?: (s: string) => void) => fetchTcgplayerProducts(log, ["Cards"]);
+export const fetchTcgplayerSealed = (log?: (s: string) => void) => fetchTcgplayerProducts(log, ["Sealed Products"]);
 
 /**
  * Per-printing prices for one product. Retries, because there is no fallback:
@@ -320,11 +363,25 @@ export async function buildTcgSnapshot(
     else byKey.set(key, [p]);
   }
 
+  const byProductId = new Map<number, TcgProduct>();
+  for (const p of products) byProductId.set(p.productId, p);
+
   const unmatched: string[] = [];
   const nameRejected: string[] = [];
   const pairs: { card: RiftCard; product: TcgProduct }[] = [];
 
   for (const card of cards) {
+    // Promos carry their TCGplayer product id, so they join on it directly and
+    // skip both the collector-number key and the name check. Their numbers are
+    // ambiguous by construction (see RiftCard.tcgProductId), so number matching
+    // would be actively wrong for them.
+    if (card.tcgProductId != null) {
+      const direct = byProductId.get(card.tcgProductId);
+      if (direct) pairs.push({ card, product: direct });
+      else unmatched.push(`${card.setCode} ${card.collectorLabel} ${card.name} (product ${card.tcgProductId} gone)`);
+      continue;
+    }
+
     const hits = byKey.get(cardKey(card));
     if (!hits?.length) {
       unmatched.push(`${card.setCode} ${card.collectorLabel} ${card.name}`);

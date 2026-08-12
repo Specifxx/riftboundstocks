@@ -26,7 +26,7 @@ export const DOMAIN_KEYS = Object.keys(DOMAINS) as DomainKey[];
 export const CARD_TYPES = ["Unit", "Spell", "Gear", "Rune", "Battlefield", "Legend"] as const;
 export type CardType = (typeof CARD_TYPES)[number];
 
-export type RarityKey = "Common" | "Uncommon" | "Rare" | "Epic" | "Showcase";
+export type RarityKey = "Common" | "Uncommon" | "Rare" | "Epic" | "Showcase" | "Promo";
 
 export interface RarityInfo {
   key: RarityKey;
@@ -43,6 +43,9 @@ export const RARITIES: Record<RarityKey, RarityInfo> = {
   Rare: { key: "Rare", label: "Rare", color: "#3b82f6", weight: 6 },
   Epic: { key: "Epic", label: "Epic", color: "#a855f7", weight: 16 },
   Showcase: { key: "Showcase", label: "Showcase", color: "#f5a524", weight: 34 },
+  // TCGplayer's own rarity for event and organized-play printings. Not a booster
+  // rarity — it says how the card was distributed, not how often it was pulled.
+  Promo: { key: "Promo", label: "Promo", color: "#e0679a", weight: 40 },
 };
 
 export const RARITY_KEYS = Object.keys(RARITIES) as RarityKey[];
@@ -51,8 +54,8 @@ export interface SetInfo {
   code: string;
   name: string;
   slug: string;
-  /** Core Set | Starter | Expansion — drives the "Set Types" filter on /sets. */
-  setType: "Core Set" | "Starter" | "Expansion";
+  /** Drives the "Set Types" filter on /sets. */
+  setType: "Core Set" | "Starter" | "Expansion" | "Promo";
   releasedOn: string;
   totalCards: number;
 }
@@ -65,6 +68,15 @@ export const SETS: SetInfo[] = [
   { code: "SFD", name: "Spirit Forged", slug: "spiritforged", setType: "Expansion", releasedOn: "2026-02-27", totalCards: 221 },
   { code: "UNL", name: "Unleashed", slug: "unleashed", setType: "Expansion", releasedOn: "2026-05-15", totalCards: 219 },
   { code: "VEN", name: "Vendetta", slug: "vendetta", setType: "Expansion", releasedOn: "2026-07-31", totalCards: 166 },
+  // Promo distributions. These are not booster sets — their cards are reprints
+  // of base-set cards handed out at events, so their collector numbers carry the
+  // BASE set's denominator (an OPP card numbered 013/298 is an Origins card).
+  // `totalCards` is therefore the observed count, not a printed set size.
+  // Names are TCGplayer's own setName strings, not inferences.
+  { code: "OPP", name: "Organized Play Promos", slug: "organized-play", setType: "Promo", releasedOn: "2025-10-31", totalCards: 0 },
+  { code: "PR", name: "Promotional Cards", slug: "promos", setType: "Promo", releasedOn: "2025-10-31", totalCards: 0 },
+  { code: "SGN", name: "Secret Garden", slug: "secret-garden", setType: "Promo", releasedOn: "2026-05-15", totalCards: 3 },
+  { code: "JDG", name: "Judge Promos", slug: "judge-promos", setType: "Promo", releasedOn: "2025-10-31", totalCards: 0 },
 ];
 
 export const SET_BY_CODE: Record<string, SetInfo> = Object.fromEntries(SETS.map((s) => [s.code, s]));

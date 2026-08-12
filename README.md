@@ -8,19 +8,24 @@ Sibling project to [RiftCompare](https://riftcompare.com); it shares that codeba
 
 ---
 
-## ⚠️ This build ships DEMO prices
+## What's real, and what isn't
 
 Read this before doing anything with the numbers on the site.
 
 | What | Real? |
 |---|---|
-| Card names, sets, collector numbers, rarities, domains, types, stats | ✅ Real — 950 cards, 4 sets |
-| Card artwork | ✅ Real — official art via the RiftScribe CDN |
-| **Prices and price history** | ❌ **Generated.** No TCGplayer key is configured |
+| Card names, sets, collector numbers, rarities, domains, types, stats | ✅ Real — 1,416 printings across 9 sets |
+| Card artwork | ✅ Real — RiftScribe CDN, plus TCGplayer product images for promos |
+| **Prices** | ✅ **Real TCGplayer Market and Listed Median, per printing** |
+| Sealed products | ✅ Real — 54 boxes, packs, decks, kits and bundles |
+| Rules and flavour text | ✅ Real — from TCGplayer's product data |
+| **Price history** | ⏳ Accumulates daily from the first import. TCGplayer publishes none, so it is **not** backfilled |
 | **Articles and authors** | ❌ **Invented.** All 13 articles are demo content; all 5 bylines are fictional personas |
-| Ability text, artist credits | ⛔ Not included — the site links to Riot's official card database rather than inventing them |
+| Artist credits | ⛔ Not published by either source — not guessed at |
 
-The demo prices come from `src/lib/prices/synthetic.ts`, a deterministic function of the card and the calendar date. Every surface that prints one of these figures renders `<DemoPricesNotice />`, and the disclaimers disappear automatically once `TCGPLAYER_PUBLIC_KEY` is set — see [Going live with real prices](#going-live-with-real-prices).
+Prices are imported from TCGplayer by `npm run prices:import` and committed to the repo. The **editorial is still invented** — 13 demo articles under 5 fictional bylines — and says so on every article, in the footer and on `/about`.
+
+A fresh clone with no imported data falls back to `src/lib/prices/synthetic.ts`, a generator, and every surface then renders a prominent demo-data warning. That switch is driven by the data itself (`PRICES_ARE_DEMO` in `lib/prices/demo-flag.ts`), not by an env var someone has to remember to set.
 
 ---
 
@@ -63,18 +68,31 @@ src/
     sitemap.ts, robots.ts
   components/             shared UI (Navbar, Ticker, PriceChart, CardTable, …)
   lib/
-    catalog.ts            the 950-card in-memory index
+    catalog.ts            the 1,416-printing in-memory index (RiftScribe + promos)
     riftbound.ts          domains, rarities, card types, sets, formats
     prices/
       source.ts           the PriceSource adapter interface
-      synthetic.ts        the demo generator (default)
-      tcgplayer.ts        live TCGplayer ingestion
+      live.ts             real prices, read from the committed snapshots
+      synthetic.ts        the generator, used only before the first import
+      tcgplayer.ts        TCGplayer ingestion (search + pricepoints)
+      sealed.ts           sealed product types + the ordered classifier
+      store.ts            the on-disk file shapes
       index.ts            public pricing API + movers/stats analytics
     content/              articles, fictional authors, editorial types
-  data/riftbound-cards.json   the bundled catalogue
+  data/
+    riftbound-cards.json  booster-set catalogue (RiftScribe)
+    promo-cards.json      OPP/PR/SGN/JDG printings (TCGplayer)
+    prices.json           today's quote per printing
+    price-history.json    one column per day — the chart series
+    card-details.json     product ids, rules text, flavour
+    sealed.json           54 sealed products
+    sealed-prices.json, sealed-history.json
 scripts/
-  build-catalog.ts        refresh the catalogue from RiftScribe
-  import-prices.ts        fetch TCGplayer prices → Postgres snapshots
+  build-catalog.ts        refresh booster-set cards from RiftScribe
+  build-promos.ts         build the promo catalogue from TCGplayer
+  build-sealed.ts         build the sealed catalogue from TCGplayer
+  import-prices.ts        daily: prices for every printing + sealed product
+  prisma-sink.ts          optional Postgres mirror
   gen-avatars.ts          regenerate author avatars
   smoke-pages.ts          route smoke test
 prisma/schema.prisma      optional snapshot storage
@@ -82,7 +100,7 @@ prisma/schema.prisma      optional snapshot storage
 
 ### Why there is no database by default
 
-950 cards is small enough that an in-process index beats a database round-trip on every page, and it means the site deploys to Vercel with zero infrastructure. Postgres becomes worth adding at exactly one point: when you want **real** daily snapshots to accumulate instead of being recomputed.
+1,416 printings is small enough that an in-process index beats a database round-trip on every page, and it means the site deploys to Vercel with zero infrastructure. **The repo is the price database**: the daily GitHub Action commits each snapshot, and the commit triggers a redeploy. Postgres becomes worth adding when the history file gets long enough that committing it daily stops being reasonable — the schema and the mirror script are already there.
 
 ### The pricing adapter
 
@@ -90,24 +108,31 @@ Every page reads prices through `src/lib/prices/index.ts` and never touches a ve
 
 ```ts
 export function activeSource(): PriceSource {
-  return syntheticSource;   // ← the one line that changes
+  return HAS_LIVE_PRICES ? liveSource : syntheticSource;
 }
 ```
 
-`PriceSource` (in `prices/source.ts`) exposes `history(card)` and `latest(card)`, returning `low`, `mid` (Average), `market`, `foil` and `foilMarket` in **integer USD cents**. Market price — not the lowest listing — is the headline figure, for the reason TCGEmpire's importer documents: the cheapest listing on a TCG marketplace is routinely a damaged or foreign-language copy.
+`PriceSource` exposes `history(card)` and `latest(card)`, returning `low`, `mid`, `market`, `foil` and `foilMarket` in **integer USD cents**. **Every field is nullable, and null never means zero** — it means TCGplayer has no price for that printing. Coercing it to 0 would sort the card to the top of "cheapest", drag down set totals and read as a real valuation.
 
-The generator is closed-form rather than a random walk, so pricing 950 cards for the movers tables costs two evaluations per card instead of generating every card's full history.
+### Two traps this codebase has already hit
 
-## Going live with real prices
+**`pricepoints` has no fallback.** The search payload's `marketPrice` is not printing-scoped: on a foil-only printing it *is* the foil price. Using it as a Normal fallback wrote foil prices into the Normal series for 624 of 1,170 cards. 626 printings are foil-only (most Showcase and alt-art cards), so a card with no Normal listing gets a null Normal price and rankings read through `primaryPrice()`.
 
-1. Provision Postgres (Neon is the path of least resistance) and set `DATABASE_URL`.
-2. `npm run db:push` — creates `Card` and `PriceSnapshot`.
-3. `npm run prices:import` — matches the catalogue against TCGplayer and writes one snapshot per printing per day. Re-running on the same day updates rather than duplicating.
-4. Schedule step 3 daily (Vercel Cron → an API route, or a GitHub Action).
-5. Point `activeSource()` at a Prisma-backed reader.
-6. Set `TCGPLAYER_PUBLIC_KEY`, which flips `PRICES_ARE_DEMO` to `false` and removes the demo disclaimers site-wide.
+**Promos are matched by product id, not collector number.** OPP draws from five base sets so numerators repeat, and the same card ships at several event tiers — `Annie - Dark Child 017/024` exists at $39.44, $1,850.00 and $2,210.34. `build-promos.ts` stores each printing's TCGplayer `productId` so the importer joins on it directly.
 
-**Do not do step 6 before steps 1–5 actually work** — that flag is the only thing standing between a visitor and generated numbers presented as real ones.
+## Refreshing prices
+
+```bash
+npm run prices:import     # ~5 min: every printing + all 54 sealed products
+```
+
+Runs daily via `.github/workflows/refresh-prices.yml`, which commits the diff. Re-running on the same day replaces that day's column rather than appending a second one, so the job is safe to retry.
+
+The importer **refuses to write** if fewer than half the cards price — a collapsed match rate means the endpoint changed shape, and overwriting good prices with near-nothing is worse than doing nothing.
+
+**Price history is not backfilled.** TCGplayer publishes no historical prices, so the series starts at the first import and grows a day at a time. Until two days exist, every change-based surface (movers, the ticker, `/interests`, the index chart) degrades to a labelled "most valuable" view rather than showing dashes or a fabricated baseline.
+
+Set `DATABASE_URL` to additionally mirror each snapshot into Postgres (`scripts/prisma-sink.ts`).
 
 ### TCGplayer terms
 
@@ -116,14 +141,18 @@ TCGplayer's pricing data is licensed, not public domain. Attribution is required
 ## Refreshing the catalogue
 
 ```bash
-npm run seed:catalog
+npm run seed:catalog   # booster-set cards, from RiftScribe
+npm run seed:promos    # OPP/PR/SGN/JDG printings, from TCGplayer
+npm run seed:sealed    # 54 sealed products, from TCGplayer
 ```
 
-Pulls the full card list from the [RiftScribe](https://riftscribe.gg) community API into `src/data/riftbound-cards.json`. Images stay on their CDN and are hot-linked — re-hosting hundreds of megabytes of Riot's artwork would be both wasteful and a far larger copyright ask than referencing it.
+RiftScribe carries only booster-set cards, so promos come from TCGplayer, which is also where their art comes from — for the ~22% of promos it has an image for. The rest borrow the **base card's** illustration, flagged with `borrowedArt` and labelled "Base-set art" in the UI, because a Metal or alt-art promo does not look like the card it reprints. 14 have no art at all and render a typed placeholder, never a broken image.
 
-If a **new set** appears, add it to `SETS` in `src/lib/riftbound.ts` and to `setFromTotal()` in `lib/prices/tcgplayer.ts`. Cards in an unknown set render without a set name or release date.
+If a **new set** appears, add it to `SETS` in `src/lib/riftbound.ts`, and its card total to `setFromTotal()` in `lib/prices/tcgplayer.ts` so promos of it can be placed.
 
-> Alt-art (`ogn-007a-298`) and Signature (`ogn-299-star-298`) printings share their base card's `collector_number` in the raw feed. `variantFromId()` in `catalog.ts` parses the token back out — without it, 156 cards collide and vanish from the index.
+> **The RiftScribe id is authoritative, not `collector_number`.** The feed's numeric field strips the R/T/SP prefix, so Vendetta's Fury Rune (`ven-r01`) and Baccai Sandspinner (`ven-001-166`) both arrive as number `1`. `parseId()` in `catalog.ts` recovers the real token — without it the rune is priced as the unit.
+
+> **The sealed classifier's rule order is load-bearing.** 22 of 54 products match more than one rule. `Origins - Sleeved Booster Pack Art Bundle [Set of 3]` contains "Bundle", "Sleeved Booster" *and* "Booster Pack"; reordering types a $58 collector item as a $6 pack. Don't alphabetise it.
 
 ## Theming
 

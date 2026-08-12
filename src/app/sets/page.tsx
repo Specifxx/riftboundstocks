@@ -9,7 +9,7 @@ import { DemoPricesNotice } from "@/components/Bits";
 export const metadata: Metadata = {
   title: "Riftbound Sets",
   description:
-    "Every Riftbound: League of Legends TCG set — Origins, Origins: Proving Grounds, Spirit Forged and Unleashed. Card counts, set values and market performance for each release.",
+    "Every Riftbound: League of Legends TCG set — Origins, Proving Grounds, Spirit Forged, Unleashed and Vendetta, plus the Organized Play, Judge and Secret Garden promo distributions. Card counts, set values and market performance for each.",
   alternates: { canonical: `${SITE_URL}/sets` },
 };
 

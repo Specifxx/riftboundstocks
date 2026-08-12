@@ -23,8 +23,9 @@
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { CARDS } from "../src/lib/catalog";
-import { buildTcgSnapshot, type TcgCardData } from "../src/lib/prices/tcgplayer";
+import { buildTcgSnapshot, fetchPricePoints, type TcgCardData } from "../src/lib/prices/tcgplayer";
 import { SERIES_ORDER, type PriceFile, type HistoryFile, type DetailsFile } from "../src/lib/prices/store";
+import type { SealedFile } from "../src/lib/prices/sealed";
 
 const path = (name: string) => fileURLToPath(new URL(`../src/data/${name}`, import.meta.url));
 
@@ -124,12 +125,73 @@ async function main() {
   );
   console.log(`Done in ${((Date.now() - started) / 1000).toFixed(0)}s.`);
 
+  await importSealed(day);
+
   if (process.env.DATABASE_URL) {
     console.log("\nDATABASE_URL is set — mirroring the snapshot to Postgres…");
     const { writeSnapshotToPrisma } = await import("./prisma-sink");
     await writeSnapshotToPrisma(day, data);
   }
 }
+
+/**
+ * Prices for the 54 sealed products.
+ *
+ * Same pricepoints call as the singles, and for the same reason: the search
+ * payload returns `medianPrice: null` for every sealed product, so a real "Mid"
+ * series only exists through the per-product endpoint. `low` is deliberately NOT
+ * stored — the lowest sealed listing is routinely nonsense (a $12 "Vendetta
+ * Booster Display" against a $160 market, a $2,039 Pre-Rift Event Kit against
+ * $275), so market is the only figure worth publishing here.
+ */
+async function importSealed(day: string) {
+  const catalogue = readJson<SealedFile>("sealed.json", { updatedAt: "", products: [] });
+  if (catalogue.products.length === 0) {
+    console.log("\nNo sealed catalogue — run `npm run seed:sealed` first. Skipping sealed prices.");
+    return;
+  }
+
+  console.log(`\nPricing ${catalogue.products.length} sealed products…`);
+  const prices: PriceFile = { day, fetchedAt: new Date().toISOString(), source: "tcgplayer", cards: {} };
+  let priced = 0;
+
+  for (const p of catalogue.products) {
+    const points = await fetchPricePoints(p.productId);
+    const normal = points?.find((x) => x.printingType === "Normal");
+    const market = normal?.marketPrice == null ? null : Math.round(normal.marketPrice * 100);
+    const mid = normal?.listedMedianPrice == null ? null : Math.round(normal.listedMedianPrice * 100);
+    if (market == null && mid == null) continue;
+    // Same tuple shape as the singles, so the charts and movers components work
+    // on sealed with no changes. Foil is meaningless for a box.
+    prices.cards[String(p.productId)] = [null, mid, market, null, null];
+    priced++;
+    await sleep(90);
+  }
+
+  writeFileSync(path("sealed-prices.json"), JSON.stringify(prices));
+
+  const history = readJson<HistoryFile>("sealed-history.json", { days: [], cards: {} });
+  let col = history.days.indexOf(day);
+  if (col === -1) {
+    history.days.push(day);
+    col = history.days.length - 1;
+  }
+  const width = history.days.length;
+  for (const key of Object.keys(prices.cards)) {
+    const row = (history.cards[key] ??= []);
+    while (row.length < width) row.push(null);
+    row[col] = prices.cards[key];
+  }
+  for (const [key, row] of Object.entries(history.cards)) {
+    while (row.length < width) row.push(null);
+    if (!(key in prices.cards)) row[col] = null;
+  }
+  writeFileSync(path("sealed-history.json"), JSON.stringify(history));
+
+  console.log(`  priced ${priced}/${catalogue.products.length} sealed products.`);
+}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 main().catch((e) => {
   console.error(e);

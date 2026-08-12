@@ -48,7 +48,8 @@ jobs:
         run: |
           git config user.name "riftboundstocks-bot"
           git config user.email "actions@github.com"
-          git add src/data/prices.json src/data/price-history.json src/data/card-details.json
+          git add src/data/prices.json src/data/price-history.json src/data/card-details.json \
+                  src/data/sealed-prices.json src/data/sealed-history.json
           # The importer exits non-zero rather than writing a bad snapshot, so
           # reaching here with no diff means prices genuinely didn't move.
           if git diff --cached --quiet; then

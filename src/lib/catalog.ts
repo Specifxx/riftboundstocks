@@ -7,6 +7,7 @@
 // The raw file is the SAME artefact TCGEmpire ships at prisma/riftbound-cards.json,
 // refreshed by scripts/build-catalog.ts (the ported image/catalogue ingestion).
 import raw from "@/data/riftbound-cards.json";
+import promos from "@/data/promo-cards.json";
 import { SET_BY_CODE, type CardType, type DomainKey, type RarityKey } from "./riftbound";
 import { normalizeSearch } from "./format";
 
@@ -43,7 +44,29 @@ export interface RiftCard {
    * "R01", "T03", "SP1"). This — not `collectorNumber` — is the pricing join key.
    */
   numberToken: string;
-  kind: "base" | "token" | "rune" | "special";
+  kind: "base" | "token" | "rune" | "special" | "promo";
+  /**
+   * TCGplayer product id, when the catalogue already knows it.
+   *
+   * Set for PROMO printings, which come from TCGplayer itself. It bypasses
+   * collector-number matching entirely — and it has to, because promo numbers
+   * collide badly: OPP draws from five base sets so numerators repeat, and the
+   * same card ships at several event tiers ("Annie - Dark Child 017/024" exists
+   * at $39, $1,850 and $2,210). A key that ignored the tier would publish a 56×
+   * wrong price. Base-set cards leave this undefined and match by number.
+   */
+  tcgProductId?: number;
+  /** Promos only: the set this card was originally printed in, from the denominator. */
+  baseSetCode?: string;
+  /** Promos only: event tier / finish, e.g. "Metal (Prize Wall)". */
+  treatment?: string;
+  /**
+   * True when `imageUrl` is the BASE card's art rather than a picture of this
+   * printing. TCGplayer has images for only 22% of OPP promos, so the rest
+   * borrow the base-set illustration — which is the same picture for a straight
+   * reprint but NOT for a Metal or alt-art promo. The UI must say so.
+   */
+  borrowedArt?: boolean;
   /**
    * Alt-art / Showcase suffix from the printing's id ("a" in "ogn-007a-298"),
    * null for the base art. The raw feed's `collector_number` drops this letter,
@@ -176,7 +199,10 @@ function normalise(c: RawCard): RiftCard {
   };
 }
 
-export const CARDS: RiftCard[] = (raw as RawCard[]).map(normalise);
+// Promo printings (OPP/PR/SGN/JDG) come from TCGplayer rather than RiftScribe,
+// which carries only booster-set cards. Built by scripts/build-promos.ts and
+// already in RiftCard shape, so they simply join the catalogue.
+export const CARDS: RiftCard[] = [...(raw as RawCard[]).map(normalise), ...(promos as unknown as RiftCard[])];
 
 const BY_SLUG = new Map(CARDS.map((c) => [c.slug, c]));
 const BY_ID = new Map(CARDS.map((c) => [c.id, c]));

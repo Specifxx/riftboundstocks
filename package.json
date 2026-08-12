@@ -14,7 +14,9 @@
     "prices:import": "tsx scripts/import-prices.ts",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
-    "smoke": "tsx scripts/smoke-pages.ts"
+    "smoke": "tsx scripts/smoke-pages.ts",
+    "seed:promos": "tsx scripts/build-promos.ts",
+    "seed:sealed": "tsx scripts/build-sealed.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
