@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { CARDS, cardBySlug, otherPrintings } from "@/lib/catalog";
 import { activeSource, cardStats, priceHistory, latestQuote } from "@/lib/prices";
 import { tcgSearchUrl } from "@/lib/prices/tcgplayer";
+import { affiliateUrl, outboundRel, riftcompareCardUrl } from "@/lib/affiliate";
 import { FORMATS, SET_BY_CODE, domainInfo } from "@/lib/riftbound";
 import { formatMoney, formatDate } from "@/lib/format";
 import { OFFICIAL_CARD_DB_URL, SITE_NAME, SITE_URL } from "@/lib/site";
@@ -12,6 +13,7 @@ import { PriceChart } from "@/components/PriceChart";
 import { CardActions } from "@/components/CardActions";
 import { AltCurrencyCell, AltCurrencyHeader, Money } from "@/components/Prefs";
 import { Delta, DemoPricesNotice, DomainPill, RarityPill } from "@/components/Bits";
+import { AffiliateDisclosure } from "@/components/AffiliateDisclosure";
 
 // Pre-render the most valuable cards at build time and stream the rest on first
 // request. Building all 950 would triple build time for pages nobody opens.
@@ -234,9 +236,9 @@ export default function CardPage({ params }: { params: { slug: string } }) {
                         className={`num text-[15px] font-bold ${isFoil ? "text-foil" : "text-ink"}`}
                       />
                       <a
-                        href={tcgSearchUrl(card.name)}
+                        href={affiliateUrl(tcgSearchUrl(card.name), "card-prices", `/card/${card.slug}`)}
                         target="_blank"
-                        rel="noopener noreferrer sponsored"
+                        rel={outboundRel()}
                         className="shrink-0 rounded-md border border-line px-2 py-1 text-[11px] font-semibold text-accent hover:border-accent"
                       >
                         Buy →
@@ -245,10 +247,23 @@ export default function CardPage({ params }: { params: { slug: string } }) {
                   ),
                 )}
               </ul>
-              <p className="mt-3 text-[11px] leading-relaxed text-ink-dim">
-                Outbound links go to TCGplayer search. They are marked{" "}
-                <code className="font-mono text-[10px]">rel=&quot;sponsored&quot;</code> so they are honest about being
-                affiliate-ready, though no affiliate tag is attached in this build.
+
+              {/* Immediately under the links it describes — see the placement
+                  rules in AffiliateDisclosure. */}
+              <AffiliateDisclosure className="mt-3 border-t border-line pt-2.5" />
+
+              {/* The sister site covers what this one doesn't: live store prices
+                  in six markets, where this page is TCGplayer history only. */}
+              <p className="mt-2 text-[11px] leading-relaxed text-ink-dim">
+                Shopping outside the US?{" "}
+                <a
+                  href={riftcompareCardUrl(card.name, "card-prices")}
+                  target="_blank"
+                  rel="noopener"
+                  className="font-semibold text-accent hover:underline"
+                >
+                  Compare {card.name} across AU, NZ, UK, SG and CA stores on RiftCompare →
+                </a>
               </p>
             </section>
 

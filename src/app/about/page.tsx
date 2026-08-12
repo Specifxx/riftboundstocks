@@ -5,6 +5,7 @@ import { ARTICLES } from "@/lib/content/articles";
 import { CARDS } from "@/lib/catalog";
 import { SETS } from "@/lib/riftbound";
 import { CONTACT_EMAIL, OFFICIAL_CARD_DB_URL, PRICES_ARE_DEMO, SITE_NAME, SITE_URL } from "@/lib/site";
+import { riftcompareUrl } from "@/lib/affiliate";
 
 export const metadata: Metadata = {
   title: "About & Disclaimers",
@@ -77,6 +78,24 @@ export default function AboutPage() {
             from what any individual seller charges. TCGplayer is not affiliated with this site.
           </p>
         )}
+      </Section>
+
+      <Section id="affiliate" title="How this site makes money">
+        <p>
+          {SITE_NAME} is a <strong className="font-semibold text-ink">TCGplayer affiliate</strong>. Every &quot;Buy&quot;
+          link on the site is an affiliate link: if you buy after following one, we earn a commission — at no extra cost
+          to you. Those links are marked <code className="font-mono text-[13px] text-ink">rel=&quot;sponsored&quot;</code>{" "}
+          in the page source as well as being labelled on screen.
+        </p>
+        <p>
+          <strong className="font-semibold text-ink">Commission does not influence the data.</strong> There is only one
+          merchant here, so there is no ranking to bias — but the principle matters anyway: prices, movers and charts
+          are produced from the pricing data alone. Nothing is promoted, reordered or hidden because of what it pays.
+        </p>
+        <p>
+          Links to <a href={riftcompareUrl("", "about")} target="_blank" rel="noopener" className="text-accent hover:underline">RiftCompare</a>,
+          our sister site, are <em>not</em> affiliate links — it is run by the same people and pays nothing.
+        </p>
       </Section>
 
       <Section id="authors" title="The authors are fictional">

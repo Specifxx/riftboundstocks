@@ -104,10 +104,19 @@ export default function PrivacyPage() {
             happens after you leave.
           </p>
           <p>
-            Those links are marked <code className="font-mono text-[12px] text-ink">rel=&quot;sponsored&quot;</code>{" "}
-            because the site is built to support affiliate links, but{" "}
-            <strong className="font-semibold text-ink">no affiliate tag is attached in this build</strong> and no
-            commission is earned. TCGplayer is not affiliated with this site.
+            Those links are <strong className="font-semibold text-ink">affiliate links</strong>, marked{" "}
+            <code className="font-mono text-[12px] text-ink">rel=&quot;sponsored&quot;</code> and labelled on screen. They
+            route through Impact, TCGplayer&apos;s affiliate network, which redirects you to TCGplayer and records the
+            click so any resulting purchase can be credited to this site. Impact sees the click and applies its own
+            cookies at that point; neither this site nor Impact receives anything about you from us beyond the fact that
+            a link on a particular page was followed. We earn a commission on qualifying purchases at no extra cost to
+            you.
+          </p>
+          <p>
+            The site also links to <strong className="font-semibold text-ink">RiftCompare</strong>, a sister site run by
+            the same people. Those links are not affiliate links and earn nothing; they carry a{" "}
+            <code className="font-mono text-[12px] text-ink">ref</code> parameter purely so RiftCompare can see how many
+            visitors arrived from here. TCGplayer and Impact are not affiliated with this site.
           </p>
         </Section>
 

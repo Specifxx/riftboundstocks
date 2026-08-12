@@ -6,6 +6,9 @@ import { CardImage } from "./CardImage";
 import { Sparkline } from "./PriceChart";
 import { Money } from "./Prefs";
 import { Delta, DomainPill, RarityPill } from "./Bits";
+import { AffiliateDisclosure } from "./AffiliateDisclosure";
+import { affiliateUrl, outboundRel } from "@/lib/affiliate";
+import { tcgSearchUrl } from "@/lib/prices/tcgplayer";
 
 /** Embedded card panel: art, live prices and a 60-day sparkline. */
 function CardBlock({ slug, note }: { slug: string; note?: string }) {
@@ -57,8 +60,21 @@ function CardBlock({ slug, note }: { slug: string; note?: string }) {
                 </dd>
               </div>
             </dl>
-            <Sparkline points={spark} className="h-8 w-24 shrink-0" />
+            <div className="flex shrink-0 items-center gap-2.5">
+              <Sparkline points={spark} className="h-8 w-24" />
+              <a
+                href={affiliateUrl(tcgSearchUrl(card.name), "article-card", "/news")}
+                target="_blank"
+                rel={outboundRel()}
+                className="rounded-md border border-line px-2 py-1 text-[11px] font-semibold text-accent hover:border-accent"
+              >
+                Buy →
+              </a>
+            </div>
           </div>
+
+          {/* Adjacent to the link, per the placement rules in AffiliateDisclosure. */}
+          <AffiliateDisclosure className="mt-2" />
         </div>
       </div>
       {note && <figcaption className="mt-1.5 text-[12px] italic text-ink-dim">{note}</figcaption>}

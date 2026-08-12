@@ -8,6 +8,7 @@ import { PrefsProvider } from "@/components/Prefs";
 import { CookieNotice } from "@/components/CookieNotice";
 import { THEME_STORAGE_KEY } from "@/lib/currency";
 import { SITE_NAME, SITE_TAGLINE, SITE_URL } from "@/lib/site";
+import { IMPACT_SITE_VERIFICATION } from "@/lib/affiliate";
 
 // Body/UI: a clean humanist sans. Section titles: Oswald, a condensed grotesque
 // — the "financial broadsheet" voice the design calls for, and narrow enough
@@ -35,6 +36,11 @@ export const metadata: Metadata = {
   },
   twitter: { card: "summary_large_image" },
   robots: { index: true, follow: true },
+  // Impact needs a verification token in <head> to confirm this domain belongs
+  // to the partner account before TCGplayer commissions pay out. Omitted
+  // entirely until the token is configured — an empty meta tag verifies nothing
+  // and just looks like a bug.
+  ...(IMPACT_SITE_VERIFICATION ? { other: { "impact-site-verification": IMPACT_SITE_VERIFICATION } } : {}),
 };
 
 export const viewport: Viewport = {

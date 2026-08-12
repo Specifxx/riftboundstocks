@@ -2,6 +2,7 @@ import Link from "next/link";
 import { BrandLogo, BrandWordmark } from "./BrandLogo";
 import { SETS } from "@/lib/riftbound";
 import { CONTACT_EMAIL, PRICES_ARE_DEMO, SITE_NAME } from "@/lib/site";
+import { riftcompareUrl } from "@/lib/affiliate";
 
 const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
   {
@@ -66,6 +67,40 @@ export function Footer() {
                 </Link>
               ))}
             </div>
+
+            {/* Sister site. Complementary rather than competing: this site tracks
+                TCGplayer history, RiftCompare compares live store prices across
+                six markets. */}
+            <a
+              href={riftcompareUrl("", "footer-card")}
+              target="_blank"
+              rel="noopener"
+              className="mt-4 flex items-start gap-2.5 rounded-lg border border-line bg-surface-2 p-2.5 transition-colors hover:border-accent"
+            >
+              <span
+                className="mt-0.5 inline-block h-6 w-6 shrink-0"
+                style={{
+                  backgroundImage: "linear-gradient(in oklch, #34d17e, #1ea65c)",
+                  WebkitMaskImage: "url(/logo-r.png)",
+                  maskImage: "url(/logo-r.png)",
+                  WebkitMaskSize: "contain",
+                  maskSize: "contain",
+                  WebkitMaskRepeat: "no-repeat",
+                  maskRepeat: "no-repeat",
+                  WebkitMaskPosition: "center",
+                  maskPosition: "center",
+                }}
+                aria-hidden
+              />
+              <span className="min-w-0">
+                <span className="block text-[12.5px] font-semibold text-ink">
+                  RiftCompare <span className="text-ink-dim">— our sister site</span>
+                </span>
+                <span className="block text-[11.5px] leading-relaxed text-ink-muted">
+                  Compare live Riftbound singles prices across stores in AU, NZ, US, UK, SG and CA.
+                </span>
+              </span>
+            </a>
           </div>
 
           {COLUMNS.map((col) => (
@@ -102,6 +137,12 @@ export function Footer() {
             <strong className="font-semibold text-ink-muted">Pricing.</strong> Prices are sourced from TCGplayer and are
             provided for reference only — they are not offers to buy or sell, and they will differ from what any
             individual seller charges. TCGplayer is not affiliated with this site.
+          </p>
+          <p>
+            <strong className="font-semibold text-ink-muted">Affiliate disclosure.</strong> {SITE_NAME} is a TCGplayer
+            affiliate. Links to TCGplayer on this site are affiliate links, and we earn a commission from qualifying
+            purchases made through them — at no extra cost to you. Commission never influences which prices are shown
+            or how cards are ranked; the figures come from the pricing data, not from what pays.
           </p>
           {PRICES_ARE_DEMO && (
             <p>
