@@ -1,14 +1,15 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // DEMO PRICE DATA — NOT REAL MARKET PRICES.
 // ─────────────────────────────────────────────────────────────────────────────
-// Every number this file produces is generated. No TCGplayer key is wired up in
-// this build, so rather than ship empty charts the site renders a plausible
-// synthetic market. Nothing here is a real valuation, and every surface that
-// prints one of these figures carries the demo disclaimer (see PRICES_ARE_DEMO in
-// lib/site.ts and the DemoPricesNotice component).
+// Every number this file produces is generated. `npm run prices:import` has
+// never populated src/data/prices.json in this build, so rather than ship
+// empty charts the site renders a plausible synthetic market. Nothing here is
+// a real valuation, and every surface that prints one of these figures
+// carries the demo disclaimer (see PRICES_ARE_DEMO in lib/site.ts and the
+// DemoPricesNotice component).
 //
-// Swap it for real data with TCGPLAYER_PUBLIC_KEY — see ./tcgplayer.ts and
-// activeSource() in ./index.ts.
+// Swap it for real data by running `npm run prices:import` (needs no
+// credentials — see ./tcgplayer.ts) — see activeSource() in ./index.ts.
 //
 // CLOSED FORM, NOT A RANDOM WALK. Price on a day is a direct function of
 // (card id, day index) rather than the accumulation of every day before it. That

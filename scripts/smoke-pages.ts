@@ -31,6 +31,7 @@ function routes(): string[] {
     "/premium",
     "/login",
     "/signup",
+    "/portfolio",
     "/about",
     "/privacy",
     "/search?q=jinx",
