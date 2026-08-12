@@ -56,13 +56,6 @@ function DisabledNotice() {
           nowhere to store an account. The form below is disabled on purpose — nothing typed here is sent, stored or
           emailed. See <code className="font-mono text-[12px] text-ink">DEPLOYMENT.md</code> to enable it.
         </p>
-        <p className="mt-2 text-[13px] leading-relaxed text-ink-muted">
-          If you came from{" "}
-          <Link href="/premium" className="text-accent hover:underline">
-            Premium
-          </Link>
-          : that tier isn&apos;t purchasable regardless — there is no billing behind this site yet.
-        </p>
       </div>
       <form aria-describedby="signup-disabled" className="panel p-5">
         <fieldset disabled className="space-y-3 opacity-60">

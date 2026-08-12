@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { CARDS, type RiftCard } from "@/lib/catalog";
 import {
   movers,
@@ -178,22 +177,6 @@ export default function HomePage() {
               initialSort="now"
               pageSize={10}
             />
-          </div>
-
-          {/* Ad slot placeholder. Nothing is loaded here — there is no ad network
-              wired up, and the site currently sets no cookies at all. If one is
-              ever added, CookieNotice has to become a real consent gate first. */}
-          <div className="panel mt-4 flex flex-col items-center gap-2 border-dashed p-5 text-center">
-            <span className="eyebrow">Advertisement</span>
-            <p className="text-[13px] leading-relaxed text-ink-muted">
-              This slot is a placeholder — no ads are served on this build.
-            </p>
-            <Link
-              href="/premium"
-              className="mt-1 rounded-md bg-accent px-3 py-1.5 text-[12.5px] font-semibold text-accent-ink hover:opacity-90"
-            >
-              Remove ads with Premium
-            </Link>
           </div>
         </aside>
       </div>

@@ -37,14 +37,10 @@ export default async function LoginPage({ searchParams }: { searchParams: { next
         The whole site works without an account:{" "}
         <Link href="/browse" className="text-accent hover:underline">
           browse every card
-        </Link>
-        ,{" "}
+        </Link>{" "}
+        or{" "}
         <Link href="/analytics" className="text-accent hover:underline">
           read the market index
-        </Link>{" "}
-        or see{" "}
-        <Link href="/premium" className="text-accent hover:underline">
-          what Premium would add
         </Link>
         .
       </p>
