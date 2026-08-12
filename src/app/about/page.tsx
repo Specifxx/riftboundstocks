@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AUTHORS } from "@/lib/content/authors";
 import { ARTICLES } from "@/lib/content/articles";
+import { REPORTS } from "@/lib/content/reports";
 import { CARDS } from "@/lib/catalog";
 import { SETS } from "@/lib/riftbound";
 import { CONTACT_EMAIL, OFFICIAL_CARD_DB_URL, PRICES_ARE_DEMO, SITE_NAME, SITE_URL } from "@/lib/site";
@@ -100,7 +101,7 @@ export default function AboutPage() {
 
       <Section id="authors" title="The authors are fictional">
         <p>
-          The {AUTHORS.length} bylines on this site are{" "}
+          The {AUTHORS.filter((a) => !a.isDesk).length} human-looking bylines on this site are{" "}
           <strong className="font-semibold text-ink">invented personas</strong>. None of them is a real person, none is
           based on a real person, and no real writer&apos;s name, likeness, biography or work has been used. They exist
           so the article templates have something to render.
@@ -112,7 +113,7 @@ export default function AboutPage() {
           must not create.
         </p>
         <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-          {AUTHORS.map((a) => (
+          {AUTHORS.filter((a) => !a.isDesk).map((a) => (
             <li key={a.slug} className="flex items-center gap-2.5 rounded-lg border border-line bg-surface-1 p-2.5">
               <img src={a.avatar} alt="" width={36} height={36} className="h-9 w-9 shrink-0 rounded-full" />
               <span className="min-w-0">
@@ -124,11 +125,28 @@ export default function AboutPage() {
         </ul>
       </Section>
 
-      <Section title="The articles are demo content">
+      <Section id="editorial" title="Two kinds of article">
         <p>
-          All {ARTICLES.length} articles are illustrative. They discuss real cards, but the market activity, tournament
-          results and price movements they describe are invented, as is the analysis. Nothing published here is
-          journalism, investment advice, or a record of anything that happened.
+          The {ARTICLES.length} pieces under{" "}
+          <Link href="/news" className="text-accent hover:underline">
+            News
+          </Link>{" "}
+          are not all the same thing, and every card in that grid is badged so you never have to guess which you are
+          reading.
+        </p>
+        <p>
+          <strong className="font-semibold text-accent">Measured</strong> — {REPORTS.length} data reports. Every figure
+          in them was computed from the TCGplayer price snapshot on a stated date, and{" "}
+          <code className="font-mono text-[13px] text-ink">scripts/verify-reports.ts</code> re-derives all of them from
+          the source data before the site builds, failing the build if any has drifted. They are bylined to an automated
+          desk rather than a persona, because real analysis under an invented human byline would be worse than no byline
+          at all. They describe the market; they do not predict it, and they are not advice.
+        </p>
+        <p>
+          <strong className="font-semibold text-down">Demo</strong> — {ARTICLES.length - REPORTS.length} illustrative
+          pieces. They discuss real cards, but the market activity, tournament results and price movements they describe
+          are invented, as is the analysis, and their bylines are the fictional personas above. Nothing in them is a
+          record of anything that happened.
         </p>
       </Section>
 

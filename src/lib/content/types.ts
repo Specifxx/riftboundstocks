@@ -6,6 +6,7 @@
 // fictional personas (see ./authors.ts). Nothing here is journalism or advice.
 
 export const CATEGORIES = [
+  "Data Report",
   "Weekly Winners",
   "Meta Report",
   "Hidden Gems",
@@ -17,6 +18,7 @@ export type Category = (typeof CATEGORIES)[number];
 
 /** Category → accent colour for the label overlay on article cards. */
 export const CATEGORY_COLOR: Record<Category, string> = {
+  "Data Report": "#4da3ff",
   "Weekly Winners": "#3fb950",
   "Meta Report": "#4da3ff",
   "Hidden Gems": "#caa85a",
@@ -43,6 +45,18 @@ export type Block =
 
 export interface Article {
   slug: string;
+  /**
+   * A DATA REPORT: every figure in it was computed from the price snapshot on
+   * `asOf`, and scripts/verify-reports.ts re-derives them on every build.
+   *
+   * The distinction from the demo articles is not cosmetic. Those are invented
+   * — fictional bylines describing market events that never happened. These are
+   * arithmetic over real TCGplayer data. Mixing the two without a visible marker
+   * would let a reader take an invented claim for a measured one.
+   */
+  dataReport?: boolean;
+  /** Snapshot date the figures were computed from (yyyy-mm-dd). Data reports only. */
+  asOf?: string;
   title: string;
   category: Category;
   /** Author slug — see ./authors.ts. */

@@ -16,7 +16,8 @@
     "db:push": "prisma db push",
     "smoke": "tsx scripts/smoke-pages.ts",
     "seed:promos": "tsx scripts/build-promos.ts",
-    "seed:sealed": "tsx scripts/build-sealed.ts"
+    "seed:sealed": "tsx scripts/build-sealed.ts",
+    "verify:reports": "tsx scripts/verify-reports.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

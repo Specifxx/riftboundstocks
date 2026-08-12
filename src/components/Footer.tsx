@@ -156,11 +156,12 @@ export function Footer() {
             </p>
           )}
           <p>
-            <strong className="font-semibold text-down">Editorial is demo content.</strong> Every article on this site
-            is illustrative, and its byline is an{" "}
-            <strong className="font-semibold text-ink-muted">invented persona, not a real person</strong>. The analysis,
-            results and market events described in them did not happen. Nothing published here is journalism or
-            financial advice. See{" "}
+            <strong className="font-semibold text-down">Editorial.</strong> Articles marked{" "}
+            <strong className="font-semibold text-down">Demo</strong> are illustrative content under{" "}
+            <strong className="font-semibold text-ink-muted">invented personas, not real people</strong> — the analysis
+            and market events in them did not happen. Articles marked{" "}
+            <strong className="font-semibold text-accent">Measured</strong> are data reports whose figures are computed
+            from the price snapshot and re-derived from the source data on every build. Neither is financial advice. See{" "}
             <Link href="/about" className="text-accent hover:underline">
               About &amp; Disclaimers
             </Link>

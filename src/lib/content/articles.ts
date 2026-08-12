@@ -22,8 +22,9 @@
 // so the framing survives being deep-linked, syndicated or screenshotted.
 
 import type { Article, Category } from "./types";
+import { REPORTS } from "./reports";
 
-export const ARTICLES: Article[] = [
+const DEMO_ARTICLES: Article[] = [
   // ───────────────────────────────────────────────────────────── Weekly Winners
   {
     slug: "weekly-winners-showcase-legends-carry-a-thin-tape",
@@ -965,6 +966,14 @@ export const ARTICLES: Article[] = [
     ],
   },
 ];
+
+/**
+ * Every article on the site: the invented demo pieces above, plus the data
+ * reports in ./reports.ts whose figures are computed from the real price
+ * snapshot. `dataReport` distinguishes them, and the UI marks them — a reader
+ * must never have to guess which kind they are reading.
+ */
+export const ARTICLES: Article[] = [...DEMO_ARTICLES, ...REPORTS];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Lookup helpers

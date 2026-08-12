@@ -21,9 +21,26 @@ export interface Author {
   role: string;
   bio: string;
   avatar: string;
+  /**
+   * Not a person at all — the site's own automated desk.
+   *
+   * Data reports are arithmetic over the price snapshot, so attributing them to
+   * one of the invented personas below would be worse than the personas
+   * themselves: it would put real analysis under a fabricated human byline.
+   * This byline says plainly that a script wrote it.
+   */
+  isDesk?: boolean;
 }
 
 export const AUTHORS: Author[] = [
+  {
+    slug: "data-desk",
+    name: "RiftboundStocks Data Desk",
+    role: "Automated analysis",
+    bio: "Not a person. Data reports are generated from the daily TCGplayer price snapshot, and every figure in them is re-derived from the data by scripts/verify-reports.ts before the site builds. Where a number appears, it was measured — not estimated, and not written by hand.",
+    avatar: "/authors/data-desk.svg",
+    isDesk: true,
+  },
   {
     slug: "mira-castellan",
     name: "Mira Castellan",

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ARTICLES, articleBySlug, sortedArticles } from "@/lib/content/articles";
 import { authorOr } from "@/lib/content/authors";
 import { cardBySlug } from "@/lib/catalog";
+import { formatDate } from "@/lib/format";
 import { SITE_URL } from "@/lib/site";
 import { ArticleBody } from "@/components/ArticleBody";
 import { ArticleCard, AuthorByline, CategoryLabel } from "@/components/ArticleCard";
@@ -79,15 +80,33 @@ export default function ArticlePage({ params }: { params: { slug: string } }) {
               {author.name} <span className="ml-1 text-[12px] font-normal text-ink-dim">{author.role}</span>
             </p>
             <p className="mt-1 text-[13px] leading-relaxed text-ink-muted">{author.bio}</p>
-            <p className="mt-2 text-[12px] leading-relaxed text-ink-dim">
-              <strong className="font-semibold text-down">{author.name} is a fictional demo persona</strong> — not a
-              real person, and not based on one. This article is illustrative content written to populate the site, and
-              the prices, results and analysis in it are invented. See{" "}
-              <Link href="/about" className="text-accent hover:underline">
-                About &amp; Disclaimers
-              </Link>
-              .
-            </p>
+            {/* Two different disclosures, because these are two different kinds
+                of article. Applying the "fictional persona" line to a data report
+                would be false; applying the "measured" line to a demo article
+                would be far worse. */}
+            {author.isDesk ? (
+              <p className="mt-2 text-[12px] leading-relaxed text-ink-dim">
+                <strong className="font-semibold text-accent">This is a data report, not a written article.</strong>{" "}
+                Every figure in it was computed from the TCGplayer price snapshot of{" "}
+                {article.asOf ? formatDate(`${article.asOf}T00:00:00Z`) : "the day it was published"} and is re-derived
+                from the source data on every build. It describes the market rather than predicting it, and it is not
+                advice. See{" "}
+                <Link href="/about" className="text-accent hover:underline">
+                  About &amp; Disclaimers
+                </Link>
+                .
+              </p>
+            ) : (
+              <p className="mt-2 text-[12px] leading-relaxed text-ink-dim">
+                <strong className="font-semibold text-down">{author.name} is a fictional demo persona</strong> — not a
+                real person, and not based on one. This article is illustrative content written to populate the site, and
+                the prices, results and analysis in it are invented. See{" "}
+                <Link href="/about" className="text-accent hover:underline">
+                  About &amp; Disclaimers
+                </Link>
+                .
+              </p>
+            )}
           </div>
         </div>
       </aside>

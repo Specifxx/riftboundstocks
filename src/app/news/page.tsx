@@ -37,11 +37,11 @@ export default function NewsPage({ searchParams }: { searchParams: { category?: 
       <header className="mb-5">
         <h1 className="font-display text-3xl uppercase tracking-wide text-ink sm:text-4xl">News &amp; Articles</h1>
         <p className="mt-1.5 max-w-2xl text-[14px] leading-relaxed text-ink-muted">
-          Market commentary on the Riftbound singles market.{" "}
-          <strong className="font-semibold text-ink">
-            Every article here is demo content written by a fictional persona
-          </strong>{" "}
-          to show what the templates look like with copy in them — not real analysis. See{" "}
+          Two kinds of writing sit here, and every card says which it is.{" "}
+          <strong className="font-semibold text-accent">Measured</strong> pieces are data reports: every figure in them
+          is computed from the TCGplayer price snapshot and re-checked against the source data on every build.{" "}
+          <strong className="font-semibold text-down">Demo</strong> pieces are illustrative content written by fictional
+          personas to fill the templates — the market events they describe did not happen. See{" "}
           <Link href="/about" className="text-accent hover:underline">
             About &amp; Disclaimers
           </Link>
