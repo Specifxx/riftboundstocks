@@ -144,22 +144,17 @@ export default function PrivacyPage() {
           {ACCOUNTS_ENABLED ? (
             <>
               <p>
-                Creating an account stores your <strong className="font-semibold text-ink">email address</strong>,{" "}
-                <strong className="font-semibold text-ink">display name</strong>, and — if you set one —{" "}
-                a <strong className="font-semibold text-ink">password</strong>, which is never stored in plain text
-                (it&apos;s hashed with bcrypt; we cannot read it back, and neither could anyone who obtained the
-                database). Nothing else is collected: no address, no payment details, no phone number.
+                Accounts are <strong className="font-semibold text-ink">Google or Discord sign-in only</strong> —
+                there is no password to set or store. That provider authenticates you and hands us only your{" "}
+                <strong className="font-semibold text-ink">email address</strong>,{" "}
+                <strong className="font-semibold text-ink">display name</strong> and{" "}
+                <strong className="font-semibold text-ink">avatar image</strong> (whatever their consent screen told
+                you it would share), which we store against your account. We don&apos;t receive your Google or
+                Discord password, contacts, or anything beyond that basic profile. Nothing else is collected: no
+                address, no payment details, no phone number.
               </p>
               <p>
-                Signing in with <strong className="font-semibold text-ink">Google or Discord</strong> instead means we
-                never see a password at all — that provider authenticates you and hands us only your email, display
-                name and avatar image (whatever their consent screen told you it would share), which we store the same
-                way as an email/password account. We don&apos;t receive your Google or Discord password, contacts, or
-                anything beyond that basic profile.
-              </p>
-              <p>
-                Verifying an email or resetting a password uses a one-time link that expires in 1 hour and is deleted
-                the moment it&apos;s used. Staying signed in uses the single functional cookie described above — see{" "}
+                Staying signed in uses the single functional cookie described above — see{" "}
                 <Link href="#cookies" className="text-accent hover:underline">
                   Cookies
                 </Link>
@@ -183,8 +178,8 @@ export default function PrivacyPage() {
               <Link href="/signup" className="text-accent hover:underline">
                 sign up
               </Link>{" "}
-              forms are disabled and accept nothing, so there is no email address, password or profile anywhere. No
-              newsletter, no mailing list.
+              pages just say so, with no sign-in button to click, so there is no email address or profile stored
+              anywhere. No newsletter, no mailing list.
             </p>
           )}
           <p>

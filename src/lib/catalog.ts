@@ -247,18 +247,23 @@ export function allPrintings(card: RiftCard): RiftCard[] {
 }
 
 /**
- * Name search. Matches on the punctuation-stripped name so "kaisa" finds "Kai'Sa",
- * ranking prefix matches above substring matches so typing "jin" surfaces "Jinx"
- * before "Marauding Jinxblade".
+ * Name and collector-number search. Matches on the punctuation-stripped name so
+ * "kaisa" finds "Kai'Sa" and "jinxloosecannon" finds "Jinx, Loose Cannon", and
+ * separately on the raw collector label so "303" or "r01" finds a card by its
+ * printed number. Name-prefix matches rank above everything else, so typing
+ * "jin" surfaces "Jinx" before "Marauding Jinxblade" or a stray number hit.
  */
 export function searchCards(query: string, limit = 24): RiftCard[] {
   const q = normalizeSearch(query);
   if (!q) return [];
+  // Unstripped (just trimmed + lowercased): collector labels carry meaningful
+  // punctuation ("001/298", "R01") that normalizeSearch would flatten away.
+  const numberQuery = query.trim().toLowerCase();
   const starts: RiftCard[] = [];
   const contains: RiftCard[] = [];
   for (const c of CARDS) {
     if (c.nameNormalized.startsWith(q)) starts.push(c);
-    else if (c.nameNormalized.includes(q)) contains.push(c);
+    else if (c.nameNormalized.includes(q) || c.collectorLabel.toLowerCase().includes(numberQuery)) contains.push(c);
     if (starts.length >= limit) break;
   }
   return [...starts, ...contains].slice(0, limit);
