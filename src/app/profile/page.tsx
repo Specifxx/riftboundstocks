@@ -4,7 +4,9 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { LogoutButton, ResendVerifyButton } from "@/components/ProfileActions";
+import { ApiKeysPanel } from "@/components/ApiKeysPanel";
 import { SITE_NAME } from "@/lib/site";
+import { planLimits } from "@/lib/plans";
 
 export const metadata: Metadata = { title: "Profile", robots: { index: false, follow: true } };
 
@@ -16,8 +18,9 @@ export default async function ProfilePage() {
 
   const account = await prisma.user.findUnique({
     where: { id: user.id },
-    select: { googleId: true, discordId: true, passwordHash: true, createdAt: true },
+    select: { googleId: true, discordId: true, passwordHash: true, createdAt: true, planTier: true },
   });
+  const limits = planLimits(account?.planTier);
 
   const methods = [
     { label: "Password", on: !!account?.passwordHash },
@@ -92,6 +95,18 @@ export default async function ProfilePage() {
           .
         </p>
       </div>
+
+      <div className="panel mt-4 flex items-center justify-between p-5">
+        <div>
+          <h2 className="eyebrow">Plan</h2>
+          <p className="mt-1 text-[14px] font-semibold text-ink">{limits.label}</p>
+        </div>
+        <Link href="/premium" className="rounded-md border border-line px-3 py-1.5 text-[12.5px] font-semibold text-accent hover:border-accent">
+          {limits.tier === "FREE" ? "Upgrade" : "Manage plan"}
+        </Link>
+      </div>
+
+      <ApiKeysPanel eligible={limits.publicApi} />
 
       <p className="mt-4 text-center text-[12px] leading-relaxed text-ink-dim">
         {SITE_NAME} stores your email, display name and how you signed in — nothing else. See{" "}

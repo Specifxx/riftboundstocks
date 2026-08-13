@@ -19,13 +19,6 @@ const nextConfig = {
       },
     ];
   },
-  async redirects() {
-    return [
-      // Premium is pulled for now (no billing behind it yet) — temporary (307)
-      // rather than a 404/410, since the page was indexed and may be bookmarked.
-      { source: "/premium", destination: "/", permanent: false },
-    ];
-  },
 };
 
 module.exports = nextConfig;
