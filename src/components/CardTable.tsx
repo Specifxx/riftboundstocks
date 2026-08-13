@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Money } from "./Prefs";
+import { Money, usePrefs } from "./Prefs";
 import { DeltaArrow, DomainPill, RarityPill } from "./Bits";
+import { convert } from "@/lib/currency";
+import { formatMoney } from "@/lib/format";
 
 /**
  * One row of a card table. Deliberately a flat, serialisable shape rather than a
@@ -60,6 +62,7 @@ export function CardTable({
   const [sort, setSort] = useState<SortKey>(initialSort);
   const [dir, setDir] = useState<"asc" | "desc">(initialDir);
   const [shown, setShown] = useState(pageSize);
+  const { currency } = usePrefs();
 
   const sorted = useMemo(() => {
     const mul = dir === "asc" ? 1 : -1;
@@ -203,6 +206,12 @@ export function CardTable({
                 {columns.includes("pct") && (
                   <td className="py-1.5 text-right">
                     <DeltaArrow pct={r.pct ?? null} />
+                    {r.now != null && r.then != null && (
+                      <span className="num block text-[10.5px] text-ink-dim">
+                        {r.now >= r.then ? "+" : "−"}
+                        {formatMoney(convert(Math.abs(r.now - r.then), currency), currency)}
+                      </span>
+                    )}
                   </td>
                 )}
               </tr>

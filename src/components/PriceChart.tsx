@@ -20,9 +20,9 @@ const W_DEFAULT = 900;
 const NAV_H = 52;
 
 const QUICK_RANGES = [
-  { key: "1M", days: 30 },
-  { key: "3M", days: 91 },
-  { key: "6M", days: 182 },
+  { key: "7D", days: 7 },
+  { key: "30D", days: 30 },
+  { key: "90D", days: 90 },
   { key: "1Y", days: 365 },
   { key: "ALL", days: Infinity },
 ] as const;

@@ -10,8 +10,19 @@
 // key, CORS-open by design. See DATA_INTEGRATION.md for the full contract,
 // including the join-key story below.
 
-import { cache } from "react";
+import * as React from "react";
 import type { RiftCard } from "@/lib/catalog";
+
+// React's `cache()` is only wired up under Next's own module resolution (it
+// aliases "react" to a build that exports it for Server Components); a bare
+// `import { cache } from "react"` throws "is not a function" the moment this
+// module loads outside Next — which every tsx-run script under scripts/
+// does, since lib/prices/index.ts re-exports from this file. Feature-detect
+// instead of hard-importing: identical de-duping inside the Next app, and a
+// same-shape passthrough (no request memoisation, which no script here needs)
+// when run standalone.
+const cache: <T extends (...args: never[]) => unknown>(fn: T) => T =
+  typeof (React as { cache?: unknown }).cache === "function" ? (React as unknown as { cache: typeof cache }).cache : (fn) => fn;
 
 const API_BASE = (process.env.RIFTCOMPARE_API_URL || "https://riftcompare.com/api/v1").replace(/\/$/, "");
 const MARKET = "US"; // this site is USD-only; see DATA_INTEGRATION.md's currency section.

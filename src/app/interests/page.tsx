@@ -124,6 +124,7 @@ export default function InterestsPage({ searchParams }: { searchParams: Query })
 
   const daily = split(1);
   const weekly = split(7);
+  const monthly = split(30);
   const today = new Date();
 
   const qs = (key: SeriesKey) => {
@@ -203,6 +204,16 @@ export default function InterestsPage({ searchParams }: { searchParams: Query })
         subtitle={`${seriesLabel} price, 7-day change`}
         gainers={weekly.gainers}
         losers={weekly.losers}
+        seriesLabel={seriesLabel}
+      />
+      )}
+
+      {HAS_CHANGE_DATA && (
+      <MoverSection
+        title="Since last month"
+        subtitle={`${seriesLabel} price, 30-day change`}
+        gainers={monthly.gainers}
+        losers={monthly.losers}
         seriesLabel={seriesLabel}
       />
       )}
