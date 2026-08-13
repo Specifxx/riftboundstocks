@@ -94,8 +94,8 @@ model PriceSnapshot {
 }
 
 /// An account. Mirrors the shape of TCGEmpire's User model, minus everything
-/// this site has no feature for yet (wallet, marketplace, Premium billing) —
-/// just enough to sign in and prove an email address.
+/// this site has no feature for yet (wallet, marketplace) — just enough to
+/// sign in, prove an email address, and (below) hold a plan tier.
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
@@ -112,12 +112,44 @@ model User {
   discordId     String?
   createdAt     DateTime  @default(now())
 
+  /// "FREE" | "PLUS" | "PRO" | "STORE" — see lib/plans.ts for what each tier
+  /// unlocks. A plain string, not a Prisma enum: every other loosely-typed
+  /// field in this schema (condition, source) follows the same pattern, and it
+  /// keeps a future tier addition a data change, not a migration. Billing is
+  /// NOT wired up yet — see PLANS in lib/plans.ts for the TODO(config).
+  planTier String @default("FREE")
+
   authTokens  AuthToken[]
   priceAlerts PriceAlert[]
   collection  CollectionCard[]
+  apiKeys     ApiKey[]
 
   @@index([googleId])
   @@index([discordId])
+}
+
+/// A key for the public read-only API (see src/app/api/v1/*, docs/API.md).
+/// One user can hold several (e.g. one per integration); each is independently
+/// revocable. Gated by plan tier at request time (lib/plans.ts), not by a
+/// separate flag here, so upgrading a plan doesn't require reissuing keys.
+model ApiKey {
+  id         String    @id @default(cuid())
+  userId     String
+  /// SHA-256 hex of the actual key. The plaintext key is shown once at
+  /// creation and never stored — same principle as a password hash, because a
+  /// leaked database must not hand out working API access.
+  keyHash    String    @unique
+  /// Last 6 characters of the plaintext, so a user can tell keys apart in a
+  /// list without either of them being able to reconstruct the full key.
+  keySuffix  String
+  label      String
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 /// A "notify me when this card's price drops" watch. Compared against the
@@ -133,6 +165,16 @@ model PriceAlert {
   /// key into the Card model, since every page already resolves a card that way.
   cardId         String
   lastPriceCents Int?
+  /// Optional target price. Null (the CardActions "Watch" button's default)
+  /// keeps the original behaviour: notify on ANY drop from lastPriceCents.
+  /// Set from the /alerts management UI to notify on a specific crossing
+  /// instead — see direction below and the edge-detection logic in
+  /// lib/price-alerts.ts, which fires once per crossing, not once per day
+  /// the price happens to still be past the target.
+  targetCents    Int?
+  /// "below" (default) = notify when price drops to/under targetCents;
+  /// "above" = notify when it rises to/over it. Ignored when targetCents is null.
+  direction      String    @default("below")
   unsubToken     String    @unique
   createdAt      DateTime  @default(now())
   lastNotifiedAt DateTime?
