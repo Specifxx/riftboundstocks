@@ -22,21 +22,3 @@ export function LogoutButton() {
   );
 }
 
-export function ResendVerifyButton() {
-  const [sent, setSent] = useState(false);
-  const [loading, setLoading] = useState(false);
-  return (
-    <button
-      disabled={loading || sent}
-      onClick={async () => {
-        setLoading(true);
-        await fetch("/api/auth/resend-verify", { method: "POST" }).catch(() => {});
-        setSent(true);
-        setLoading(false);
-      }}
-      className="text-[12px] font-semibold text-accent underline hover:opacity-80 disabled:no-underline disabled:opacity-60"
-    >
-      {sent ? "Sent — check your inbox" : loading ? "Sending…" : "Resend confirmation email"}
-    </button>
-  );
-}

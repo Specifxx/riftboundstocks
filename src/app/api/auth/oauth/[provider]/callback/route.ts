@@ -104,9 +104,11 @@ async function upsertOAuthUser(
 
   // Otherwise link to an existing account with the same email (the provider has
   // verified this email, so it's the same person). Security: if that account was
-  // NEVER email-verified yet has a password, the password was set without proving
-  // inbox ownership (a possible squatter) — discard it, since the OAuth provider is
-  // now the authority on this email. The real owner can set a fresh one via /forgot.
+  // NEVER email-verified yet has a password (from before this site went
+  // OAuth-only — email/password sign-up no longer exists, so no NEW row can
+  // ever set this), the password was set without proving inbox ownership (a
+  // possible squatter) — discard it, since the OAuth provider is now the
+  // authority on this email.
   const byEmail = await prisma.user.findUnique({ where: { email } });
   if (byEmail) {
     const user = await prisma.user.update({
