@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Block } from "@/lib/content/types";
 import { cardBySlug } from "@/lib/catalog";
-import { latestQuote, priceHistory, quoteDaysAgo, pctChange } from "@/lib/prices";
+import { latestQuote, priceHistory, quoteDaysAgo, pctChange, primaryPrice } from "@/lib/prices";
 import { CardImage } from "./CardImage";
 import { Sparkline } from "./PriceChart";
 import { Money } from "./Prefs";
@@ -16,7 +16,7 @@ function CardBlock({ slug, note }: { slug: string; note?: string }) {
   if (!card) return null;
 
   const q = latestQuote(card);
-  const pct = pctChange(q.market, quoteDaysAgo(card, 7).market);
+  const pct = pctChange(primaryPrice(q), primaryPrice(quoteDaysAgo(card, 7)));
   const spark = priceHistory(card)
     .slice(-60)
     .map((p) => p.market)
@@ -105,6 +105,7 @@ function CardTableBlock({ title, slugs }: { title: string; slugs: string[] }) {
         <tbody>
           {cards.map((c) => {
             const q = latestQuote(c);
+            const price = primaryPrice(q);
             return (
               <tr key={c.id} className="border-b border-line last:border-0">
                 <td className="px-2.5 py-1.5 sm:px-3.5">
@@ -119,10 +120,16 @@ function CardTableBlock({ title, slugs }: { title: string; slugs: string[] }) {
                   </Link>
                 </td>
                 <td className="px-1.5 py-1.5 text-right sm:px-2">
-                  <Money cents={q.market} className="num font-semibold text-ink" />
+                  <Money cents={price} className="num font-semibold text-ink" />
+                  {/* Headline price, so a foil-only printing (every Signature
+                      treatment) shows its foil market rather than a dash —
+                      same convention as the card page's "Other printings" table. */}
+                  {q.market == null && q.foilMarket != null && (
+                    <span className="ml-1 text-[10px] font-normal text-foil">foil</span>
+                  )}
                 </td>
                 <td className="px-2.5 py-1.5 text-right sm:px-3.5">
-                  <Delta pct={pctChange(q.market, quoteDaysAgo(c, 7).market)} className="text-[12px]" />
+                  <Delta pct={pctChange(price, primaryPrice(quoteDaysAgo(c, 7)))} className="text-[12px]" />
                 </td>
               </tr>
             );
