@@ -2,15 +2,26 @@
 // card's CURRENT headline price (the same real TCGplayer-backed price every
 // other page shows — see lib/prices' activeSource()/primaryPrice()) against
 // the baseline recorded last run, and emails a digest per subscriber for
-// anything that dropped. Run from /api/cron/price-alerts.
+// anything that qualifies. Run from /api/cron/price-alerts.
 //
-// The baseline always advances (up or down) so a later dip is measured
+// Two alert shapes share this one job:
+//   - targetCents null (the CardActions "Watch" button's default): fire on
+//     ANY drop from the baseline, same as the original behaviour.
+//   - targetCents set (from the /alerts management UI): fire once when the
+//     price CROSSES the target in `direction` — below means "drops to or
+//     under", above means "rises to or over". Edge-detected against the
+//     baseline so a card that sits past its target for a week notifies once,
+//     not once per day; if the price later moves back across the target, the
+//     next crossing notifies again.
+//
+// The baseline always advances (up or down) so a later move is measured
 // against the most recent price, not a stale one, and a card with no current
 // price is skipped for this run rather than treated as "dropped to zero".
 import { prisma } from "./db";
 import { cardById } from "./catalog";
 import { latestQuote, primaryPrice } from "./prices";
-import { sendPriceDropEmail, type PriceDropItem } from "./email";
+import type { PriceDropItem } from "./email";
+import { emailChannel } from "./alerts/delivery";
 import { SITE_URL } from "./site";
 
 export interface AlertRunSummary {
@@ -20,9 +31,25 @@ export interface AlertRunSummary {
   updated: number;
 }
 
+export function crossed(prev: number | null, current: number, target: number, direction: string): boolean {
+  const now = direction === "above" ? current >= target : current <= target;
+  if (!now) return false;
+  const was = prev == null ? false : direction === "above" ? prev >= target : prev <= target;
+  return !was; // only the transition into the qualifying side, not every day spent there
+}
+
 export async function runPriceAlerts(): Promise<AlertRunSummary> {
   const alerts = await prisma.priceAlert.findMany({
-    select: { id: true, userId: true, cardId: true, lastPriceCents: true, unsubToken: true, user: { select: { email: true } } },
+    select: {
+      id: true,
+      userId: true,
+      cardId: true,
+      lastPriceCents: true,
+      targetCents: true,
+      direction: true,
+      unsubToken: true,
+      user: { select: { email: true } },
+    },
   });
 
   const summary: AlertRunSummary = { alerts: alerts.length, drops: 0, emails: 0, updated: 0 };
@@ -40,7 +67,9 @@ export async function runPriceAlerts(): Promise<AlertRunSummary> {
     if (current == null) continue; // not currently priced — nothing to compare
 
     const prev = a.lastPriceCents;
-    if (prev != null && current < prev) {
+    const qualifies = a.targetCents != null ? crossed(prev, current, a.targetCents, a.direction) : prev != null && current < prev;
+
+    if (qualifies) {
       summary.drops++;
       notifiedIds.push(a.id);
       const item: PriceDropItem = {
@@ -48,7 +77,7 @@ export async function runPriceAlerts(): Promise<AlertRunSummary> {
         setCode: card.setCode,
         collectorLabel: card.collectorLabel,
         url: `${SITE_URL}/card/${card.slug}`,
-        oldCents: prev,
+        oldCents: prev ?? current,
         newCents: current,
       };
       const bucket = byEmail.get(a.user.email) ?? { token: a.unsubToken, items: [] };
@@ -60,10 +89,11 @@ export async function runPriceAlerts(): Promise<AlertRunSummary> {
   }
 
   // Sequential sends — daily volume here is small, and it stays gentle on the
-  // email provider's rate limits.
+  // email provider's rate limits. Email is the only delivery channel wired
+  // up today; see lib/alerts/delivery.ts for the SMS/Telegram/webhook stubs.
   for (const [email, { token, items }] of byEmail) {
     const unsubUrl = `${SITE_URL}/api/alerts/unsubscribe?token=${encodeURIComponent(token)}`;
-    const sent = await sendPriceDropEmail(email, items, unsubUrl);
+    const sent = await emailChannel.send(email, items, unsubUrl);
     if (sent) summary.emails++;
   }
 

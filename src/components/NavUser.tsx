@@ -110,6 +110,22 @@ function DesktopMenu({ user }: { user: MeUser }) {
             >
               Portfolio
             </Link>
+            <Link
+              href="/alerts"
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className="block px-3.5 py-2 text-[13px] font-semibold text-ink hover:bg-surface-2"
+            >
+              Alerts
+            </Link>
+            <Link
+              href="/premium"
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className="block px-3.5 py-2 text-[13px] font-semibold text-ink hover:bg-surface-2"
+            >
+              Premium
+            </Link>
           </div>
           <div className="border-t border-line py-1">
             <button
@@ -142,6 +158,9 @@ function MobileSignedIn({ user }: { user: MeUser }) {
       </Link>
       <Link href="/portfolio" className="rounded-md px-2.5 py-1.5 text-[13px] font-semibold text-ink-muted">
         Portfolio
+      </Link>
+      <Link href="/alerts" className="rounded-md px-2.5 py-1.5 text-[13px] font-semibold text-ink-muted">
+        Alerts
       </Link>
       <button onClick={signOut} className="rounded-md px-2.5 py-1.5 text-[13px] font-semibold text-ink-muted">
         Sign out
