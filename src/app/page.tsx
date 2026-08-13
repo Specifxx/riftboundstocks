@@ -18,6 +18,8 @@ import { ArticleCard } from "@/components/ArticleCard";
 import { CardTable, type CardRow } from "@/components/CardTable";
 import { Money } from "@/components/Prefs";
 import { Delta, DemoPricesNotice, HistoryNotice, SectionTitle } from "@/components/Bits";
+import { BrandLogo } from "@/components/BrandLogo";
+import { SITE_TAGLINE } from "@/lib/site";
 
 export const revalidate = 3600;
 
@@ -53,23 +55,23 @@ function MarketSummary() {
   const down = day.filter((m) => m.pct < 0).length;
 
   const items = [
-    { label: "Catalogue value", node: <Money cents={now} className="num text-xl font-bold text-ink" /> },
+    { label: "Catalogue value", node: <Money cents={now} className="num text-2xl font-bold text-ink" /> },
     {
       label: "Cards priced",
       node: (
-        <span className="num text-xl font-bold text-ink">
+        <span className="num text-2xl font-bold text-ink">
           {priced}
           <span className="ml-1 text-[13px] font-normal text-ink-dim">/ {CARDS.length}</span>
         </span>
       ),
     },
-    { label: "Sets", node: <span className="num text-xl font-bold text-ink">{SETS.length}</span> },
+    { label: "Sets", node: <span className="num text-2xl font-bold text-ink">{SETS.length}</span> },
     {
       label: HAS_CHANGE_DATA ? "7-day change" : "History",
       node: HAS_CHANGE_DATA ? (
-        <Delta pct={basketChange(7)} className="text-xl" />
+        <Delta pct={basketChange(7)} className="text-2xl" />
       ) : (
-        <span className="num text-xl font-bold text-ink">
+        <span className="num text-2xl font-bold text-ink">
           {HISTORY_LENGTH}
           <span className="ml-1 text-[13px] font-normal text-ink-dim">day{HISTORY_LENGTH === 1 ? "" : "s"}</span>
         </span>
@@ -78,7 +80,7 @@ function MarketSummary() {
     {
       label: "Up / down today",
       node: HAS_CHANGE_DATA ? (
-        <span className="num text-xl font-bold">
+        <span className="num text-2xl font-bold">
           <span className="text-up">{up}</span>
           <span className="mx-1 text-ink-dim">/</span>
           <span className="text-down">{down}</span>
@@ -90,14 +92,24 @@ function MarketSummary() {
   ];
 
   return (
-    <dl className="panel mb-6 grid grid-cols-2 gap-4 p-4 sm:grid-cols-3 lg:grid-cols-5">
-      {items.map((i) => (
-        <div key={i.label}>
-          <dt className="eyebrow">{i.label}</dt>
-          <dd className="mt-0.5">{i.node}</dd>
-        </div>
-      ))}
-    </dl>
+    <section className="relative mb-8 overflow-hidden rounded-2xl border border-line-strong bg-surface-1 shadow-raised">
+      {/* Oversized, faint mark watermark — the signature module this identity
+          is actually built around, so it gets its own visual weight rather
+          than reusing the generic `.panel` treatment every other card uses. */}
+      <BrandLogo className="pointer-events-none absolute -right-6 -top-8 h-40 w-40 opacity-[0.06] sm:h-48 sm:w-48" />
+      <div className="relative p-5 sm:p-7">
+        <p className="eyebrow text-accent">The Ledger</p>
+        <p className="mt-1 max-w-lg text-[13px] leading-relaxed text-ink-muted sm:text-sm">{SITE_TAGLINE}.</p>
+        <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-3 lg:grid-cols-5">
+          {items.map((i) => (
+            <div key={i.label}>
+              <dt className="eyebrow">{i.label}</dt>
+              <dd className="mt-1">{i.node}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+    </section>
   );
 }
 

@@ -2,6 +2,7 @@
 // source, so the demo/live switch happens in one place.
 
 import { CARDS, type RiftCard } from "@/lib/catalog";
+import { DOMAIN_KEYS, type DomainKey } from "@/lib/riftbound";
 import { syntheticSource, syntheticQuoteDaysAgo } from "./synthetic";
 import { HAS_LIVE_PRICES, HISTORY_DAYS, LIVE_FETCHED_AT, liveSource, liveQuoteDaysAgo, EMPTY_QUOTE } from "./live";
 import type { PriceQuote, PriceSnapshot, PriceSource, SeriesKey } from "./source";
@@ -255,6 +256,68 @@ export function trendingCards(limit = 4): Mover[] {
     .filter((m) => Math.abs(m.pct) > 1)
     .sort((a, b) => Math.abs(b.pct) - Math.abs(a.pct))
     .slice(0, limit);
+}
+
+// ── domain heat (replaces the ticker) ────────────────────────────────────────
+
+export interface DomainHeatEntry {
+  domain: DomainKey;
+  /** Average 1-day % move across priced cards in this domain. Null before HAS_CHANGE_DATA. */
+  avgPct: number | null;
+  /** Priced cards in this domain, not the full catalogue count. */
+  cardCount: number;
+  /** Sum of headline price across priced cards in this domain. */
+  totalValue: number;
+  /** Biggest single move in the domain today, for the tile's caption. */
+  topMover: Mover | null;
+}
+
+/**
+ * One row per Domain (Fury/Calm/Mind/Body/Chaos/Order — Colorless excluded,
+ * it isn't a Domain a card is IN, it's the absence of one), for the homepage
+ * "Domain Heat" board. Real aggregates over the same catalogue and price data
+ * every other page reads — nothing here is generated for the board itself.
+ *
+ * `avgPct` is null until HAS_CHANGE_DATA (two days of history) — the board
+ * still renders card counts and catalogue value on day one, just without a
+ * heat reading, the same "real data, honestly partial" rule as the ticker it
+ * replaces.
+ */
+export function domainHeat(): DomainHeatEntry[] {
+  type Bucket = { sumPct: number; nPct: number; count: number; value: number; top: Mover | null };
+  const buckets = new Map<DomainKey, Bucket>();
+  for (const key of DOMAIN_KEYS) buckets.set(key, { sumPct: 0, nPct: 0, count: 0, value: 0, top: null });
+
+  for (const card of CARDS) {
+    const b = buckets.get(card.domain);
+    if (!b) continue;
+    const v = primaryPrice(latestQuote(card));
+    if (v != null) {
+      b.count++;
+      b.value += v;
+    }
+  }
+
+  if (HAS_CHANGE_DATA) {
+    for (const m of movers("market", 1, 100)) {
+      const b = buckets.get(m.card.domain);
+      if (!b) continue;
+      b.sumPct += m.pct;
+      b.nPct++;
+      if (!b.top || Math.abs(m.pct) > Math.abs(b.top.pct)) b.top = m;
+    }
+  }
+
+  return DOMAIN_KEYS.filter((k) => k !== "Colorless").map((domain) => {
+    const b = buckets.get(domain)!;
+    return {
+      domain,
+      avgPct: HAS_CHANGE_DATA && b.nPct > 0 ? b.sumPct / b.nPct : null,
+      cardCount: b.count,
+      totalValue: b.value,
+      topMover: b.top,
+    };
+  });
 }
 
 export { EMPTY_QUOTE };
