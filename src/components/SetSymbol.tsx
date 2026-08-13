@@ -1,19 +1,23 @@
-import { SET_BY_CODE } from "@/lib/riftbound";
+import { SET_BY_CODE, type SetInfo } from "@/lib/riftbound";
 
 // Riot publishes no set-symbol asset this project can legitimately use, so each
-// set gets a generated monogram instead: its three-letter code on a per-set
-// colour. It reads as an icon in a list, and it is unambiguously ours rather
-// than an imitation of an official mark.
-const SET_COLOR: Record<string, string> = {
-  OGN: "#4da3ff",
-  OGS: "#8b8f9a",
-  SFD: "#a855f7",
-  UNL: "#3fb950",
+// set gets a generated monogram instead: its three-letter code on a colour keyed
+// by set type (the same grouping as the "Set Types" filter on /sets). Keying by
+// type rather than by individual code means every set — including ones added to
+// SETS after this file was last touched — gets a deliberate, consistent colour
+// instead of silently falling back to grey. Green/amber-green are avoided: the
+// site reserves green exclusively for price gains (see tailwind.config.ts).
+const SET_TYPE_COLOR: Record<SetInfo["setType"], string> = {
+  "Core Set": "#4da3ff",
+  Starter: "#22d3ee",
+  Expansion: "#a855f7",
+  Promo: "#f0b429",
 };
 
 export function SetSymbol({ code, size = 28 }: { code: string; size?: number }) {
-  const color = SET_COLOR[code] ?? "#8b8f9a";
-  const name = SET_BY_CODE[code]?.name ?? code;
+  const set = SET_BY_CODE[code];
+  const color = (set && SET_TYPE_COLOR[set.setType]) ?? "#8b8f9a";
+  const name = set?.name ?? code;
   return (
     <span
       role="img"
