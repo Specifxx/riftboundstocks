@@ -46,7 +46,7 @@ jobs:
 
       - name: Commit the day's snapshot
         run: |
-          git config user.name "riftboundstocks-bot"
+          git config user.name "riftledger-bot"
           git config user.email "actions@github.com"
           git add src/data/prices.json src/data/price-history.json src/data/card-details.json \
                   src/data/sealed-prices.json src/data/sealed-history.json
