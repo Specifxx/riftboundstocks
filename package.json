@@ -17,7 +17,8 @@
     "smoke": "tsx scripts/smoke-pages.ts",
     "seed:promos": "tsx scripts/build-promos.ts",
     "seed:sealed": "tsx scripts/build-sealed.ts",
-    "verify:reports": "tsx scripts/verify-reports.ts"
+    "verify:reports": "tsx scripts/verify-reports.ts",
+    "seed:icons": "tsx scripts/gen-icons.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
@@ -38,6 +39,7 @@
     "eslint-config-next": "^14.2.35",
     "postcss": "^8.5.15",
     "prisma": "^5.22.0",
+    "sharp": "^0.33.5",
     "tailwindcss": "^3.4.6",
     "tsx": "^4.16.2",
     "typescript": "^5.5.3"

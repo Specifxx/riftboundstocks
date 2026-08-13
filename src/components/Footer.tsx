@@ -36,7 +36,6 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
     title: "Site",
     links: [
       { label: "About & Disclaimers", href: "/about" },
-      { label: "Premium", href: "/premium" },
       { label: "Privacy", href: "/privacy" },
       { label: "Sitemap", href: "/sitemap.xml" },
     ],
@@ -61,7 +60,7 @@ export function Footer() {
                 <Link
                   key={s.code}
                   href={`/sets/${s.slug}`}
-                  className="rounded border border-line px-1.5 py-0.5 font-mono text-[10px] font-semibold text-ink-dim hover:border-line-strong hover:text-ink"
+                  className="inline-flex min-h-[32px] items-center rounded border border-line px-2 py-0.5 font-mono text-[10px] font-semibold text-ink-dim hover:border-line-strong hover:text-ink sm:min-h-0 sm:px-1.5"
                 >
                   {s.code}
                 </Link>
@@ -106,10 +105,15 @@ export function Footer() {
           {COLUMNS.map((col) => (
             <div key={col.title}>
               <h3 className="eyebrow mb-2.5">{col.title}</h3>
-              <ul className="space-y-1.5">
+              {/* On phones each link gets a 32px row so the list is tappable;
+                  desktop keeps the tighter 1.5 spacing. */}
+              <ul className="sm:space-y-1.5">
                 {col.links.map((l) => (
                   <li key={l.href}>
-                    <Link href={l.href} className="text-[13px] text-ink-muted hover:text-accent">
+                    <Link
+                      href={l.href}
+                      className="inline-flex min-h-[32px] items-center text-[13px] text-ink-muted hover:text-accent sm:min-h-0"
+                    >
                       {l.label}
                     </Link>
                   </li>

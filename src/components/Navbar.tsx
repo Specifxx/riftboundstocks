@@ -62,7 +62,6 @@ const NAV: NavItem[] = [
       { label: "All games →", href: riftcompareUrl("/games", "nav"), hint: "The full arcade on RiftCompare", external: true },
     ],
   },
-  { label: "Premium", href: "/premium" },
 ];
 
 export function Navbar() {
@@ -101,7 +100,8 @@ export function Navbar() {
   return (
     <nav ref={navRef} className="sticky top-0 z-40 border-b border-line bg-surface-1/95 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-[1400px] items-center gap-3 px-3 sm:px-5">
-        <Link href="/" className="flex shrink-0 items-center gap-2" aria-label="RiftboundStocks home">
+        {/* -mx-1/px-1 grows the touch target to 40px without moving the mark. */}
+        <Link href="/" className="-mx-1 flex h-10 shrink-0 items-center gap-2 px-1" aria-label="RiftboundStocks home">
           <BrandLogo className="h-7 w-7" />
           <span className="hidden sm:block">
             <BrandWordmark />

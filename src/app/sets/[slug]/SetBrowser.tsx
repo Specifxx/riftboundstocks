@@ -24,7 +24,7 @@ function Chip({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`rounded-md border px-2 py-1 text-[11.5px] font-semibold transition-colors ${
+      className={`inline-flex min-h-[34px] items-center rounded-md border px-2.5 py-1 text-[11.5px] font-semibold transition-colors sm:min-h-0 sm:px-2 ${
         active ? "border-transparent text-surface-0" : "border-line text-ink-dim hover:text-ink"
       }`}
       style={active ? { backgroundColor: color ?? "rgb(var(--accent))", color: "rgb(var(--accent-ink))" } : undefined}
@@ -100,7 +100,7 @@ export function SetBrowser({ rows }: { rows: CardRow[] }) {
                 key={v}
                 type="button"
                 onClick={() => setView(v)}
-                className={`rounded px-2.5 py-1 text-[11.5px] font-semibold capitalize ${
+                className={`inline-flex min-h-[32px] items-center rounded px-3 py-1 text-[11.5px] font-semibold capitalize sm:min-h-0 sm:px-2.5 ${
                   view === v ? "bg-surface-3 text-ink" : "text-ink-dim hover:text-ink"
                 }`}
               >

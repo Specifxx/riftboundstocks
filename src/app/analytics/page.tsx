@@ -205,12 +205,12 @@ export default function AnalyticsPage() {
   const first = points[0];
 
   const headline = [
-    { label: "Index level", value: <Money cents={latest?.market ?? null} className="num text-2xl font-bold text-accent" /> },
-    { label: "7 days", value: <Delta pct={indexChange(points, 7)} className="text-2xl" /> },
-    { label: "30 days", value: <Delta pct={indexChange(points, 30)} className="text-2xl" /> },
+    { label: "Index level", value: <Money cents={latest?.market ?? null} className="num text-lg font-bold text-accent sm:text-2xl" /> },
+    { label: "7 days", value: <Delta pct={indexChange(points, 7)} className="text-lg sm:text-2xl" /> },
+    { label: "30 days", value: <Delta pct={indexChange(points, 30)} className="text-lg sm:text-2xl" /> },
     {
       label: `${points.length} days`,
-      value: <Delta pct={first && latest ? pctChange(latest.market, first.market) : null} className="text-2xl" />,
+      value: <Delta pct={first && latest ? pctChange(latest.market, first.market) : null} className="text-lg sm:text-2xl" />,
     },
   ];
 
@@ -243,9 +243,12 @@ export default function AnalyticsPage() {
                   moves only when prices move.
                 </p>
               </div>
-              <dl className="flex flex-wrap gap-x-7 gap-y-2">
+              {/* Right-aligned only once it sits at the right of the header row.
+                  Wrapped onto its own rows on a phone, right alignment leaves
+                  each label floating over a value of a different width. */}
+              <dl className="grid grid-cols-2 gap-x-6 gap-y-3 sm:flex sm:flex-wrap sm:gap-x-7 sm:gap-y-2">
                 {headline.map((h) => (
-                  <div key={h.label} className="text-right">
+                  <div key={h.label} className="min-w-0 sm:text-right">
                     <dt className="eyebrow">{h.label}</dt>
                     <dd>{h.value}</dd>
                   </div>
@@ -275,23 +278,26 @@ export default function AnalyticsPage() {
                   today; the tracked line starts once there is a second day to plot it against.
                 </p>
               </div>
-              <dl className="flex flex-wrap gap-x-7 gap-y-2">
-                <div className="text-right">
+              {/* Right-aligned only once it sits at the right of the header row.
+                  Wrapped onto its own rows on a phone, right alignment leaves
+                  each label floating over a value of a different width. */}
+              <dl className="grid grid-cols-2 gap-x-6 gap-y-3 sm:flex sm:flex-wrap sm:gap-x-7 sm:gap-y-2">
+                <div className="min-w-0 sm:text-right">
                   <dt className="eyebrow">Index level</dt>
                   <dd>
-                    <Money cents={marketTotal} className="num text-2xl font-bold text-accent" />
+                    <Money cents={marketTotal} className="num text-lg font-bold text-accent sm:text-2xl" />
                   </dd>
                 </div>
-                <div className="text-right">
+                <div className="min-w-0 sm:text-right">
                   <dt className="eyebrow">Cards priced</dt>
-                  <dd className="num text-2xl font-bold text-ink">
+                  <dd className="num text-lg font-bold text-ink sm:text-2xl">
                     {priced}
                     <span className="text-[13px] font-normal text-ink-dim"> / {CARDS.length}</span>
                   </dd>
                 </div>
-                <div className="text-right">
+                <div className="min-w-0 sm:text-right">
                   <dt className="eyebrow">History</dt>
-                  <dd className="num text-2xl font-bold text-ink">
+                  <dd className="num text-lg font-bold text-ink sm:text-2xl">
                     {HISTORY_LENGTH} day{HISTORY_LENGTH === 1 ? "" : "s"}
                   </dd>
                 </div>
@@ -319,13 +325,13 @@ export default function AnalyticsPage() {
           Set Performance
         </SectionTitle>
         <Panel>
-          <div className="-mx-4 overflow-x-auto px-4">
-            <table className="w-full min-w-[640px] text-[13px]">
+          <div className="w-full">
+            <table className="w-full table-fixed text-[13px]">
               <thead>
                 <tr className="border-b border-line text-left text-ink-dim">
                   <th className="py-2 font-medium">Set</th>
-                  <th className="py-2 font-medium">Released</th>
-                  <th className="py-2 text-right font-medium">Cards</th>
+                  <th className="hidden py-2 font-medium md:table-cell">Released</th>
+                  <th className="hidden py-2 text-right font-medium sm:table-cell">Cards</th>
                   <th className="py-2 text-right font-medium">Median</th>
                   <th className="py-2 text-right font-medium">Set value</th>
                   {HAS_CHANGE_DATA && (
@@ -346,10 +352,10 @@ export default function AnalyticsPage() {
                       <span className="ml-2 font-mono text-[10.5px] text-ink-dim">{s.code}</span>
                       <span className="block text-[11px] text-ink-dim">{s.setType}</span>
                     </td>
-                    <td className="whitespace-nowrap py-2 text-ink-muted">
+                    <td className="hidden whitespace-nowrap py-2 text-ink-muted md:table-cell">
                       {formatDate(`${s.releasedOn}T00:00:00Z`)}
                     </td>
-                    <td className="num py-2 text-right text-ink-muted">
+                    <td className="num hidden py-2 text-right text-ink-muted sm:table-cell">
                       {s.cards}
                       {s.priced < s.cards && (
                         <span className="block text-[10.5px] text-ink-dim">{s.priced} priced</span>

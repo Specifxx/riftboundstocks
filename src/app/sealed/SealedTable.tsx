@@ -59,16 +59,26 @@ export function SealedTable({ rows }: { rows: SealedTableRow[] }) {
     setDir(NUMERIC.includes(key) ? "desc" : "asc");
   }
 
-  const Th = ({ label, sortKey, align = "left" }: { label: string; sortKey: SortKey; align?: "left" | "right" }) => (
+  const Th = ({
+    label,
+    sortKey,
+    align = "left",
+    cls = "",
+  }: {
+    label: string;
+    sortKey: SortKey;
+    align?: "left" | "right";
+    cls?: string;
+  }) => (
     <th
       scope="col"
       aria-sort={sort === sortKey ? (dir === "asc" ? "ascending" : "descending") : "none"}
-      className={`whitespace-nowrap py-2 font-medium ${align === "right" ? "text-right" : "text-left"}`}
+      className={`whitespace-nowrap py-2 font-medium ${align === "right" ? "text-right" : "text-left"} ${cls}`}
     >
       <button
         type="button"
         onClick={() => toggle(sortKey)}
-        className={`inline-flex items-center gap-1 hover:text-ink ${sort === sortKey ? "text-ink" : ""}`}
+        className={`-my-1.5 inline-flex items-center gap-1 py-1.5 hover:text-ink ${sort === sortKey ? "text-ink" : ""}`}
       >
         {label}
         <span aria-hidden className={sort === sortKey ? "text-accent" : "opacity-0"}>
@@ -79,13 +89,13 @@ export function SealedTable({ rows }: { rows: SealedTableRow[] }) {
   );
 
   return (
-    <div className="-mx-4 overflow-x-auto px-4">
-      <table className="w-full min-w-[620px] text-[13px]">
+    <div className="w-full">
+      <table className="w-full table-fixed text-[13px]">
         <thead>
           <tr className="border-b border-line text-ink-dim">
             <Th label="Product" sortKey="name" />
-            <Th label="Set" sortKey="set" />
-            <Th label="Type" sortKey="type" />
+            <Th label="Set" sortKey="set" cls="hidden sm:table-cell" />
+            <Th label="Type" sortKey="type" cls="hidden md:table-cell" />
             <Th label="Median" sortKey="mid" align="right" />
             <Th label="Market" sortKey="market" align="right" />
           </tr>
@@ -108,8 +118,8 @@ export function SealedTable({ rows }: { rows: SealedTableRow[] }) {
                   </span>
                 )}
               </td>
-              <td className="whitespace-nowrap py-2 text-ink-muted">{r.setName}</td>
-              <td className="whitespace-nowrap py-2 text-ink-muted">{r.typeLabel}</td>
+              <td className="hidden truncate py-2 pr-2 text-ink-muted sm:table-cell">{r.setName}</td>
+              <td className="hidden truncate py-2 pr-2 text-ink-muted md:table-cell">{r.typeLabel}</td>
               <td className="py-2 text-right">
                 <Money cents={r.mid} className="num text-ink-dim" />
               </td>

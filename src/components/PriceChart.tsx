@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { SERIES_KEYS, SERIES_META, type PriceSnapshot, type SeriesKey } from "@/lib/prices/source";
 import { convert } from "@/lib/currency";
-import { formatMoney } from "@/lib/format";
+import { formatMoney, formatMoneyCompact } from "@/lib/format";
 import { usePrefs } from "./Prefs";
 
 // Pure SVG + a thin pointer layer, no charting library — the same choice
@@ -11,11 +11,13 @@ import { usePrefs } from "./Prefs";
 // crosshair and a brush is less code than configuring a library to do it, and it
 // ships no extra kilobytes to every card page.
 
-const W = 900;
-const H = 300;
-const PAD = { l: 56, r: 14, t: 16, b: 26 };
+// The viewBox is measured from the container rather than fixed, so one SVG unit
+// is always one CSS pixel. With a hard 900-unit viewBox the chart still *drew*
+// correctly on a phone, but every label shrank with it — 10px axis text renders
+// at about 4px inside a 360px-wide box, which is unreadable. Measuring keeps
+// type at its stated size at every width.
+const W_DEFAULT = 900;
 const NAV_H = 52;
-const NAV_PAD = { l: 56, r: 14, t: 6, b: 14 };
 
 const QUICK_RANGES = [
   { key: "1M", days: 30 },
@@ -34,6 +36,27 @@ interface Props {
 export function PriceChart({ points, sources, activeSourceId }: Props) {
   const { currency } = usePrefs();
   const clipId = useId();
+  const sizeRef = useRef<HTMLDivElement>(null);
+  const [W, setW] = useState(W_DEFAULT);
+
+  useEffect(() => {
+    const el = sizeRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) => {
+      const w = Math.round(entry.contentRect.width);
+      if (w > 0) setW(w);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const narrow = W < 520;
+  // The y-axis gutter has to fit "US$1,903.53"; on a phone the labels are
+  // abbreviated instead so the plot keeps its width.
+  const H = narrow ? 220 : 300;
+  const PAD = { l: narrow ? 44 : 56, r: 12, t: 14, b: 22 };
+  const NAV_PAD = { l: PAD.l, r: PAD.r, t: 6, b: 14 };
+  const AXIS_FS = narrow ? 9 : 10;
 
   // Foil series are hidden by default: on most cards they sit several times
   // above the non-foil lines, and leaving them on squashes the three series a
@@ -82,10 +105,15 @@ export function PriceChart({ points, sources, activeSourceId }: Props) {
   const span = Math.max(1, max - min);
   const m = view.length;
 
-  const x = useCallback((i: number) => PAD.l + (m <= 1 ? 0 : (i / (m - 1)) * (W - PAD.l - PAD.r)), [m]);
-  const y = useCallback((v: number) => PAD.t + (1 - (v - min) / span) * (H - PAD.t - PAD.b), [min, span]);
+  const x = useCallback((i: number) => PAD.l + (m <= 1 ? 0 : (i / (m - 1)) * (W - PAD.l - PAD.r)), [m, W, PAD.l, PAD.r]);
+  const y = useCallback((v: number) => PAD.t + (1 - (v - min) / span) * (H - PAD.t - PAD.b), [min, span, H, PAD.t, PAD.b]);
 
   const money = useCallback((cents: number) => formatMoney(convert(cents, currency), currency), [currency]);
+  // Axis ticks only; the tooltip and the header keep full precision.
+  const axisMoney = useCallback(
+    (cents: number) => (narrow ? formatMoneyCompact(convert(cents, currency), currency) : money(cents)),
+    [narrow, currency, money],
+  );
 
   const linePath = useCallback(
     (key: SeriesKey) => {
@@ -126,7 +154,7 @@ export function PriceChart({ points, sources, activeSourceId }: Props) {
     const leftPx = rect.left + (NAV_PAD.l / W) * rect.width;
     const plotPx = ((W - NAV_PAD.l - NAV_PAD.r) / W) * rect.width;
     return Math.min(1, Math.max(0, (clientX - leftPx) / plotPx));
-  }, []);
+  }, [W, NAV_PAD.l, NAV_PAD.r]);
 
   const onNavPointerMove = useCallback(
     (clientX: number) => {
@@ -188,7 +216,7 @@ export function PriceChart({ points, sources, activeSourceId }: Props) {
     new Date(`${day}T00:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
 
   return (
-    <div>
+    <div ref={sizeRef}>
       {/* Controls: series toggles + price source */}
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-1.5">
@@ -244,7 +272,7 @@ export function PriceChart({ points, sources, activeSourceId }: Props) {
         onTouchStart={(e) => onPlotMove(e.touches[0].clientX)}
         onTouchMove={(e) => onPlotMove(e.touches[0].clientX)}
       >
-        <svg viewBox={`0 0 ${W} ${H}`} className="h-[260px] w-full sm:h-[300px]" role="img" aria-label="Price history">
+        <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} className="w-full" style={{ height: H }} role="img" aria-label="Price history">
           <defs>
             <clipPath id={clipId}>
               <rect x={PAD.l} y={PAD.t} width={W - PAD.l - PAD.r} height={H - PAD.t - PAD.b} />
@@ -261,8 +289,8 @@ export function PriceChart({ points, sources, activeSourceId }: Props) {
                 stroke="rgb(var(--line))"
                 strokeWidth="1"
               />
-              <text x={PAD.l - 8} y={y(gv) + 3.5} textAnchor="end" fontSize="10" fill="rgb(var(--ink-dim))">
-                {money(gv)}
+              <text x={PAD.l - 6} y={y(gv) + 3.5} textAnchor="end" fontSize={AXIS_FS} fill="rgb(var(--ink-dim))">
+                {axisMoney(gv)}
               </text>
             </g>
           ))}
@@ -282,10 +310,10 @@ export function PriceChart({ points, sources, activeSourceId }: Props) {
             ))}
           </g>
 
-          <text x={PAD.l} y={H - 8} textAnchor="start" fontSize="10" fill="rgb(var(--ink-dim))">
+          <text x={PAD.l} y={H - 6} textAnchor="start" fontSize={AXIS_FS} fill="rgb(var(--ink-dim))">
             {fmtDate(view[0].day)}
           </text>
-          <text x={W - PAD.r} y={H - 8} textAnchor="end" fontSize="10" fill="rgb(var(--ink-dim))">
+          <text x={W - PAD.r} y={H - 6} textAnchor="end" fontSize={AXIS_FS} fill="rgb(var(--ink-dim))">
             {fmtDate(view[m - 1].day)}
           </text>
 
@@ -344,7 +372,9 @@ export function PriceChart({ points, sources, activeSourceId }: Props) {
         <svg
           ref={navRef}
           viewBox={`0 0 ${W} ${NAV_H}`}
-          className="h-[52px] w-full touch-none"
+          width={W}
+          height={NAV_H}
+          className="w-full touch-none"
           role="group"
           aria-label="Date range selector"
           onPointerMove={(e) => onNavPointerMove(e.clientX)}

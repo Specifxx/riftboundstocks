@@ -52,7 +52,7 @@ export default function NewsPage({ searchParams }: { searchParams: { category?: 
       <div className="mb-5 flex flex-wrap gap-1.5">
         <Link
           href={href(null)}
-          className={`rounded-md border px-2.5 py-1 text-[12px] font-semibold ${
+          className={`inline-flex min-h-[34px] items-center rounded-md border px-2.5 py-1 text-[12px] font-semibold sm:min-h-0 ${
             !category ? "border-accent bg-accent text-accent-ink" : "border-line text-ink-dim hover:text-ink"
           }`}
         >
@@ -62,7 +62,7 @@ export default function NewsPage({ searchParams }: { searchParams: { category?: 
           <Link
             key={c}
             href={href(c)}
-            className={`rounded-md border px-2.5 py-1 text-[12px] font-semibold ${
+            className={`inline-flex min-h-[34px] items-center rounded-md border px-2.5 py-1 text-[12px] font-semibold sm:min-h-0 ${
               category === c ? "border-accent bg-accent text-accent-ink" : "border-line text-ink-dim hover:text-ink"
             }`}
           >

@@ -5,7 +5,7 @@ import { ARTICLES } from "@/lib/content/articles";
 import { REPORTS } from "@/lib/content/reports";
 import { CARDS } from "@/lib/catalog";
 import { SETS } from "@/lib/riftbound";
-import { CONTACT_EMAIL, OFFICIAL_CARD_DB_URL, PRICES_ARE_DEMO, SITE_NAME, SITE_URL } from "@/lib/site";
+import { ACCOUNTS_ENABLED, CONTACT_EMAIL, OFFICIAL_CARD_DB_URL, PRICES_ARE_DEMO, SITE_NAME, SITE_URL } from "@/lib/site";
 import { riftcompareUrl } from "@/lib/affiliate";
 
 export const metadata: Metadata = {
@@ -160,8 +160,10 @@ export default function AboutPage() {
 
       <Section title="Privacy">
         <p>
-          This site sets no cookies, runs no analytics and loads no advertising. Your theme and currency preferences are
-          stored in your own browser. See the{" "}
+          {ACCOUNTS_ENABLED
+            ? "This site runs no analytics and loads no advertising. The only cookie it sets is a functional one that keeps you signed in, and only if you create an account."
+            : "This site sets no cookies, runs no analytics and loads no advertising."}{" "}
+          Your theme and currency preferences are stored in your own browser. See the{" "}
           <Link href="/privacy" className="text-accent hover:underline">
             privacy page
           </Link>{" "}

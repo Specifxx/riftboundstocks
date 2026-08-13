@@ -34,7 +34,7 @@ export function Ticker() {
     <Link
       key={key}
       href={`/card/${r.slug}`}
-      className="group inline-flex shrink-0 items-center gap-2 border-r border-line px-4 py-1.5"
+      className="group inline-flex h-10 shrink-0 items-center gap-2 border-r border-line px-4"
     >
       <span className="max-w-[190px] truncate text-[12px] font-medium text-ink-muted group-hover:text-ink">
         {r.name}
