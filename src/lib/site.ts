@@ -15,10 +15,11 @@ export const SITE_URL = (
       : "http://localhost:3000")
 ).replace(/\/$/, "");
 
-// TODO(config): riftledger.app is a placeholder — no domain has been
-// registered yet. Buy the real domain and set NEXT_PUBLIC_CONTACT_EMAIL /
-// NEXT_PUBLIC_SITE_URL in Vercel before launch (see DEPLOYMENT.md).
-export const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL || "hello@riftledger.app";
+// riftcompare@gmail.com per confirmed common ownership with the sister site
+// (see Footer.tsx) — real, not a placeholder. TODO(config): a riftledger.*
+// domain is not yet registered; set NEXT_PUBLIC_SITE_URL once one is, so
+// canonical URLs/sitemap/OG tags stop pointing at the *.vercel.app host.
+export const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL || "riftcompare@gmail.com";
 
 // Riot's official Riftbound card database — the authoritative source every card
 // page links out to, since this site publishes prices, not rules text.

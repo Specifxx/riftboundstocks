@@ -1,9 +1,9 @@
 import Link from "next/link";
 import type { RiftCard } from "@/lib/catalog";
-import { latestQuote, quoteDaysAgo, pctChange } from "@/lib/prices";
+import { latestQuote, quoteDaysAgo, pctChange, primaryPrice } from "@/lib/prices";
 import { CardImage } from "./CardImage";
 import { Money } from "./Prefs";
-import { Delta, DomainPill, RarityPill } from "./Bits";
+import { Delta } from "./Bits";
 
 /**
  * Vendor badge. A neutral monogram rather than TCGplayer's actual logo — their
@@ -18,9 +18,30 @@ export function VendorBadge({ label = "TCG" }: { label?: string }) {
   );
 }
 
-/** Large homepage tile: full art plus the three headline prices. */
-export function TrendingTile({ card, pct }: { card: RiftCard; pct?: number | null }) {
+/**
+ * Large homepage tile: full art, name/number, and exactly two prices in one
+ * slim row — an MTGStocks-style "Trending Cards" tile, deliberately not the
+ * full Low/Mid/Market/Foil breakdown the card page itself shows. TCGplayer is
+ * `primaryPrice()` (market, falling back to foil market for a foil-only
+ * printing — same headline figure used everywhere else on the site); eBay is
+ * the cheapest eBay listing RiftCompare has already cached, passed in by the
+ * caller (see `cheapestEbayCents` in lib/prices/riftcompare.ts) rather than
+ * fetched here, so this stays a plain presentational component.
+ */
+export function TrendingTile({
+  card,
+  pct,
+  ebayCents,
+}: {
+  card: RiftCard;
+  pct?: number | null;
+  ebayCents?: number | null;
+}) {
   const q = latestQuote(card);
+  const tcgCents = primaryPrice(q);
+  // True only for a foil-only printing (no Normal listing at all) — flagged so
+  // its price doesn't read as a regular one. See README's "Two traps" section.
+  const isFoilOnly = q.market == null && q.foilMarket != null;
   return (
     <Link
       href={`/card/${card.slug}`}
@@ -38,36 +59,20 @@ export function TrendingTile({ card, pct }: { card: RiftCard; pct?: number | nul
           </span>
         )}
       </div>
-      <div className="flex flex-1 flex-col p-3">
-        <h3 className="truncate font-display text-[15px] font-semibold text-ink group-hover:text-accent">{card.name}</h3>
-        <p className="mt-0.5 truncate text-[11px] text-ink-dim">
-          {card.setName} · {card.collectorLabel}
-        </p>
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          <RarityPill rarity={card.rarity} />
-          <DomainPill domain={card.domain} />
-        </div>
+      <div className="p-2.5">
+        <h3 className="truncate font-display text-[13px] font-semibold text-ink group-hover:text-accent">{card.name}</h3>
+        <p className="truncate font-mono text-[10px] text-ink-dim">{card.collectorLabel}</p>
 
-        <dl className="mt-3 space-y-1 border-t border-line pt-2.5">
-          {(
-            [
-              ["Low", q.low],
-              ["Market", q.market],
-              ["Foil", q.foilMarket],
-            ] as const
-          ).map(([label, cents]) => (
-            <div key={label} className="flex items-center gap-2">
-              <VendorBadge />
-              <dt className="text-[11px] text-ink-dim">{label}</dt>
-              <dd className="ml-auto">
-                <Money
-                  cents={cents}
-                  className={`num text-[13px] font-semibold ${label === "Foil" ? "text-foil" : "text-ink"}`}
-                />
-              </dd>
-            </div>
-          ))}
-        </dl>
+        <div className="mt-2 flex items-center justify-between gap-2 border-t border-line pt-2">
+          <span className="flex items-center gap-1.5">
+            <VendorBadge label="TCG" />
+            <Money cents={tcgCents} className={`num text-[12.5px] font-semibold ${isFoilOnly ? "text-foil" : "text-ink"}`} />
+          </span>
+          <span className="flex items-center gap-1.5">
+            <VendorBadge label="EB" />
+            <Money cents={ebayCents ?? null} className="num text-[12.5px] font-semibold text-ink" />
+          </span>
+        </div>
       </div>
     </Link>
   );

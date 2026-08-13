@@ -160,10 +160,11 @@ correctly and converting them would be converting a converted number.
 ## Accounts, Watch/Alert, Portfolio
 
 **Auth is not new.** By the time this integration was built, the base branch already had a
-complete account system (email/password + Google/Discord OAuth, session cookies via
-`jose`, `lib/auth.ts`) built for an unrelated reason (see `git log` — a separate, earlier
-change). Building a second one would mean two user tables and two sign-in flows on one
-site; instead, `PriceAlert` and `CollectionCard` (`prisma/schema.prisma`) are new tables
+complete account system (Google/Discord OAuth, session cookies via `jose`, `lib/auth.ts`)
+built for an unrelated reason (see `git log` — a separate, earlier change; email/password
+sign-up was removed shortly after — accounts are OAuth-only). Building a second auth
+system would mean two user tables and two sign-in flows on one site; instead, `PriceAlert`
+and `CollectionCard` (`prisma/schema.prisma`) are new tables
 that hang off the *existing* `User` model via a foreign key, and every new route
 (`/api/alerts`, `/api/portfolio`, `/api/cron/price-alerts`) reuses the existing
 `getCurrentUser()` / `accountsDisabledResponse()` / `ACCOUNTS_ENABLED` gating that every

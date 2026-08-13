@@ -99,7 +99,11 @@ model PriceSnapshot {
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
-  /// Optional — accounts created via Google/Discord sign-in have no password.
+  /// Vestigial. Accounts are Google/Discord OAuth only now — nothing in the
+  /// app can set this anymore (email/password sign-up was removed). Left as a
+  /// nullable column rather than dropped, since dropping it would be a
+  /// destructive migration on a live database for zero functional gain; kept
+  /// only so a pre-existing row (from before the removal) isn't orphaned.
   passwordHash  String?
   displayName   String
   avatarUrl     String?
@@ -209,8 +213,10 @@ model CollectionCard {
   @@index([cardId])
 }
 
-/// One-time tokens for email verification / password reset. Same shape and
-/// purpose as TCGEmpire's AuthToken so the two are easy to keep in sync.
+/// Vestigial. Was one-time tokens for email verification / password reset;
+/// both were removed when accounts became Google/Discord OAuth only, so
+/// nothing in the app creates or consumes a row here anymore. Left in place
+/// (not dropped) for the same reason as User.passwordHash above.
 model AuthToken {
   id        String   @id @default(cuid())
   token     String   @unique

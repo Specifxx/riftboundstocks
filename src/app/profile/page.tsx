@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
-import { LogoutButton, ResendVerifyButton } from "@/components/ProfileActions";
+import { LogoutButton } from "@/components/ProfileActions";
 import { ApiKeysPanel } from "@/components/ApiKeysPanel";
 import { SITE_NAME } from "@/lib/site";
 import { planLimits } from "@/lib/plans";
@@ -18,12 +18,11 @@ export default async function ProfilePage() {
 
   const account = await prisma.user.findUnique({
     where: { id: user.id },
-    select: { googleId: true, discordId: true, passwordHash: true, createdAt: true, planTier: true },
+    select: { googleId: true, discordId: true, createdAt: true, planTier: true },
   });
   const limits = planLimits(account?.planTier);
 
   const methods = [
-    { label: "Password", on: !!account?.passwordHash },
     { label: "Google", on: !!account?.googleId },
     { label: "Discord", on: !!account?.discordId },
   ];
@@ -56,21 +55,6 @@ export default async function ProfilePage() {
 
       <div className="panel mt-4 p-5">
         <h2 className="eyebrow">Account &amp; security</h2>
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-b border-line pb-3 text-[13px]">
-          <span className="text-ink-muted">Email</span>
-          {user.emailVerified ? (
-            <span className="inline-flex items-center rounded bg-up/15 px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-up">
-              ✓ Verified
-            </span>
-          ) : (
-            <span className="flex items-center gap-2">
-              <span className="inline-flex items-center rounded border border-line px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-ink-muted">
-                Not confirmed
-              </span>
-              <ResendVerifyButton />
-            </span>
-          )}
-        </div>
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[13px]">
           <span className="text-ink-muted">Sign-in methods</span>
           <span className="flex gap-1.5">
@@ -88,11 +72,11 @@ export default async function ProfilePage() {
           </span>
         </div>
         <p className="mt-3 text-[12px] text-ink-dim">
-          Link more sign-in options any time from the{" "}
+          Link another provider to this account any time from the{" "}
           <Link href="/login" className="text-accent hover:underline">
             log in page
-          </Link>
-          .
+          </Link>{" "}
+          — signing in with a different provider using this same email links it automatically.
         </p>
       </div>
 

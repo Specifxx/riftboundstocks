@@ -81,7 +81,7 @@ You need this the moment you want prices that *accumulate* rather than being rec
 
 ## Step 5 — Turn on accounts (optional)
 
-Needs Step 4 done first — accounts store a `User` row, so there's nowhere to put one without a database. Until then `/login` and `/signup` render their forms disabled, same as every other feature below that needs a key.
+**Google or Discord sign-in only — there is no email/password option.** Needs Step 4 done first — accounts store a `User` row, so there's nowhere to put one without a database. Until then `/login` and `/signup` just say accounts aren't configured, same as every other feature below that needs a key.
 
 1. Add the tables:
    ```bash
@@ -91,20 +91,22 @@ Needs Step 4 done first — accounts store a `User` row, so there's nowhere to p
    ```
    AUTH_SECRET = <output of: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))">
    ```
-   That alone is enough — email/password sign-up and login now work. Everything after this is optional on top of it.
-3. **Google sign-in** — [Google Cloud Console](https://console.cloud.google.com/) → APIs & Services → Credentials → **Create OAuth client ID** (Web application). Authorised redirect URI:
+   This alone is **not** enough to sign anyone in — you also need at least one of steps 3/4 below. `AUTH_SECRET` only signs the session cookie once someone's already authenticated.
+3. **Google sign-in** — [Google Cloud Console](https://console.cloud.google.com/) → APIs & Services → Credentials → **Create OAuth client ID**. Application type must be **Web application** — Desktop or Android client types can't use this flow and will fail. Authorised redirect URI, exactly:
    ```
    https://riftledger.app/api/auth/oauth/google/callback
    ```
    Add `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in Vercel.
+
+   **`Error 401: invalid_client` / "The OAuth client was not found"** means the `client_id` Vercel is sending doesn't match any real client in Google's system — the client was never finished being created, was deleted, or `GOOGLE_CLIENT_ID` still holds a placeholder. This is a Cloud Console / env var problem, not a code bug: recreate the client (or find the real one), confirm the redirect URI above is registered on it *exactly* (no trailing slash, right protocol), paste the real ID/secret into Vercel, and redeploy.
 4. **Discord sign-in** — [Discord Developer Portal](https://discord.com/developers/applications) → New Application → OAuth2. Redirect:
    ```
    https://riftledger.app/api/auth/oauth/discord/callback
    ```
    Scopes `identify` and `email`. Add `DISCORD_CLIENT_ID` and `DISCORD_CLIENT_SECRET` in Vercel.
-5. **Verification / password-reset emails** — [resend.com](https://resend.com) → API Keys → add `RESEND_API_KEY` in Vercel. Without it, sign-up and password reset still work, but the emails just log a warning instead of sending, which makes both flows unusable for anyone but you testing locally.
+5. **Price-drop digest email** (optional, not needed for sign-in) — [resend.com](https://resend.com) → API Keys → add `RESEND_API_KEY` in Vercel. This only powers the Watch/Alert digest (step 8 below); OAuth accounts need no verification email and there's no password to reset.
 
-**Redeploy after adding these.** A provider button (Google/Discord) only appears once *both* its env vars are set — a half-configured provider stays hidden rather than showing a button that fails.
+**Redeploy after adding these.** A provider button (Google/Discord) only appears once *both* its env vars are set — a half-configured provider stays hidden rather than showing a button that fails. If neither provider is configured, `/login` and `/signup` show "accounts aren't configured" even with `DATABASE_URL` and `AUTH_SECRET` set — there's nothing to click without at least one.
 
 ## Step 6 — Import real TCGplayer prices
 
@@ -158,10 +160,10 @@ A non-commercial deployment on your own domain costs about **$12/year**. Vercel'
 
 **Prices look identical to yesterday** — expected on the demo generator, which advances one point per real day. Real movement needs step 6 (which needs no database — `src/data/prices.json` is a repo file, not a table); step 4 is only needed for accounts and the optional Postgres price mirror, not for prices themselves.
 
-**`/login` and `/signup` show the disabled form** — `DATABASE_URL` isn't set (step 4), or you didn't redeploy after setting it. Email/password sign-in needs `DATABASE_URL` + `AUTH_SECRET` only; a Google or Discord button needs *both* of that provider's env vars, or it stays hidden rather than showing and failing.
+**`/login` and `/signup` say accounts aren't configured** — `DATABASE_URL` isn't set (step 4), or `AUTH_SECRET` isn't, or neither OAuth provider is fully configured (step 3/4 — a provider needs *both* its client id and secret set, or it stays hidden rather than showing a button that fails). Redeploy after fixing whichever one it was.
 
-**Verification / reset emails never arrive** — `RESEND_API_KEY` isn't set, so the site is logging a warning and not sending instead of erroring. Accounts still work without it (you just can't complete email verification), but set it before pointing real users at sign-up.
+**Google sign-in fails with `Error 401: invalid_client`** — see step 5's note. This is a Google Cloud Console / env var mismatch, not a code issue.
 
 **"Compare stores" grid or regional prices missing from a card page** — expected for a lot of cards, not a bug: that section is sourced live from RiftCompare (see `DATA_INTEGRATION.md`) and only renders when RiftCompare has a match for that exact printing. No setup needed either way — it isn't gated by an env var, only by `RIFTCOMPARE_API_URL` being reachable (it defaults to production RiftCompare) and that specific card having a match there.
 
-**Watch emails never arrive** — same shape as verification emails: check `RESEND_API_KEY` first, then confirm the Vercel Cron is actually configured (step 8) — `vercel.json` declares the schedule, but Vercel only registers crons that were present in the **Production** deployment, so a first deploy without `CRON_SECRET` set still needs a redeploy once it's added.
+**Watch emails never arrive** — check `RESEND_API_KEY` first (step 5), then confirm the Vercel Cron is actually configured (step 8) — `vercel.json` declares the schedule, but Vercel only registers crons that were present in the **Production** deployment, so a first deploy without `CRON_SECRET` set still needs a redeploy once it's added.
