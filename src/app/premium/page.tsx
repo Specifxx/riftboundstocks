@@ -79,7 +79,6 @@ export default async function PremiumPage() {
                 <li>{limitLabel(p.maxWatchlist, "watchlist cards")}</li>
                 <li>{p.historyDays == null ? "Full price history" : `${p.historyDays}-day history`}</li>
                 <li className={p.csvImport ? "" : "text-ink-dim"}>{p.csvImport ? "✓" : "—"} CSV portfolio import</li>
-                <li className={p.extendedVendors ? "" : "text-ink-dim"}>{p.extendedVendors ? "✓" : "—"} Extended vendor prices</li>
                 <li className={p.publicApi ? "" : "text-ink-dim"}>{p.publicApi ? "✓" : "—"} Public read-only API</li>
               </ul>
               <button

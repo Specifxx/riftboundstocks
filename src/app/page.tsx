@@ -141,8 +141,14 @@ export default async function HomePage() {
   const trending = trendingCards(4);
   const topValue = topByMarket(10);
 
+  // trendingCards() itself compares against 7 days ago, so it stays empty for
+  // longer than HAS_CHANGE_DATA's 2-day threshold guarantees — gating on the
+  // actual result (rather than HAS_CHANGE_DATA) keeps this from rendering a
+  // "Trending Cards" header over an empty grid during that gap.
+  const showTrending = trending.length > 0;
+
   // The four Trending Cards tiles, independent of which branch supplies them.
-  const trendingTiles: { card: RiftCard; pct: number | null }[] = HAS_CHANGE_DATA
+  const trendingTiles: { card: RiftCard; pct: number | null }[] = showTrending
     ? trending.map((m) => ({ card: m.card, pct: m.pct }))
     : topValue.slice(0, 4).map(({ card }) => ({ card, pct: null }));
 
@@ -162,10 +168,16 @@ export default async function HomePage() {
       <MarketSummary />
 
       <section className="mb-8">
-        <SectionTitle href="/interests" linkLabel={HAS_CHANGE_DATA ? "All movers" : "Browse all"}>
-          {HAS_CHANGE_DATA ? "Trending Cards" : "Most Valuable Cards"}
+        <SectionTitle href="/interests" linkLabel={showTrending ? "All movers" : "Browse all"}>
+          {showTrending ? "Trending Cards" : "Most Valuable Cards"}
         </SectionTitle>
         {!HAS_CHANGE_DATA && <HistoryNotice className="mb-3" />}
+        {HAS_CHANGE_DATA && !showTrending && (
+          <p className="mb-3 rounded-lg border border-line bg-surface-2 px-3 py-2 text-[12px] leading-relaxed text-ink-muted">
+            <strong className="font-semibold text-ink">Trending compares against a week ago.</strong> Showing the
+            most valuable cards until price history stretches back that far.
+          </p>
+        )}
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {trendingTiles.map((t, i) => (
             <TrendingTile key={t.card.id} card={t.card} pct={t.pct} ebayCents={cheapestEbayCents(trendingListings[i])} />

@@ -15,7 +15,6 @@ export interface PlanLimits {
   historyDays: number | null; // null = full history
   csvImport: boolean;
   publicApi: boolean;
-  extendedVendors: boolean; // Cardmarket + future adapters, see lib/prices/providers
   blurb: string;
 }
 
@@ -29,7 +28,6 @@ export const PLANS: Record<PlanTier, PlanLimits> = {
     historyDays: 90,
     csvImport: false,
     publicApi: false,
-    extendedVendors: false,
     blurb: "Track prices, set a handful of alerts, and watch up to 25 cards.",
   },
   PLUS: {
@@ -41,7 +39,6 @@ export const PLANS: Record<PlanTier, PlanLimits> = {
     historyDays: null,
     csvImport: true,
     publicApi: false,
-    extendedVendors: true,
     blurb: "Unlimited history, CSV import, and room for a real collection.",
   },
   PRO: {
@@ -53,7 +50,6 @@ export const PLANS: Record<PlanTier, PlanLimits> = {
     historyDays: null,
     csvImport: true,
     publicApi: true,
-    extendedVendors: true,
     blurb: "Unlimited alerts and watchlist, plus API access for your own tools.",
   },
   STORE: {
@@ -65,7 +61,6 @@ export const PLANS: Record<PlanTier, PlanLimits> = {
     historyDays: null,
     csvImport: true,
     publicApi: true,
-    extendedVendors: true,
     blurb: "Bulk API access and inventory tooling for shops. Talk to us for pricing.",
   },
 };
