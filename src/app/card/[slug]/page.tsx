@@ -23,6 +23,8 @@ import { PriceChart } from "@/components/PriceChart";
 import { CardActions } from "@/components/CardActions";
 import { StoreListings } from "@/components/StoreListings";
 import { ShoppingRegions } from "@/components/ShoppingRegions";
+import { VendorProviders } from "@/components/VendorProviders";
+import { fetchVendorQuotes } from "@/lib/prices/providers";
 import { AltCurrencyCell, AltCurrencyHeader, Money } from "@/components/Prefs";
 import { Delta, DemoPricesNotice, DomainPill, RarityPill } from "@/components/Bits";
 import { AffiliateDisclosure } from "@/components/AffiliateDisclosure";
@@ -90,7 +92,11 @@ export default async function CardPage({ params }: { params: { slug: string } })
   // printing) and every consumer below already renders around that; a slow or
   // down RiftCompare degrades this page to exactly what it was before these
   // existed, never a broken one.
-  const [listings, regional] = await Promise.all([fetchCardListings(card), fetchRegionalPrices(card)]);
+  const [listings, regional, vendorQuotes] = await Promise.all([
+    fetchCardListings(card),
+    fetchRegionalPrices(card),
+    fetchVendorQuotes(card),
+  ]);
 
   const summary = [
     { label: "Low", cents: q.low, tone: "text-ink" },
@@ -303,6 +309,8 @@ export default async function CardPage({ params }: { params: { slug: string } })
               {/* Immediately under the links it describes — see the placement
                   rules in AffiliateDisclosure. */}
               <AffiliateDisclosure className="mt-3 border-t border-line pt-2.5" />
+
+              <VendorProviders results={vendorQuotes} />
 
               {/* The sister site covers what this one doesn't: live store prices
                   in six markets, where this page is TCGplayer history only. */}
