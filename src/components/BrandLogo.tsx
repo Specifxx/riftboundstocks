@@ -1,41 +1,31 @@
-import { SITE_NAME } from "@/lib/site";
-
-// The RiftboundStocks mark: an original hex-and-rift glyph, not a letterform.
-//
-// A hexagon (Riftbound's card-frame and rune motif — see the hex-cornered card
-// tiles in CardTile.tsx) split by a jagged diagonal "rift" fracture, the two
-// halves picked out in the accent gradient against a filled void. It is drawn
-// as plain inline SVG paths — no external asset, no mask, nothing shared with
-// any other product's mark — so it recolours for free in both themes via
-// `currentColor`/CSS variables and never needs a second file kept in sync.
+// The RiftboundStocks mark: RiftCompare's own "R" (sibling site, same
+// ownership — see Footer.tsx), recoloured from its flat source PNG through a
+// CSS mask so it always matches the current theme's accent/foil gradient
+// rather than needing a second asset per palette. The small "S" tucked after
+// the R is what distinguishes this site from RiftCompare at a glance; the
+// mark itself is deliberately identical. Decorative (aria-hidden) everywhere
+// it's used — a Link with its own accessible name, or a visible wordmark
+// alongside it, or a purely decorative watermark — so it's never announced
+// redundantly.
 export function BrandLogo({ className = "h-8 w-8" }: { className?: string }) {
   return (
-    <svg viewBox="0 0 32 32" className={className} role="img" aria-label={`${SITE_NAME} mark`}>
-      <defs>
-        <linearGradient id="rl-mark-grad" x1="4" y1="4" x2="28" y2="28" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stopColor="rgb(var(--accent))" />
-          <stop offset="1" stopColor="rgb(var(--foil))" />
-        </linearGradient>
-      </defs>
-      {/* Hexagon frame, echoing the card-tile hex corners used across the site. */}
-      <path
-        d="M16 1.5 29 9v14L16 30.5 3 23V9Z"
-        fill="none"
-        stroke="url(#rl-mark-grad)"
-        strokeWidth="2.1"
-        strokeLinejoin="round"
+    <span className="relative inline-flex shrink-0 items-center" aria-hidden>
+      <span
+        className={`inline-block ${className}`}
+        style={{
+          backgroundImage: "linear-gradient(in oklch, rgb(var(--accent)), rgb(var(--foil)))",
+          WebkitMaskImage: "url(/logo-r.png)",
+          maskImage: "url(/logo-r.png)",
+          WebkitMaskSize: "contain",
+          maskSize: "contain",
+          WebkitMaskRepeat: "no-repeat",
+          maskRepeat: "no-repeat",
+          WebkitMaskPosition: "center",
+          maskPosition: "center",
+        }}
       />
-      {/* The rift: a jagged fracture through the frame, splitting it into two
-          plates — the mark's namesake, a line torn open down the middle. */}
-      <path
-        d="M13.5 5.5 17 13l-3.4 2.6L17.5 19 14 26.5"
-        fill="none"
-        stroke="url(#rl-mark-grad)"
-        strokeWidth="2.3"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+      <span className="-ml-1 self-start font-display text-[13px] font-bold leading-none text-accent">S</span>
+    </span>
   );
 }
 
