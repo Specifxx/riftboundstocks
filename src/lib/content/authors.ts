@@ -35,7 +35,7 @@ export interface Author {
 export const AUTHORS: Author[] = [
   {
     slug: "data-desk",
-    name: "RiftLedger Data Desk",
+    name: "RiftboundStocks Data Desk",
     role: "Automated analysis",
     bio: "Not a person. Data reports are generated from the daily TCGplayer price snapshot, and every figure in them is re-derived from the data by scripts/verify-reports.ts before the site builds. Where a number appears, it was measured — not estimated, and not written by hand.",
     avatar: "/authors/data-desk.svg",

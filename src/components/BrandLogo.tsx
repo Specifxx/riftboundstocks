@@ -1,6 +1,6 @@
 import { SITE_NAME } from "@/lib/site";
 
-// The RiftLedger mark: an original hex-and-rift glyph, not a letterform.
+// The RiftboundStocks mark: an original hex-and-rift glyph, not a letterform.
 //
 // A hexagon (Riftbound's card-frame and rune motif — see the hex-cornered card
 // tiles in CardTile.tsx) split by a jagged diagonal "rift" fracture, the two
@@ -26,7 +26,7 @@ export function BrandLogo({ className = "h-8 w-8" }: { className?: string }) {
         strokeLinejoin="round"
       />
       {/* The rift: a jagged fracture through the frame, splitting it into two
-          plates — the "ledger" reads as a line torn open down the middle. */}
+          plates — the mark's namesake, a line torn open down the middle. */}
       <path
         d="M13.5 5.5 17 13l-3.4 2.6L17.5 19 14 26.5"
         fill="none"
@@ -42,7 +42,7 @@ export function BrandLogo({ className = "h-8 w-8" }: { className?: string }) {
 export function BrandWordmark() {
   return (
     <span className="font-display text-[19px] font-semibold uppercase tracking-tight text-ink">
-      Rift<span className="text-accent">Ledger</span>
+      Riftbound<span className="text-accent">Stocks</span>
     </span>
   );
 }

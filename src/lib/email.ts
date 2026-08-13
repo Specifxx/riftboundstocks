@@ -56,7 +56,7 @@ function emailShell(heading: string, inner: string, footer: string): string {
   return `<!doctype html><html><body style="margin:0;background:#f3ead9;font-family:Arial,Helvetica,sans-serif">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3ead9;padding:32px 0"><tr><td align="center">
     <table role="presentation" width="520" cellpadding="0" cellspacing="0" style="background:#fdfaf4;border:1px solid #d6c9b0;border-radius:16px">
-      <tr><td style="padding:28px 32px 6px"><div style="font-size:20px;font-weight:700;color:#281e14;text-transform:uppercase;letter-spacing:0.02em">Rift<span style="color:#0d6f61">Ledger</span></div></td></tr>
+      <tr><td style="padding:28px 32px 6px"><div style="font-size:20px;font-weight:700;color:#281e14;text-transform:uppercase;letter-spacing:0.02em">Riftbound<span style="color:#0d6f61">Stocks</span></div></td></tr>
       <tr><td style="padding:6px 32px 4px"><h1 style="margin:0;font-size:20px;color:#281e14">${heading}</h1></td></tr>
       ${inner}
       ${footer}

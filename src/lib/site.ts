@@ -1,7 +1,7 @@
 // Single source of truth for the site's brand identity. Every user-facing
 // mention of the product name reads from SITE_NAME rather than being spelled
 // out at the call site, so the whole site is a one-line rename.
-export const SITE_NAME = "RiftLedger";
+export const SITE_NAME = "RiftboundStocks";
 export const SITE_TAGLINE = "Riftbound TCG price tracking, movers and market history";
 
 // Set NEXT_PUBLIC_SITE_URL in Vercel once the domain is attached; the fallback
@@ -16,9 +16,7 @@ export const SITE_URL = (
 ).replace(/\/$/, "");
 
 // riftcompare@gmail.com per confirmed common ownership with the sister site
-// (see Footer.tsx) — real, not a placeholder. TODO(config): a riftledger.*
-// domain is not yet registered; set NEXT_PUBLIC_SITE_URL once one is, so
-// canonical URLs/sitemap/OG tags stop pointing at the *.vercel.app host.
+// (see Footer.tsx) — real, not a placeholder.
 export const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL || "riftcompare@gmail.com";
 
 // Riot's official Riftbound card database — the authoritative source every card

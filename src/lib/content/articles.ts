@@ -38,7 +38,7 @@ const DEMO_ARTICLES: Article[] = [
     body: [
       {
         kind: "quote",
-        text: "Demo article. RiftLedger is an unofficial fan project; this piece, its author and the market activity it describes are illustrative and not real analysis.",
+        text: "Demo article. RiftboundStocks is an unofficial fan project; this piece, its author and the market activity it describes are illustrative and not real analysis.",
       },
       {
         kind: "p",
@@ -107,7 +107,7 @@ const DEMO_ARTICLES: Article[] = [
     body: [
       {
         kind: "quote",
-        text: "Demo article. RiftLedger is an unofficial fan project; this piece, its author and the market activity it describes are illustrative and not real analysis.",
+        text: "Demo article. RiftboundStocks is an unofficial fan project; this piece, its author and the market activity it describes are illustrative and not real analysis.",
       },
       {
         kind: "p",
@@ -173,7 +173,7 @@ const DEMO_ARTICLES: Article[] = [
     body: [
       {
         kind: "quote",
-        text: "Demo article. RiftLedger is an unofficial fan project; this piece, its author and the market activity it describes are illustrative and not real analysis.",
+        text: "Demo article. RiftboundStocks is an unofficial fan project; this piece, its author and the market activity it describes are illustrative and not real analysis.",
       },
       {
         kind: "p",
@@ -247,7 +247,7 @@ const DEMO_ARTICLES: Article[] = [
     body: [
       {
         kind: "quote",
-        text: "Demo article. RiftLedger is an unofficial fan project; this piece, its author and the market activity it describes are illustrative and not real analysis.",
+        text: "Demo article. RiftboundStocks is an unofficial fan project; this piece, its author and the market activity it describes are illustrative and not real analysis.",
       },
       {
         kind: "p",
@@ -312,7 +312,7 @@ const DEMO_ARTICLES: Article[] = [
     body: [
       {
         kind: "quote",
-        text: "Demo article. RiftLedger is an unofficial fan project; this piece, its author and the market activity it describes are illustrative and not real analysis.",
+        text: "Demo article. RiftboundStocks is an unofficial fan project; this piece, its author and the market activity it describes are illustrative and not real analysis.",
       },
       {
         kind: "p",
@@ -390,7 +390,7 @@ const DEMO_ARTICLES: Article[] = [
     body: [
       {
         kind: "quote",
-        text: "Demo article. RiftLedger is an unofficial fan project; this piece, its author and the market activity it describes are illustrative and not real analysis.",
+        text: "Demo article. RiftboundStocks is an unofficial fan project; this piece, its author and the market activity it describes are illustrative and not real analysis.",
       },
       {
         kind: "p",
@@ -457,7 +457,7 @@ const DEMO_ARTICLES: Article[] = [
     body: [
       {
         kind: "quote",
-        text: "Demo article. RiftLedger is an unofficial fan project; this piece, its author and the market activity it describes are illustrative and not real analysis.",
+        text: "Demo article. RiftboundStocks is an unofficial fan project; this piece, its author and the market activity it describes are illustrative and not real analysis.",
       },
       {
         kind: "p",
@@ -533,7 +533,7 @@ const DEMO_ARTICLES: Article[] = [
     body: [
       {
         kind: "quote",
-        text: "Demo article. RiftLedger is an unofficial fan project; this piece, its author and the market activity it describes are illustrative and not real analysis.",
+        text: "Demo article. RiftboundStocks is an unofficial fan project; this piece, its author and the market activity it describes are illustrative and not real analysis.",
       },
       {
         kind: "p",
@@ -603,7 +603,7 @@ const DEMO_ARTICLES: Article[] = [
     body: [
       {
         kind: "quote",
-        text: "Demo article. RiftLedger is an unofficial fan project; this piece, its author and the market activity it describes are illustrative and not real analysis.",
+        text: "Demo article. RiftboundStocks is an unofficial fan project; this piece, its author and the market activity it describes are illustrative and not real analysis.",
       },
       {
         kind: "p",
@@ -673,7 +673,7 @@ const DEMO_ARTICLES: Article[] = [
     body: [
       {
         kind: "quote",
-        text: "Demo article. RiftLedger is an unofficial fan project; this piece, its author and the market activity it describes are illustrative and not real analysis.",
+        text: "Demo article. RiftboundStocks is an unofficial fan project; this piece, its author and the market activity it describes are illustrative and not real analysis.",
       },
       {
         kind: "p",
@@ -750,7 +750,7 @@ const DEMO_ARTICLES: Article[] = [
     body: [
       {
         kind: "quote",
-        text: "Demo article. RiftLedger is an unofficial fan project; this piece, its author and the market activity it describes are illustrative and not real analysis.",
+        text: "Demo article. RiftboundStocks is an unofficial fan project; this piece, its author and the market activity it describes are illustrative and not real analysis.",
       },
       {
         kind: "p",
@@ -823,7 +823,7 @@ const DEMO_ARTICLES: Article[] = [
     body: [
       {
         kind: "quote",
-        text: "Demo article. RiftLedger is an unofficial fan project; this piece, its author and the market activity it describes are illustrative and not real analysis.",
+        text: "Demo article. RiftboundStocks is an unofficial fan project; this piece, its author and the market activity it describes are illustrative and not real analysis.",
       },
       {
         kind: "p",
@@ -895,7 +895,7 @@ const DEMO_ARTICLES: Article[] = [
     body: [
       {
         kind: "quote",
-        text: "Demo article. RiftLedger is an unofficial fan project; this piece, its author and the market activity it describes are illustrative and not real analysis.",
+        text: "Demo article. RiftboundStocks is an unofficial fan project; this piece, its author and the market activity it describes are illustrative and not real analysis.",
       },
       {
         kind: "p",

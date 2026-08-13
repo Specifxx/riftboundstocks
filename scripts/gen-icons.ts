@@ -73,7 +73,7 @@ async function openGraph() {
   const m = await sharp(Buffer.from(markSvg(markSize))).png().toBuffer();
   const text = Buffer.from(
     `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}">` +
-      `<text x="600" y="430" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="76" font-weight="700" letter-spacing="2" fill="${INK}">RIFT<tspan fill="${ACCENT}">LEDGER</tspan></text>` +
+      `<text x="600" y="430" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="60" font-weight="700" letter-spacing="1" fill="${INK}">RIFTBOUND<tspan fill="${ACCENT}">STOCKS</tspan></text>` +
       `<text x="600" y="490" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" fill="#b0a6c2">Riftbound TCG price tracking, movers and market history</text>` +
       `</svg>`,
   );
@@ -88,7 +88,7 @@ async function openGraph() {
 }
 
 async function main() {
-  console.log("Generating icons from the RiftLedger hex-and-rift mark…");
+  console.log("Generating icons from the RiftboundStocks hex-and-rift mark…");
   await icon(512, "src/app/icon.png", 96);
   await icon(180, "src/app/apple-icon.png", 0);
   await openGraph();

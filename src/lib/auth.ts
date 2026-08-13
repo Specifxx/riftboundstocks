@@ -5,7 +5,7 @@ import { SignJWT, jwtVerify } from "jose";
 import { prisma } from "./db";
 import { ACCOUNTS_ENABLED } from "./site";
 
-const SESSION_COOKIE = "rl_session";
+const SESSION_COOKIE = "rbs_session";
 
 // Every /api/auth/* route calls this first. Protects a direct POST from
 // throwing a raw Prisma "DATABASE_URL not found" error when a deployment has
@@ -36,7 +36,7 @@ function getSecret(): Uint8Array {
     console.warn(
       "[auth] AUTH_SECRET not set — using an insecure development-only secret. NEVER use this in production."
     );
-    cachedSecret = new TextEncoder().encode("riftledger-dev-secret-change-me");
+    cachedSecret = new TextEncoder().encode("riftboundstocks-dev-secret-change-me");
     return cachedSecret;
   }
   cachedSecret = new TextEncoder().encode(s);

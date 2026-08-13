@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 const STORAGE_KEYS: { key: string; purpose: string }[] = [
   { key: THEME_STORAGE_KEY, purpose: "Dark or light theme, so the site doesn't flash the wrong palette on the next page." },
   { key: CURRENCY_STORAGE_KEY, purpose: "Whether prices render in USD or EUR." },
-  { key: "rl.notice-seen", purpose: "That you dismissed the storage notice, so it stops appearing." },
+  { key: "rbs.notice-seen", purpose: "That you dismissed the storage notice, so it stops appearing." },
 ];
 
 function Section({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
@@ -47,7 +47,7 @@ export default function PrivacyPage() {
             <>
               <p>
                 <strong className="font-semibold text-ink">One cookie, and only if you create an account.</strong>{" "}
-                Signing in sets a single session cookie (<code className="font-mono text-[12px] text-ink">rl_session</code>)
+                Signing in sets a single session cookie (<code className="font-mono text-[12px] text-ink">rbs_session</code>)
                 so the site remembers you&apos;re signed in. It is <code className="font-mono text-[12px] text-ink">httpOnly</code>{" "}
                 (invisible to page JavaScript), holds nothing but your account id, and is never used for tracking,
                 analytics or advertising. Nothing is set for anyone who doesn&apos;t sign in.

@@ -24,7 +24,7 @@ import { Delta, DeltaArrow, DemoPricesNotice, Panel, RarityPill, SectionTitle } 
 export const metadata: Metadata = {
   title: "Market Analytics",
   description:
-    "The RiftLedger Index — a basket tracking the Riftbound TCG singles market — plus per-set performance and median card values across every priced printing, and the week's biggest gainers and losers once enough daily history exists.",
+    "The RiftboundStocks Index — a basket tracking the Riftbound TCG singles market — plus per-set performance and median card values across every priced printing, and the week's biggest gainers and losers once enough daily history exists.",
   alternates: { canonical: `${SITE_URL}/analytics` },
 };
 
@@ -236,7 +236,7 @@ export default function AnalyticsPage() {
           <>
             <div className="mb-4 flex flex-wrap items-end justify-between gap-x-8 gap-y-3 border-b border-line pb-4">
               <div>
-                <h2 className="font-display text-lg uppercase tracking-wide text-ink">RiftLedger Index</h2>
+                <h2 className="font-display text-lg uppercase tracking-wide text-ink">RiftboundStocks Index</h2>
                 <p className="mt-1 max-w-xl text-[12px] leading-relaxed text-ink-dim">
                   The combined market price of the {constituents} most valuable cards in the catalogue, one point per
                   day. Constituents are fixed for the whole window and must have priced on every day in it, so the line
@@ -258,7 +258,7 @@ export default function AnalyticsPage() {
 
             <PriceChart
               points={points}
-              sources={[{ id: "index", label: "RiftLedger Index" }]}
+              sources={[{ id: "index", label: "RiftboundStocks Index" }]}
               activeSourceId="index"
             />
 
@@ -272,7 +272,7 @@ export default function AnalyticsPage() {
           <>
             <div className="mb-4 flex flex-wrap items-end justify-between gap-x-8 gap-y-3 border-b border-line pb-4">
               <div>
-                <h2 className="font-display text-lg uppercase tracking-wide text-ink">RiftLedger Index</h2>
+                <h2 className="font-display text-lg uppercase tracking-wide text-ink">RiftboundStocks Index</h2>
                 <p className="mt-1 max-w-xl text-[12px] leading-relaxed text-ink-dim">
                   Every printing TCGplayer prices, added together at market price. That is where the market stands
                   today; the tracked line starts once there is a second day to plot it against.

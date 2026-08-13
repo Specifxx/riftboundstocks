@@ -1,4 +1,4 @@
-# Deploying RiftLedger
+# Deploying RiftboundStocks
 
 Written in the order you should actually do it. **Steps 1–3 get you a live site in about ten minutes** and need no database and no API keys. Everything after that is optional and can wait.
 
@@ -11,7 +11,7 @@ Already done if you're reading this in GitHub. The default branch is `main`.
 ## Step 2 — Deploy to Vercel
 
 1. Go to [vercel.com/new](https://vercel.com/new) and sign in with GitHub.
-2. **Import** the `riftledger` repository. Grant access to it if Vercel asks.
+2. **Import** the `riftboundstocks` repository. Grant access to it if Vercel asks.
 3. Vercel detects Next.js on its own. **Change nothing** — the defaults are correct:
    - Framework preset: `Next.js`
    - Build command: `npm run build`
@@ -20,27 +20,27 @@ Already done if you're reading this in GitHub. The default branch is `main`.
 4. Skip environment variables for now.
 5. **Deploy.** First build takes roughly 2–4 minutes (it pre-renders 120 card pages plus every set and article).
 
-You now have a working site at `riftledger-<hash>.vercel.app`.
+You now have a working site at `riftboundstocks-<hash>.vercel.app`.
 
 > **Node version:** Vercel defaults to Node 20+, which is what this project expects. Only touch Settings → General → Node.js Version if a build complains.
 
 ## Step 3 — Point your domain at it
 
 1. Buy the domain wherever you like (Cloudflare, Namecheap, Porkbun — Vercel also sells them, which skips this whole step).
-2. In Vercel: **Project → Settings → Domains → Add**, enter `riftledger.app`.
+2. In Vercel: **Project → Settings → Domains → Add**, enter `riftboundstocks.com`.
 3. Vercel shows you the DNS records to create. At your registrar, add:
    - **A** record, name `@`, value `76.76.21.21`
    - **CNAME** record, name `www`, value `cname.vercel-dns.com`
    *(Use whatever Vercel's panel actually shows — these values are its current defaults, not a promise.)*
 4. Wait for propagation (usually minutes, up to a few hours). Vercel issues the TLS certificate automatically.
-5. Pick which host is canonical — `riftledger.app` or `www.riftledger.app` — and set the other to redirect. Vercel offers this in the same panel.
+5. Pick which host is canonical — `riftboundstocks.com` or `www.riftboundstocks.com` — and set the other to redirect. Vercel offers this in the same panel.
 
 ### Then set the site URL
 
 **Project → Settings → Environment Variables**, add for *Production*:
 
 ```
-NEXT_PUBLIC_SITE_URL = https://riftledger.app
+NEXT_PUBLIC_SITE_URL = https://riftboundstocks.com
 NEXT_PUBLIC_CONTACT_EMAIL = you@yourdomain.com
 ```
 
@@ -48,7 +48,7 @@ NEXT_PUBLIC_CONTACT_EMAIL = you@yourdomain.com
 
 ### Tell search engines
 
-- [Google Search Console](https://search.google.com/search-console) → add the domain → verify via DNS TXT → submit `https://riftledger.app/sitemap.xml`.
+- [Google Search Console](https://search.google.com/search-console) → add the domain → verify via DNS TXT → submit `https://riftboundstocks.com/sitemap.xml`.
 - [Bing Webmaster Tools](https://www.bing.com/webmasters) → import from Google, which is two clicks.
 
 ---
@@ -92,14 +92,14 @@ You need this the moment you want prices that *accumulate* rather than being rec
    This alone is **not** enough to sign anyone in — you also need at least one of steps 3/4 below. `AUTH_SECRET` only signs the session cookie once someone's already authenticated.
 3. **Google sign-in** — [Google Cloud Console](https://console.cloud.google.com/) → APIs & Services → Credentials → **Create OAuth client ID**. Application type must be **Web application** — Desktop or Android client types can't use this flow and will fail. Authorised redirect URI, exactly:
    ```
-   https://riftledger.app/api/auth/oauth/google/callback
+   https://riftboundstocks.com/api/auth/oauth/google/callback
    ```
    Add `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in Vercel.
 
    **`Error 401: invalid_client` / "The OAuth client was not found"** means the `client_id` Vercel is sending doesn't match any real client in Google's system — the client was never finished being created, was deleted, or `GOOGLE_CLIENT_ID` still holds a placeholder. This is a Cloud Console / env var problem, not a code bug: recreate the client (or find the real one), confirm the redirect URI above is registered on it *exactly* (no trailing slash, right protocol), paste the real ID/secret into Vercel, and redeploy.
 4. **Discord sign-in** — [Discord Developer Portal](https://discord.com/developers/applications) → New Application → OAuth2. Redirect:
    ```
-   https://riftledger.app/api/auth/oauth/discord/callback
+   https://riftboundstocks.com/api/auth/oauth/discord/callback
    ```
    Scopes `identify` and `email`. Add `DISCORD_CLIENT_ID` and `DISCORD_CLIENT_SECRET` in Vercel.
 5. **Price-drop digest email** (optional, not needed for sign-in) — [resend.com](https://resend.com) → API Keys → add `RESEND_API_KEY` in Vercel. This only powers the Watch/Alert digest (step 8 below); OAuth accounts need no verification email and there's no password to reset.

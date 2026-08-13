@@ -16,7 +16,7 @@ import { SITE_URL } from "./site";
  * ⚠ This is RiftCompare's approved base, reused because both sites belong to the
  * same Impact account — so clicks credit correctly from day one. Two things still
  * need doing in the Impact dashboard:
- *   1. TODO(config): Add the real riftledger domain (once registered — see
+ *   1. TODO(config): Add the real riftboundstocks.com domain (once registered — see
  *      SITE_URL in lib/site.ts) as a PROPERTY on the account. Driving traffic
  *      from a domain the program hasn't been told about is how partnerships
  *      get suspended, even when the account is right.
@@ -48,11 +48,11 @@ export const IMPACT_SITE_VERIFICATION = process.env.NEXT_PUBLIC_IMPACT_SITE_VERI
 // price table earn, or the article card panels?" — which is the question that
 // decides where the next placement goes.
 //
-// The `rl-` prefix is what separates this site's revenue from RiftCompare's
+// The `rbs-` prefix is what separates this site's revenue from RiftCompare's
 // (`rc-`) inside the SAME Impact account. Without it the two sites' earnings are
 // one undifferentiated number.
 //
-// Format: rl-<placement>-<page>, e.g. `rl-card-prices-card`, `rl-article-news`.
+// Format: rbs-<placement>-<page>, e.g. `rbs-card-prices-card`, `rbs-article-news`.
 // Sanitised hard: a sub-id containing unexpected characters can be dropped, and a
 // dropped click is unattributed revenue that looks exactly like no revenue.
 const SUBID_MAX = 60;
@@ -65,7 +65,7 @@ export function affiliateSubId(...parts: (string | null | undefined)[]): string 
     .replace(/[^a-z0-9_-]+/g, "-")
     .replace(/-{2,}/g, "-")
     .replace(/^-|-$/g, "");
-  return s ? `rl-${s}`.slice(0, SUBID_MAX) : "rl";
+  return s ? `rbs-${s}`.slice(0, SUBID_MAX) : "rbs";
 }
 
 /**
@@ -117,7 +117,7 @@ export function outboundRel(): string {
 
 // ── Sibling site ─────────────────────────────────────────────────────────────
 // RiftCompare is this project's sister site: it compares live prices across
-// stores in six markets (AU/NZ/US/UK/SG/CA), where RiftLedger tracks TCGplayer
+// stores in six markets (AU/NZ/US/UK/SG/CA), where RiftboundStocks tracks TCGplayer
 // market history. Genuinely complementary, so the cross-links point at
 // something a reader on this page actually wants.
 //
@@ -127,7 +127,7 @@ export const RIFTCOMPARE_URL = "https://riftcompare.com";
 
 function tagged(url: string, source: string): string {
   const sep = url.includes("?") ? "&" : "?";
-  return `${url}${sep}ref=riftledger&utm_source=riftledger&utm_medium=referral&utm_campaign=${encodeURIComponent(source)}`;
+  return `${url}${sep}ref=riftboundstocks&utm_source=riftboundstocks&utm_medium=referral&utm_campaign=${encodeURIComponent(source)}`;
 }
 
 export function riftcompareUrl(path = "", source = "footer"): string {
