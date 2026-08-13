@@ -1,0 +1,48 @@
+name: Push database schema
+
+# Manual only. Applies prisma/schema.prisma to whatever DATABASE_URL points
+# at — the step nothing else in this repo does automatically. `postinstall`
+# (which runs on every `npm ci`/`npm install`, including Vercel's build) only
+# runs `prisma generate`, which generates CLIENT CODE from the schema — it
+# never touches the actual database, so setting DATABASE_URL in Vercel alone
+# does not create the User/PriceAlert/CollectionCard/AuthToken tables. This
+# workflow is that missing step, runnable from a browser with no local Node
+# or Prisma install.
+#
+# One-time setup: repo Settings → Secrets and variables → Actions → New
+# repository secret → name it DATABASE_URL, same value as in Vercel.
+# Then: Actions tab → "Push database schema" → Run workflow.
+# Run it again any time a commit adds to prisma/schema.prisma, before the
+# feature that needs the new table/column goes live.
+#
+# Safe by default: `prisma db push` refuses to apply a change that would
+# drop or truncate existing data unless run with --accept-data-loss, which
+# is deliberately not passed here — a genuinely destructive schema change
+# needs someone to decide that on purpose, not a routine sync.
+
+on:
+  workflow_dispatch: {}
+
+concurrency:
+  group: db-push
+  cancel-in-progress: false
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Push schema
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npx prisma db push

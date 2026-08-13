@@ -72,21 +72,19 @@ You need this the moment you want prices that *accumulate* rather than being rec
    ```
    DATABASE_URL = <the pooled connection string>
    ```
-5. Locally, put the same line in `.env.local`, then create the tables:
-   ```bash
-   npm run db:push
-   ```
+5. Create the tables. Two ways — same effect, pick whichever you have:
+   - **Locally**, if you have Node installed: put the same connection string in `.env.local`, then `npm run db:push`.
+   - **No local setup needed**: add the connection string as a repository secret named `DATABASE_URL` (repo **Settings → Secrets and variables → Actions → New repository secret**), then **Actions** tab → **"Push database schema"** → **Run workflow**. Re-run it any time a commit adds to `prisma/schema.prisma`, before the feature that needs the new table goes live.
 
 > Neon's free tier suspends a database that has been idle for a few minutes; the first query after that takes a second or two to wake it. Fine for this workload.
+>
+> **Setting `DATABASE_URL` in Vercel is not the same as running this step.** Vercel's build only runs `prisma generate` (which generates client *code*, not tables) — nothing deploy-time ever pushes the schema itself. Skipping this step is the single most common cause of a working-looking `/login` that 500s the moment someone actually signs in.
 
 ## Step 5 — Turn on accounts (optional)
 
 **Google or Discord sign-in only — there is no email/password option.** Needs Step 4 done first — accounts store a `User` row, so there's nowhere to put one without a database. Until then `/login` and `/signup` just say accounts aren't configured, same as every other feature below that needs a key.
 
-1. Add the tables:
-   ```bash
-   npm run db:push
-   ```
+1. Add the tables — same two options as step 4 (`npm run db:push` locally, or the "Push database schema" GitHub Action if you'd rather not touch a terminal). If you already did this in step 4, the accounts tables (`User`, `AuthToken`) came along for free — `db push` applies the whole schema at once, not per-feature.
 2. Set a session secret in Vercel (Production, Preview and Development):
    ```
    AUTH_SECRET = <output of: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))">
@@ -163,6 +161,8 @@ A non-commercial deployment on your own domain costs about **$12/year**. Vercel'
 **`/login` and `/signup` say accounts aren't configured** — `DATABASE_URL` isn't set (step 4), or `AUTH_SECRET` isn't, or neither OAuth provider is fully configured (step 3/4 — a provider needs *both* its client id and secret set, or it stays hidden rather than showing a button that fails). Redeploy after fixing whichever one it was.
 
 **Google sign-in fails with `Error 401: invalid_client`** — see step 5's note. This is a Google Cloud Console / env var mismatch, not a code issue.
+
+**Sign-in gets as far as the provider, then the site throws a 500 (or, since that's now caught, redirects to `/login` with "couldn't finish setting up your account")** — `DATABASE_URL` is set but the tables were never created. This is easy to hit because nothing in the deploy pipeline runs `db push` automatically — see the note at the end of step 4. Run it (locally or via the "Push database schema" Action) and try again. If it still fails afterward, check the Vercel function logs for the `/api/auth/oauth/[provider]/callback` route — the real error is logged there (most likely `AUTH_SECRET` missing next).
 
 **"Compare stores" grid or regional prices missing from a card page** — expected for a lot of cards, not a bug: that section is sourced live from RiftCompare (see `DATA_INTEGRATION.md`) and only renders when RiftCompare has a match for that exact printing. No setup needed either way — it isn't gated by an env var, only by `RIFTCOMPARE_API_URL` being reachable (it defaults to production RiftCompare) and that specific card having a match there.
 
