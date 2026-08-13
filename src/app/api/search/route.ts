@@ -3,8 +3,14 @@ import { searchCards } from "@/lib/catalog";
 import { latestQuote } from "@/lib/prices";
 
 // Search runs on the server so the client never downloads the 950-card index.
-// The catalogue is static for the life of a deploy, so responses are cacheable.
-export const dynamic = "force-static";
+//
+// Must stay force-dynamic: this route's entire output depends on `?q=`, and
+// force-static previously prerendered it once at build time with no query
+// string, then served that one cached `{results: []}` response to every
+// request in production forever, regardless of what was typed. The lookup
+// itself is an in-memory array scan (sub-millisecond), so there's no real
+// cost to computing it per request — the "cacheable" premise was the bug.
+export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   const q = new URL(request.url).searchParams.get("q") ?? "";

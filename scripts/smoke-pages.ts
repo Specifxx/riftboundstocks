@@ -59,11 +59,13 @@ async function main() {
 
   for (const route of all) {
     const expect404 = route.endsWith("does-not-exist");
+    // Retired but possibly bookmarked or indexed — redirected home, not 404.
+    const expect307 = route === "/premium";
     const started = Date.now();
     try {
       const res = await fetch(`${BASE}${route}`, { redirect: "manual" });
       const ms = Date.now() - started;
-      const ok = expect404 ? res.status === 404 : res.status === 200;
+      const ok = expect404 ? res.status === 404 : expect307 ? res.status === 307 : res.status === 200;
       if (!ok) failures.push(`${route} → ${res.status}`);
       console.log(`${ok ? "  ok " : "FAIL "} ${String(res.status).padEnd(4)} ${String(ms).padStart(5)}ms  ${route}`);
     } catch (e) {
