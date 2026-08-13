@@ -2,16 +2,27 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CARDS, cardBySlug, otherPrintings } from "@/lib/catalog";
-import { activeSource, cardStats, priceHistory, latestQuote, topByMarket, primaryPrice } from "@/lib/prices";
+import {
+  activeSource,
+  cardStats,
+  priceHistory,
+  latestQuote,
+  topByMarket,
+  primaryPrice,
+  fetchCardListings,
+  fetchRegionalPrices,
+} from "@/lib/prices";
 import { cardDetail } from "@/lib/card-details";
 import { tcgSearchUrl } from "@/lib/prices/tcgplayer";
-import { affiliateUrl, outboundRel, riftcompareCardUrl } from "@/lib/affiliate";
+import { affiliateUrl, outboundRel } from "@/lib/affiliate";
 import { FORMATS, SET_BY_CODE, domainInfo } from "@/lib/riftbound";
 import { formatMoney, formatDate } from "@/lib/format";
 import { OFFICIAL_CARD_DB_URL, SITE_NAME, SITE_URL } from "@/lib/site";
 import { CardImage } from "@/components/CardImage";
 import { PriceChart } from "@/components/PriceChart";
 import { CardActions } from "@/components/CardActions";
+import { StoreListings } from "@/components/StoreListings";
+import { ShoppingRegions } from "@/components/ShoppingRegions";
 import { AltCurrencyCell, AltCurrencyHeader, Money } from "@/components/Prefs";
 import { Delta, DemoPricesNotice, DomainPill, RarityPill } from "@/components/Bits";
 import { AffiliateDisclosure } from "@/components/AffiliateDisclosure";
@@ -60,7 +71,7 @@ function StatRow({ label, children }: { label: string; children: React.ReactNode
   );
 }
 
-export default function CardPage({ params }: { params: { slug: string } }) {
+export default async function CardPage({ params }: { params: { slug: string } }) {
   const card = cardBySlug(params.slug);
   if (!card) notFound();
 
@@ -72,6 +83,14 @@ export default function CardPage({ params }: { params: { slug: string } }) {
   const source = activeSource();
   const detail = cardDetail(card.id);
   const domain = domainInfo(card.domain);
+
+  // RiftCompare supplementary data — genuinely independent of everything
+  // above (which is all synchronous, catalogue-file-backed), fetched once in
+  // parallel. Both resolve to null on any failure (network, no match for this
+  // printing) and every consumer below already renders around that; a slow or
+  // down RiftCompare degrades this page to exactly what it was before these
+  // existed, never a broken one.
+  const [listings, regional] = await Promise.all([fetchCardListings(card), fetchRegionalPrices(card)]);
 
   const summary = [
     { label: "Low", cents: q.low, tone: "text-ink" },
@@ -130,7 +149,8 @@ export default function CardPage({ params }: { params: { slug: string } }) {
           them. Without that the entire left column — art, actions, every card
           detail, the rules text — would sit between the title and the chart,
           and the chart is the reason the page exists. Phone order: art and
-          prices, chart, vendor prices and data, other printings, card details. */}
+          prices, chart, vendor prices and data, compare-stores grid, other
+          printings, decks, card details. */}
       <div className="grid gap-4 lg:grid-cols-[290px_minmax(0,1fr)]">
         {/* ── Left: art, quick prices, actions ─────────────────────────────── */}
         <div className="contents lg:block lg:sticky lg:top-[72px] lg:self-start">
@@ -154,10 +174,10 @@ export default function CardPage({ params }: { params: { slug: string } }) {
               </dl>
             </div>
 
-            <CardActions cardName={card.name} />
+            <CardActions cardId={card.id} cardName={card.name} />
           </div>
 
-          <div className="panel order-5 min-w-0 p-4 lg:mt-4">
+          <div className="panel order-7 min-w-0 p-4 lg:mt-4">
             <h2 className="eyebrow mb-2">Card details</h2>
             <dl className="text-[13px]">
               <StatRow label="Type">
@@ -286,17 +306,7 @@ export default function CardPage({ params }: { params: { slug: string } }) {
 
               {/* The sister site covers what this one doesn't: live store prices
                   in six markets, where this page is TCGplayer history only. */}
-              <p className="mt-2 text-[11px] leading-relaxed text-ink-dim">
-                Shopping outside the US?{" "}
-                <a
-                  href={riftcompareCardUrl(card.name, "card-prices")}
-                  target="_blank"
-                  rel="noopener"
-                  className="font-semibold text-accent hover:underline"
-                >
-                  Compare {card.name} across AU, NZ, UK, SG and CA stores on RiftCompare →
-                </a>
-              </p>
+              <ShoppingRegions cardName={card.name} prices={regional} />
             </section>
 
             {/* Data panel */}
@@ -378,8 +388,16 @@ export default function CardPage({ params }: { params: { slug: string } }) {
             </section>
           </div>
 
+          {/* Full multi-vendor grid — every store RiftCompare tracks, not
+              just TCGplayer. Renders nothing when there's no match. */}
+          {listings && (
+            <div className="order-4 min-w-0">
+              <StoreListings data={listings} />
+            </div>
+          )}
+
           {/* Other printings */}
-          <section className="panel order-4 min-w-0 p-4">
+          <section className="panel order-5 min-w-0 p-4">
             <h2 className="eyebrow mb-3">Other printings</h2>
             {printings.length === 0 ? (
               <p className="text-[13px] text-ink-dim">
@@ -431,6 +449,14 @@ export default function CardPage({ params }: { params: { slug: string } }) {
                 </table>
               </div>
             )}
+          </section>
+
+          {/* Decks: no real deck-building data source exists yet (this site
+              tracks prices, not deck lists), so this says so plainly instead
+              of shipping empty or fabricated placeholder decks. */}
+          <section className="panel order-6 min-w-0 p-4">
+            <h2 className="eyebrow mb-2">Decks using this card</h2>
+            <p className="text-[13px] text-ink-dim">No recent decks found.</p>
           </section>
         </div>
       </div>

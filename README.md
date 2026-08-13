@@ -27,6 +27,11 @@ Prices are imported from TCGplayer by `npm run prices:import` and committed to t
 
 A fresh clone with no imported data falls back to `src/lib/prices/synthetic.ts`, a generator, and every surface then renders a prominent demo-data warning. That switch is driven by the data itself (`PRICES_ARE_DEMO` in `lib/prices/demo-flag.ts`), not by an env var someone has to remember to set.
 
+A card page's "Compare stores" grid and AU/NZ/UK/SG/CA prices are a **third** real data
+source — RiftCompare's public API, not TCGplayer — layered on top of the above. See
+**[DATA_INTEGRATION.md](./DATA_INTEGRATION.md)** for that integration, plus how
+accounts/Watch/Portfolio and the Games nav link fit together.
+
 ---
 
 ## Quick start
@@ -78,6 +83,7 @@ src/
       sealed.ts           sealed product types + the ordered classifier
       store.ts            the on-disk file shapes
       index.ts            public pricing API + movers/stats analytics
+      riftcompare.ts      multi-vendor + regional prices — see DATA_INTEGRATION.md
     content/              articles, fictional authors, editorial types
   data/
     riftbound-cards.json  booster-set catalogue (RiftScribe)
@@ -174,4 +180,6 @@ Author avatars are procedurally generated abstract SVG, not faces. No real perso
 
 ## Deployment
 
-See **[DEPLOYMENT.md](./DEPLOYMENT.md)** for the full Vercel + Neon + domain walkthrough.
+See **[DEPLOYMENT.md](./DEPLOYMENT.md)** for the full Vercel + Neon + domain walkthrough,
+and **[DATA_INTEGRATION.md](./DATA_INTEGRATION.md)** for the RiftCompare / accounts /
+engagement-feature integration.

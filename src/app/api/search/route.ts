@@ -15,6 +15,7 @@ export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   const q = new URL(request.url).searchParams.get("q") ?? "";
   const results = searchCards(q, 8).map((c) => ({
+    id: c.id,
     slug: c.slug,
     name: c.name,
     setName: c.setName,
