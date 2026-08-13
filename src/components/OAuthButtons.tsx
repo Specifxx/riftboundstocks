@@ -8,6 +8,7 @@ const OAUTH_ERRORS: Record<string, string> = {
   oauth_token: "Couldn't complete sign-in with that provider. Please try again.",
   oauth_profile: "Couldn't read your profile from that provider. Please try again.",
   oauth_noemail: "That provider didn't share an email address, which we need to create your account.",
+  oauth_account: "Signed in with the provider, but couldn't finish setting up your account. Please try again shortly.",
 };
 
 // Google/Discord only — no email/password. The whole flow is: click a
