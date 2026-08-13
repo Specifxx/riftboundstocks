@@ -230,9 +230,10 @@ real deck-list source appears later, this is the one place that needs to change.
 
 ## What was deliberately left out
 
-- **Payment/billing.** Premium (`/premium`) stays illustrative — pricing tiers and a
-  feature list, no Stripe, no paywall. Out of scope per the task; building a partial
-  billing integration would be worse than not having one.
+- **Payment/billing.** Out of scope per the task. `/premium` itself was removed by a
+  concurrent change (it showed pricing tiers with no billing behind them — pulled rather
+  than shown unpurchasable now that accounts are real; `/premium` redirects to `/`). No
+  billing was added in its place here either.
 - **A second auth system.** Covered above — reusing the existing one avoids two
   parallel user tables.
 - **Direct RiftCompare database access.** Covered above.
