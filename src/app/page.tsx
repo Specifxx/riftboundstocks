@@ -8,6 +8,8 @@ import {
   latestQuote,
   quoteDaysAgo,
   pctChange,
+  fetchCardListings,
+  cheapestEbayCents,
   HAS_CHANGE_DATA,
   HISTORY_LENGTH,
 } from "@/lib/prices";
@@ -116,7 +118,7 @@ const toRow = (card: RiftCard, now: number | null, then?: number | null, pct?: n
   pct,
 });
 
-export default function HomePage() {
+export default async function HomePage() {
   const articles = sortedArticles();
   const featured = featuredArticles(1)[0];
   const rest = articles.filter((a) => a.slug !== featured?.slug).slice(0, 6);
@@ -126,6 +128,18 @@ export default function HomePage() {
   // real prices, honestly labelled, instead of an empty panel or a fake move.
   const trending = trendingCards(4);
   const topValue = topByMarket(10);
+
+  // The four Trending Cards tiles, independent of which branch supplies them.
+  const trendingTiles: { card: RiftCard; pct: number | null }[] = HAS_CHANGE_DATA
+    ? trending.map((m) => ({ card: m.card, pct: m.pct }))
+    : topValue.slice(0, 4).map(({ card }) => ({ card, pct: null }));
+
+  // eBay's headline price per tile, read from RiftCompare's already-cached
+  // listings grid (see cheapestEbayCents in lib/prices/riftcompare.ts) — never
+  // a direct eBay call, so this never spends eBay API quota. null on any miss
+  // (RiftCompare down, or no match for this printing) and the tile just shows
+  // a dash for that price, same as an unpriced TCGplayer figure.
+  const trendingListings = await Promise.all(trendingTiles.map((t) => fetchCardListings(t.card)));
 
   const moverRows: CardRow[] = HAS_CHANGE_DATA
     ? movers("market", 1, 300).slice(0, 10).map((m) => toRow(m.card, m.now, m.then, m.pct))
@@ -141,9 +155,9 @@ export default function HomePage() {
         </SectionTitle>
         {!HAS_CHANGE_DATA && <HistoryNotice className="mb-3" />}
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {HAS_CHANGE_DATA
-            ? trending.map((m) => <TrendingTile key={m.card.id} card={m.card} pct={m.pct} />)
-            : topValue.slice(0, 4).map(({ card }) => <TrendingTile key={card.id} card={card} />)}
+          {trendingTiles.map((t, i) => (
+            <TrendingTile key={t.card.id} card={t.card} pct={t.pct} ebayCents={cheapestEbayCents(trendingListings[i])} />
+          ))}
         </div>
         <DemoPricesNotice className="mt-3" />
       </section>

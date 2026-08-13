@@ -11,7 +11,7 @@ export { HAS_LIVE_PRICES, HISTORY_DAYS, LIVE_FETCHED_AT } from "./live";
 // RiftCompare supplementary data (multi-vendor comparison + regional prices) —
 // NOT the headline price, see riftcompare.ts's own header comment. Re-exported
 // here so pages only ever import from "@/lib/prices".
-export { fetchCardListings, fetchRegionalPrices } from "./riftcompare";
+export { fetchCardListings, fetchRegionalPrices, cheapestEbayCents } from "./riftcompare";
 export type { CardListings, StoreListing, RegionalPrices } from "./riftcompare";
 
 /**
