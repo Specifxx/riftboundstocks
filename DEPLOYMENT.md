@@ -112,30 +112,29 @@ Needs Step 4 done first — accounts store a `User` row, so there's nowhere to p
 npm run prices:import
 ```
 
-This matches all 950 catalogue cards against TCGplayer's product list and writes one snapshot per printing for today. Run it once to check the match rate — expect most cards to match; anything near zero means the matcher needs attention, and the script deliberately refuses to write in that case.
+This matches all 950 catalogue cards against TCGplayer's product list and writes one snapshot per printing for today into `src/data/prices.json` (plus a day's column in `src/data/price-history.json`). Run it once to check the match rate — expect most cards to match; anything near zero means the matcher needs attention, and the script deliberately refuses to write in that case. Needs no credentials — it reads TCGplayer's own public search endpoint, the same one their website uses.
 
 **Read TCGplayer's [API terms](https://developer.tcgplayer.com/) before you run this regularly.** Their pricing data is licensed: attribution is required wherever it appears, it can't be presented as your own, and bulk redistribution isn't permitted.
 
-### Schedule it daily
+### It's already scheduled daily — as a GitHub Action, not a Vercel cron
 
-Add to `vercel.json`:
+`.github/workflows/refresh-prices.yml` runs this import at 06:10 UTC every day and **commits the new snapshot straight to the repo** — the commit is what triggers Vercel's redeploy, not a cron hitting a route. This works out of the box on a fork with no setup; the only thing worth knowing is that `git push` in that workflow needs the repo's default `GITHUB_TOKEN` to have write access (Settings → Actions → General → Workflow permissions → **Read and write**), which is on by default for a repo you created yourself.
 
-```json
-{
-  "crons": [{ "path": "/api/cron/refresh-prices", "schedule": "0 6 * * *" }]
-}
-```
+If you'd rather also mirror snapshots into Postgres (for querying outside the site itself), set the `DATABASE_URL` repository secret in GitHub — see `scripts/prisma-sink.ts`. The site itself never reads prices from Postgres either way; `src/data/prices.json` is the only source `activeSource()` reads at request time.
 
-…then write `src/app/api/cron/refresh-prices/route.ts` to call the same import logic, guarded by a `CRON_SECRET` check so the endpoint can't be triggered by anyone who guesses the path. (Vercel Cron is once-a-day on the Hobby plan, which is exactly what daily snapshots need.)
+## Step 7 — Demo banners disappear on their own
 
-## Step 7 — Switch the site off demo data
+Nothing to configure here. `PRICES_ARE_DEMO` (see `lib/prices/demo-flag.ts`) is `true` exactly when `src/data/prices.json` is empty — it flips to `false`, and every "demo data" banner disappears, the moment step 6's import has run once and been committed. There is no env var that controls this and nothing to set in Vercel; redeploying after the GitHub Action's first commit is enough.
 
-Two changes, in this order:
+## Step 8 — Price-drop watch alerts (optional, needs step 5)
 
-1. In `src/lib/prices/index.ts`, point `activeSource()` at a Prisma-backed reader instead of `syntheticSource`.
-2. Set `TCGPLAYER_PUBLIC_KEY` in Vercel.
+"Watch" on a card page emails a subscriber when the price drops — needs accounts (step 5) plus a cron trigger, which unlike step 6 genuinely does run through Vercel:
 
-That second variable is what flips `PRICES_ARE_DEMO` to `false` and strips the demo disclaimers from every page. **Do not set it until step 1 is genuinely working** — it is the only thing stopping the site presenting generated numbers as real market data.
+1. `vercel.json` already declares the schedule (`/api/cron/price-alerts`, daily). Nothing to add there.
+2. Set `CRON_SECRET` in Vercel (Production) — any long random string. Vercel Cron sends it as a bearer token automatically once the var exists; the route rejects any request without a matching one.
+3. `RESEND_API_KEY` (step 5) covers the digest email too — no separate key.
+
+Without `CRON_SECRET` the route still runs (anyone who finds the path could trigger a check early), so set it before pointing real users at Watch.
 
 ---
 
@@ -157,8 +156,12 @@ A non-commercial deployment on your own domain costs about **$12/year**. Vercel'
 
 **Canonicals / sitemap point at `*.vercel.app`** — `NEXT_PUBLIC_SITE_URL` isn't set, or you didn't redeploy after setting it.
 
-**Prices look identical to yesterday** — expected on the demo generator, which advances one point per real day. Real movement needs steps 4, 6 and 7.
+**Prices look identical to yesterday** — expected on the demo generator, which advances one point per real day. Real movement needs step 6 (which needs no database — `src/data/prices.json` is a repo file, not a table); step 4 is only needed for accounts and the optional Postgres price mirror, not for prices themselves.
 
 **`/login` and `/signup` show the disabled form** — `DATABASE_URL` isn't set (step 4), or you didn't redeploy after setting it. Email/password sign-in needs `DATABASE_URL` + `AUTH_SECRET` only; a Google or Discord button needs *both* of that provider's env vars, or it stays hidden rather than showing and failing.
 
 **Verification / reset emails never arrive** — `RESEND_API_KEY` isn't set, so the site is logging a warning and not sending instead of erroring. Accounts still work without it (you just can't complete email verification), but set it before pointing real users at sign-up.
+
+**"Compare stores" grid or regional prices missing from a card page** — expected for a lot of cards, not a bug: that section is sourced live from RiftCompare (see `DATA_INTEGRATION.md`) and only renders when RiftCompare has a match for that exact printing. No setup needed either way — it isn't gated by an env var, only by `RIFTCOMPARE_API_URL` being reachable (it defaults to production RiftCompare) and that specific card having a match there.
+
+**Watch emails never arrive** — same shape as verification emails: check `RESEND_API_KEY` first, then confirm the Vercel Cron is actually configured (step 8) — `vercel.json` declares the schedule, but Vercel only registers crons that were present in the **Production** deployment, so a first deploy without `CRON_SECRET` set still needs a redeploy once it's added.
