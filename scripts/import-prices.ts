@@ -129,8 +129,17 @@ async function main() {
 
   if (process.env.DATABASE_URL) {
     console.log("\nDATABASE_URL is set — mirroring the snapshot to Postgres…");
-    const { writeSnapshotToPrisma } = await import("./prisma-sink");
-    await writeSnapshotToPrisma(day, data);
+    // The JSON files above are the source of truth and are already written to
+    // disk at this point; Postgres is a secondary mirror (see prisma-sink.ts's
+    // header comment). The scheduled workflow commits those files as its very
+    // next step, gated on this process's exit code — an unexpected failure in
+    // the optional mirror must never take that commit down with it.
+    try {
+      const { writeSnapshotToPrisma } = await import("./prisma-sink");
+      await writeSnapshotToPrisma(day, data);
+    } catch (e) {
+      console.error("Postgres mirror failed — snapshot files were already written, continuing.", e);
+    }
   }
 }
 

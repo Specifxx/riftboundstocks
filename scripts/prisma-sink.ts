@@ -22,7 +22,10 @@ export async function writeSnapshotToPrisma(day: string, data: Map<string, TcgCa
   try {
     for (const [cardId, d] of data) {
       const card = byId.get(cardId);
-      if (!card || d.quote.market == null) continue;
+      // card.type is null for a handful of physical reference/counter prints
+      // (e.g. "XP Tracker") that have no real gameplay type — Card.type is a
+      // required column, so those rows would otherwise fail the upsert below.
+      if (!card || d.quote.market == null || !card.type) continue;
 
       const row = await prisma.card.upsert({
         where: { externalId: card.id },
