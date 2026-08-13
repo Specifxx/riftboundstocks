@@ -10,6 +10,7 @@ import { CookieNotice } from "@/components/CookieNotice";
 import { THEME_STORAGE_KEY } from "@/lib/currency";
 import { SITE_NAME, SITE_TAGLINE, SITE_URL } from "@/lib/site";
 import { IMPACT_SITE_VERIFICATION } from "@/lib/affiliate";
+import { Analytics } from "@vercel/analytics/next";
 
 // Body/UI: a clean humanist sans, for readability. Section titles: Cinzel, an
 // angular heroic display serif — the "illuminated ledger" voice the identity
@@ -85,6 +86,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Footer />
           <CookieNotice />
         </PrefsProvider>
+        <Analytics />
       </body>
     </html>
   );
