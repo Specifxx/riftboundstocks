@@ -31,17 +31,17 @@ export async function sendEmail(to: string, subject: string, html: string): Prom
   }
 }
 
-// On-brand HTML wrapper for transactional emails — same navy/blue palette as
-// the site itself (see the --surface-0/--accent tokens in globals.css).
+// On-brand HTML wrapper for transactional emails — same near-black/mint-green
+// palette as the site itself (see the --surface-0/--accent tokens in globals.css).
 function layout(heading: string, body: string, cta: { label: string; url: string }): string {
-  return `<!doctype html><html><body style="margin:0;background:#0d1b2a;font-family:Arial,Helvetica,sans-serif">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0d1b2a;padding:32px 0"><tr><td align="center">
-    <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="background:#122333;border:1px solid #22374e;border-radius:16px">
-      <tr><td style="padding:28px 32px 6px"><div style="font-size:20px;font-weight:700;color:#e9eef5;text-transform:uppercase;letter-spacing:0.02em">Riftbound<span style="color:#4da3ff">Stocks</span></div></td></tr>
-      <tr><td style="padding:6px 32px 4px"><h1 style="margin:0;font-size:20px;color:#e9eef5">${heading}</h1></td></tr>
-      <tr><td style="padding:8px 32px 16px;font-size:14px;line-height:1.6;color:#9eb0c4">${body}</td></tr>
-      <tr><td style="padding:4px 32px 26px"><a href="${cta.url}" style="display:inline-block;background:#4da3ff;color:#08121e;font-weight:700;text-decoration:none;padding:12px 22px;border-radius:10px">${cta.label}</a></td></tr>
-      <tr><td style="padding:16px 32px 26px;border-top:1px solid #22374e;font-size:12px;color:#7c95a8">RiftboundStocks · Riftbound TCG price tracking.<br/>If you didn't request this, you can safely ignore this email.</td></tr>
+  return `<!doctype html><html><body style="margin:0;background:#0b0e14;font-family:Arial,Helvetica,sans-serif">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0b0e14;padding:32px 0"><tr><td align="center">
+    <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="background:#0e1116;border:1px solid #252b38;border-radius:16px">
+      <tr><td style="padding:28px 32px 6px"><div style="font-size:20px;font-weight:700;color:#e8eaee;text-transform:uppercase;letter-spacing:0.02em">Riftbound<span style="color:#34d17e">Stocks</span></div></td></tr>
+      <tr><td style="padding:6px 32px 4px"><h1 style="margin:0;font-size:20px;color:#e8eaee">${heading}</h1></td></tr>
+      <tr><td style="padding:8px 32px 16px;font-size:14px;line-height:1.6;color:#94a3b8">${body}</td></tr>
+      <tr><td style="padding:4px 32px 26px"><a href="${cta.url}" style="display:inline-block;background:#34d17e;color:#060f0b;font-weight:700;text-decoration:none;padding:12px 22px;border-radius:10px">${cta.label}</a></td></tr>
+      <tr><td style="padding:16px 32px 26px;border-top:1px solid #252b38;font-size:12px;color:#64748b">RiftboundStocks · Riftbound TCG price tracking.<br/>If you didn't request this, you can safely ignore this email.</td></tr>
     </table></td></tr></table></body></html>`;
 }
 
@@ -87,30 +87,30 @@ export interface PriceDropItem {
 }
 
 function emailShell(heading: string, inner: string, footer: string): string {
-  return `<!doctype html><html><body style="margin:0;background:#0d1b2a;font-family:Arial,Helvetica,sans-serif">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0d1b2a;padding:32px 0"><tr><td align="center">
-    <table role="presentation" width="520" cellpadding="0" cellspacing="0" style="background:#122333;border:1px solid #22374e;border-radius:16px">
-      <tr><td style="padding:28px 32px 6px"><div style="font-size:20px;font-weight:700;color:#e9eef5;text-transform:uppercase;letter-spacing:0.02em">Riftbound<span style="color:#4da3ff">Stocks</span></div></td></tr>
-      <tr><td style="padding:6px 32px 4px"><h1 style="margin:0;font-size:20px;color:#e9eef5">${heading}</h1></td></tr>
+  return `<!doctype html><html><body style="margin:0;background:#0b0e14;font-family:Arial,Helvetica,sans-serif">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0b0e14;padding:32px 0"><tr><td align="center">
+    <table role="presentation" width="520" cellpadding="0" cellspacing="0" style="background:#0e1116;border:1px solid #252b38;border-radius:16px">
+      <tr><td style="padding:28px 32px 6px"><div style="font-size:20px;font-weight:700;color:#e8eaee;text-transform:uppercase;letter-spacing:0.02em">Riftbound<span style="color:#34d17e">Stocks</span></div></td></tr>
+      <tr><td style="padding:6px 32px 4px"><h1 style="margin:0;font-size:20px;color:#e8eaee">${heading}</h1></td></tr>
       ${inner}
       ${footer}
     </table></td></tr></table></body></html>`;
 }
 
 function alertFooter(unsubUrl: string): string {
-  return `<tr><td style="padding:16px 32px 26px;border-top:1px solid #22374e;font-size:12px;color:#7c95a8">
+  return `<tr><td style="padding:16px 32px 26px;border-top:1px solid #252b38;font-size:12px;color:#64748b">
     You're getting this because you set an alert on ${SITE_NAME}.<br/>
-    <a href="${unsubUrl}" style="color:#9eb0c4;text-decoration:underline">Unsubscribe from price alerts</a> · ${SITE_NAME}</td></tr>`;
+    <a href="${unsubUrl}" style="color:#94a3b8;text-decoration:underline">Unsubscribe from price alerts</a> · ${SITE_NAME}</td></tr>`;
 }
 
 function dropRow(item: PriceDropItem): string {
   const pct = item.oldCents > 0 ? Math.round(((item.oldCents - item.newCents) / item.oldCents) * 100) : 0;
-  return `<tr><td style="padding:12px 0;border-bottom:1px solid #22374e">
-    <a href="${item.url}" style="color:#e9eef5;font-weight:700;text-decoration:none;font-size:15px">${item.name}</a>
-    <div style="font-size:12px;color:#7c95a8;margin-top:2px">${item.setCode} · ${item.collectorLabel}</div>
-    <div style="margin-top:6px;font-size:14px;color:#9eb0c4">
-      <span style="color:#7c95a8;text-decoration:line-through">${formatMoney(item.oldCents)}</span>
-      &nbsp;→&nbsp;<span style="color:#4da3ff;font-weight:700">${formatMoney(item.newCents)}</span>
+  return `<tr><td style="padding:12px 0;border-bottom:1px solid #252b38">
+    <a href="${item.url}" style="color:#e8eaee;font-weight:700;text-decoration:none;font-size:15px">${item.name}</a>
+    <div style="font-size:12px;color:#64748b;margin-top:2px">${item.setCode} · ${item.collectorLabel}</div>
+    <div style="margin-top:6px;font-size:14px;color:#94a3b8">
+      <span style="color:#64748b;text-decoration:line-through">${formatMoney(item.oldCents)}</span>
+      &nbsp;→&nbsp;<span style="color:#34d17e;font-weight:700">${formatMoney(item.newCents)}</span>
       ${pct > 0 ? `&nbsp;<span style="background:#132a1e;color:#3fb950;font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px">-${pct}%</span>` : ""}
     </div>
   </td></tr>`;
@@ -123,9 +123,9 @@ export async function sendPriceDropEmail(to: string, items: PriceDropItem[], uns
   const heading = count === 1 ? "A watched card just got cheaper" : `${count} watched cards just got cheaper`;
   const intro = `Good news — ${count === 1 ? "a card you're watching" : "some cards you're watching"} dropped in price:`;
   const inner = `
-    <tr><td style="padding:8px 32px 4px;font-size:14px;line-height:1.6;color:#9eb0c4">${intro}</td></tr>
+    <tr><td style="padding:8px 32px 4px;font-size:14px;line-height:1.6;color:#94a3b8">${intro}</td></tr>
     <tr><td style="padding:4px 32px 12px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">${items.map(dropRow).join("")}</table></td></tr>
-    <tr><td style="padding:4px 32px 24px"><a href="${SITE_URL}/interests" style="display:inline-block;background:#4da3ff;color:#08121e;font-weight:700;text-decoration:none;padding:12px 22px;border-radius:10px">See today's movers</a></td></tr>`;
+    <tr><td style="padding:4px 32px 24px"><a href="${SITE_URL}/interests" style="display:inline-block;background:#34d17e;color:#060f0b;font-weight:700;text-decoration:none;padding:12px 22px;border-radius:10px">See today's movers</a></td></tr>`;
   const subject = count === 1 ? `Price drop: ${items[0]!.name} is now ${formatMoney(items[0]!.newCents)}` : `Price drops on ${count} of your watched cards`;
   return sendEmail(to, subject, emailShell(heading, inner, alertFooter(unsubUrl)));
 }

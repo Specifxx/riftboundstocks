@@ -12,7 +12,7 @@ export const SITE_URL = (
       : "http://localhost:3000")
 ).replace(/\/$/, "");
 
-export const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL || "hello@riftboundstocks.com";
+export const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL || "riftcompare@gmail.com";
 
 // Riot's official Riftbound card database — the authoritative source every card
 // page links out to, since this site publishes prices, not rules text.

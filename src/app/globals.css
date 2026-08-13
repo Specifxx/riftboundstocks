@@ -6,20 +6,22 @@
    opt-in override on [data-theme="light"], set by ThemeToggle and applied before
    first paint by the inline script in layout.tsx. Every colour the site uses is
    declared here as an `R G B` triple so Tailwind's `<alpha-value>` syntax keeps
-   working (see tailwind.config.ts). */
+   working (see tailwind.config.ts). The dark surfaces and accent below are
+   sibling site RiftCompare's (riftcompare.com) own values — its near-black
+   background scale and its brand-400/500/600 mint green — not an approximation. */
 :root {
-  --surface-0: 13 27 42;
-  --surface-1: 18 34 51;
-  --surface-2: 24 43 63;
-  --surface-3: 31 54 78;
-  --line: 34 55 78;
-  --line-strong: 48 74 102;
-  --ink: 233 238 245;
-  --ink-muted: 158 176 196;
-  --ink-dim: 124 145 168;
-  --accent: 77 163 255;
-  --accent-soft: 24 58 96;
-  --accent-ink: 8 18 30;
+  --surface-0: 11 14 20;
+  --surface-1: 14 17 22;
+  --surface-2: 19 23 31;
+  --surface-3: 25 30 40;
+  --line: 37 43 56;
+  --line-strong: 51 59 77;
+  --ink: 232 234 238;
+  --ink-muted: 148 163 184;
+  --ink-dim: 100 116 139;
+  --accent: 52 209 126;
+  --accent-soft: 18 48 36;
+  --accent-ink: 6 15 11;
   --up: 63 185 80;
   --down: 240 80 110;
   --foil: 202 168 90;
@@ -36,8 +38,10 @@
   --ink: 16 28 43;
   --ink-muted: 71 90 113;
   --ink-dim: 98 118 142;
-  --accent: 20 96 186;
-  --accent-soft: 219 233 250;
+  /* Darkened from the dark theme's RiftCompare brand-400 (#34d17e), the same way
+     --up/--down below are darkened — a straight port fails contrast on white. */
+  --accent: 24 128 74;
+  --accent-soft: 224 240 233;
   --accent-ink: 255 255 255;
   /* Darkened from the dark-theme values: #3fb950 and #f0506e both fail contrast
      on a white panel, and these two colours carry meaning (gain/loss) rather

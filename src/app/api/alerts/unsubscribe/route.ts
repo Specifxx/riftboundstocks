@@ -10,9 +10,9 @@ export async function GET(req: Request) {
   const page = (message: string) =>
     new Response(
       `<!doctype html><html><head><meta charset="utf-8"><title>Unsubscribe — ${SITE_NAME}</title></head>` +
-        `<body style="font-family:system-ui,sans-serif;background:#0d1b2a;color:#e9eef5;display:grid;place-items:center;height:100vh;margin:0">` +
+        `<body style="font-family:system-ui,sans-serif;background:#0b0e14;color:#e8eaee;display:grid;place-items:center;height:100vh;margin:0">` +
         `<div style="max-width:420px;text-align:center;padding:24px"><h1 style="font-size:20px">${SITE_NAME}</h1><p>${message}</p>` +
-        `<a href="/" style="color:#4da3ff">Back to ${SITE_NAME} →</a></div></body></html>`,
+        `<a href="/" style="color:#34d17e">Back to ${SITE_NAME} →</a></div></body></html>`,
       { headers: { "Content-Type": "text/html; charset=utf-8" } },
     );
 

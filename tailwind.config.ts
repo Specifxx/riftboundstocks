@@ -2,10 +2,12 @@ import type { Config } from "tailwindcss";
 
 // Every colour is a CSS custom property resolved at runtime (see globals.css),
 // so the light/dark toggle is a single `data-theme` swap on <html> rather than a
-// `dark:` variant on every element. Ported from TCGEmpire's token approach and
-// re-pitched from its green marketplace palette to this site's navy trading-desk
-// look: deep navy surfaces, a blue accent, and green/red reserved exclusively for
-// price movement so a colour never means two things at once.
+// `dark:` variant on every element. Ported from TCGEmpire's token approach, then
+// re-pitched again to match sibling site RiftCompare's look: near-black surfaces
+// and RiftCompare's own mint green as the single accent. Red still means "price
+// dropped" exclusively; green now does double duty as the brand accent and the
+// price-gain colour, so --up keeps its own distinct shade rather than reusing
+// --accent — a colour still never quietly means the wrong thing.
 const withAlpha = (v: string) => `rgb(var(${v}) / <alpha-value>)`;
 
 const config: Config = {

@@ -172,7 +172,7 @@ export function Footer() {
             .
           </p>
           <p className="pt-1.5">
-            © {new Date().getUTCFullYear()} {SITE_NAME} ·{" "}
+            © {new Date().getUTCFullYear()} RiftCompare ·{" "}
             <a href={`mailto:${CONTACT_EMAIL}`} className="hover:text-accent">
               {CONTACT_EMAIL}
             </a>
