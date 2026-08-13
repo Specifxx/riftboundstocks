@@ -89,7 +89,7 @@ export async function sendPriceDropEmail(to: string, items: PriceDropItem[], uns
   const heading = count === 1 ? "A watched card just got cheaper" : `${count} watched cards just got cheaper`;
   const intro = `Good news — ${count === 1 ? "a card you're watching" : "some cards you're watching"} dropped in price:`;
   const inner = `
-    <tr><td style="padding:8px 32px 4px;font-size:14px;line-height:1.6;color:#94a3b8">${intro}</td></tr>
+    <tr><td style="padding:8px 32px 4px;font-size:14px;line-height:1.6;color:#5c4e3a">${intro}</td></tr>
     <tr><td style="padding:4px 32px 12px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">${items.map(dropRow).join("")}</table></td></tr>
     <tr><td style="padding:4px 32px 24px"><a href="${SITE_URL}/interests" style="display:inline-block;background:#0d6f61;color:#ffffff;font-weight:700;text-decoration:none;padding:12px 22px;border-radius:10px">See today's movers</a></td></tr>`;
   const subject = count === 1 ? `Price drop: ${items[0]!.name} is now ${formatMoney(items[0]!.newCents)}` : `Price drops on ${count} of your watched cards`;

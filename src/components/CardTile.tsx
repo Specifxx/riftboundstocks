@@ -20,8 +20,8 @@ export function VendorBadge({ label = "TCG" }: { label?: string }) {
 
 /**
  * Large homepage tile: full art, name/number, and exactly two prices in one
- * slim row — an MTGStocks-style "Trending Cards" tile, deliberately not the
- * full Low/Mid/Market/Foil breakdown the card page itself shows. TCGplayer is
+ * slim row, deliberately not the full Low/Mid/Market/Foil breakdown the card
+ * page itself shows. TCGplayer is
  * `primaryPrice()` (market, falling back to foil market for a foil-only
  * printing — same headline figure used everywhere else on the site); eBay is
  * the cheapest eBay listing RiftCompare has already cached, passed in by the
