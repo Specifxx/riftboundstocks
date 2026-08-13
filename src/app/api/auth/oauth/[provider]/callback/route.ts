@@ -74,8 +74,21 @@ export async function GET(req: Request, { params }: { params: { provider: string
   if (!providerId || !email) return fail(req, "oauth_noemail");
 
   // 4) Find-or-create the user (by provider id, then by email) and link the identity.
-  const { user } = await upsertOAuthUser(provider, providerId, email, name, avatar);
-  await createSession(user.id);
+  //
+  // Everything past this point touches the database and the session secret —
+  // both are validated at request time (ACCOUNTS_ENABLED only checks that
+  // DATABASE_URL is SET, not that `prisma db push` has ever been run against
+  // it), so a misconfigured deployment can reach here and throw. Catching it
+  // is the difference between a normal "sign-in failed, try again" and a raw
+  // framework 500 page — the error is still logged in full server-side (check
+  // Vercel's function logs for this route) so it's diagnosable.
+  try {
+    const { user } = await upsertOAuthUser(provider, providerId, email, name, avatar);
+    await createSession(user.id);
+  } catch (e) {
+    console.error(`[oauth/${provider}/callback] failed to create session:`, e);
+    return fail(req, "oauth_account");
+  }
   // Land new/returning sign-ins on their profile by default.
   return NextResponse.redirect(new URL("/profile", req.url));
 }
