@@ -2,13 +2,18 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { cardById } from "@/lib/catalog";
+import { cardById, type RiftCard } from "@/lib/catalog";
 import { latestQuote, primaryPrice } from "@/lib/prices";
 import { ACCOUNTS_ENABLED, SITE_NAME, SITE_URL } from "@/lib/site";
+import { planLimits } from "@/lib/plans";
+import { portfolioValueHistory, breakdownByDomain, breakdownBySet } from "@/lib/portfolio";
 import { Money } from "@/components/Prefs";
 import { Delta } from "@/components/Bits";
 import { AddHoldingForm } from "@/components/AddHoldingForm";
 import { RemoveHoldingButton } from "@/components/RemoveHoldingButton";
+import { ImportCsvForm } from "@/components/ImportCsvForm";
+import { PortfolioBreakdown } from "@/components/PortfolioBreakdown";
+import { PortfolioValueChart } from "@/components/PortfolioValueChart";
 
 export const metadata: Metadata = {
   title: "Portfolio",
@@ -92,6 +97,15 @@ export default async function PortfolioPage({ searchParams }: { searchParams: { 
   const totalInvestedCents = costedRows.reduce((sum, r) => sum + (r.costBasisCents ?? 0) * r.quantity, 0);
   const totalPlPct = totalInvestedCents > 0 ? Math.round((totalPlCents / totalInvestedCents) * 1000) / 10 : null;
 
+  const account = await prisma.user.findUnique({ where: { id: user.id }, select: { planTier: true } });
+  const limits = planLimits(account?.planTier);
+
+  const holdingsLite = holdings.map((h) => ({ cardId: h.cardId, quantity: h.quantity }));
+  const valueOf = (c: RiftCard): number | null => primaryPrice(latestQuote(c));
+  const valueHistory = portfolioValueHistory(holdingsLite);
+  const domainSlices = breakdownByDomain(holdingsLite, valueOf);
+  const setSlices = breakdownBySet(holdingsLite, valueOf);
+
   let preselect: { id: string; name: string; setName: string; collectorLabel: string } | undefined;
   if (searchParams.add) {
     const c = cardById(searchParams.add);
@@ -128,9 +142,25 @@ export default async function PortfolioPage({ searchParams }: { searchParams: { 
         </div>
       )}
 
-      <div className="mb-4">
-        <AddHoldingForm initial={preselect} />
+      <div className="mb-4 flex flex-wrap items-start gap-2">
+        <div className="min-w-0 flex-1">
+          <AddHoldingForm initial={preselect} />
+        </div>
+        <ImportCsvForm eligible={limits.csvImport} />
       </div>
+
+      {rows.length > 0 && (
+        <div className="mb-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+          <section className="panel p-4">
+            <h2 className="eyebrow mb-3">Value over time</h2>
+            <PortfolioValueChart points={valueHistory} />
+          </section>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+            <PortfolioBreakdown title="By domain" slices={domainSlices} />
+            <PortfolioBreakdown title="By set" slices={setSlices} />
+          </div>
+        </div>
+      )}
 
       <section className="panel p-4">
         <h2 className="eyebrow mb-3">Your cards ({rows.length})</h2>

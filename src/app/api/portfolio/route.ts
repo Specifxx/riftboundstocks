@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { accountsDisabledResponse, getCurrentUser } from "@/lib/auth";
 import { cardById } from "@/lib/catalog";
 import { rateLimit, clientIp, tooManyRequests } from "@/lib/rate-limit";
+import { planLimits } from "@/lib/plans";
 
 const CONDITIONS = ["NM", "LP", "MP", "HP", "DMG"] as const;
 
@@ -32,6 +33,25 @@ export async function POST(req: Request) {
   if (!parsed.success) return NextResponse.json({ error: "Invalid input" }, { status: 400 });
   const { cardId, condition, isFoil, quantity, costBasisCents, note } = parsed.data;
   if (!cardById(cardId)) return NextResponse.json({ error: "Unknown card." }, { status: 400 });
+
+  const existingRow = await prisma.collectionCard.findUnique({
+    where: { userId_cardId_condition_isFoil: { userId: user.id, cardId, condition, isFoil } },
+  });
+  // Only a genuinely NEW row counts against the cap — correcting the quantity
+  // or cost basis on a card you already logged must never be blocked by it.
+  if (!existingRow) {
+    const account = await prisma.user.findUnique({ where: { id: user.id }, select: { planTier: true } });
+    const limits = planLimits(account?.planTier);
+    if (limits.maxWatchlist != null) {
+      const count = await prisma.collectionCard.count({ where: { userId: user.id } });
+      if (count >= limits.maxWatchlist) {
+        return NextResponse.json(
+          { error: `Your ${limits.label} plan allows up to ${limits.maxWatchlist} portfolio entries. Remove one, or upgrade on /premium.` },
+          { status: 403 },
+        );
+      }
+    }
+  }
 
   const row = await prisma.collectionCard.upsert({
     where: { userId_cardId_condition_isFoil: { userId: user.id, cardId, condition, isFoil } },
