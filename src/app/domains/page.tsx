@@ -95,7 +95,8 @@ export default function DomainsPage() {
         {summaries.map((d) => {
           const info = DOMAINS[d.key];
           return (
-            <section key={d.key} className="panel p-4">
+            // Anchor target for the homepage Domain Heat board's per-domain links.
+            <section key={d.key} id={d.key.toLowerCase()} className="panel scroll-mt-20 p-4">
               <header className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3 border-b border-line pb-3">
                 <div className="flex min-w-0 items-center gap-3">
                   <span
