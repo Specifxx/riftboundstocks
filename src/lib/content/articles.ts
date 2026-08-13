@@ -965,6 +965,84 @@ const DEMO_ARTICLES: Article[] = [
       },
     ],
   },
+
+  {
+    slug: "speculation-the-charizard-case-for-nine-tailed-fox",
+    title: "Speculation: The Charizard Case for Nine-Tailed Fox",
+    category: "Speculation",
+    author: "tobias-lindqvist",
+    publishedOn: "2026-08-13",
+    excerpt:
+      "Ahri's Signature print already outprices every other Signature in Origins, Kai'Sa's included. A ten-year call on it becoming Riftbound's flagship chase card, and the honest case against it.",
+    heroCard: "nine-tailed-fox-ogn-303s",
+    body: [
+      {
+        kind: "quote",
+        text: "Demo article. RiftboundStocks is an unofficial fan project; this piece, its author and the market activity it describes are illustrative and not real analysis.",
+      },
+      {
+        kind: "p",
+        text: "This is not a boring, liquid pick, and I want to say that up front because it is not usually what this column argues for. It is a ten-year call on a single overnumbered Showcase, which is exactly the kind of lottery ticket I have spent two columns telling you to avoid. I am making an exception because the price data already shows the beginning of the case, and because the rest of the argument does not depend on anything this catalogue can measure.",
+      },
+      { kind: "h2", text: "Where it already sits" },
+      {
+        kind: "p",
+        text: "Origins prints twelve Signature-tier Showcases numbered past the set's own 298-card total, one per Legend in the 299–310 range. Two of them are the character pieces everyone in the community actually talks about: 299*/298, titled Daughter of the Void, is Kai'Sa's; 303*/298, titled Nine-Tailed Fox, is Ahri's — the same pairing TCGplayer's own organized-play promos confirm outright, since the Metal and Best Of prizes for these two cards are literally listed as \"Kai'Sa - Daughter of the Void\" and \"Ahri - Nine-Tailed Fox.\" Neither Origins Signature spells the champion's name on the card itself.",
+      },
+      {
+        kind: "p",
+        text: "Nine-Tailed Fox is currently the single most expensive Signature in the set, ahead of Daughter of the Void by a bit over 300 dollars, or roughly 11 percent. Both sit well clear of the rest of the field — the next closest Signature trades for about half of Daughter of the Void's price, and the remaining ten span a comparatively narrow band underneath that. This is not a two-horse race that might develop. It already is one, and Ahri is already ahead in it.",
+      },
+      {
+        kind: "cardTable",
+        title: "Origins Signature Showcases, by price",
+        slugs: [
+          "nine-tailed-fox-ogn-303s",
+          "daughter-of-the-void-ogn-299s",
+          "bounty-hunter-ogn-309s",
+          "loose-cannon-ogn-301s",
+          "blind-monk-ogn-304s",
+          "swift-scout-ogn-307s",
+        ],
+      },
+      {
+        kind: "card",
+        slug: "nine-tailed-fox-ogn-303s",
+        note: "Origins 303*/298, Showcase — Ahri's Signature, and the most expensive Signature print in the set as of today.",
+      },
+      { kind: "h2", text: "Why the character, not the card" },
+      {
+        kind: "p",
+        text: "A Showcase premium is usually explained by supply and finish — fewer copies, foil-only, the frame looks better in a binder. That explains why a Signature trades above a base Rare. It does not explain why one Signature trades above another Signature of the same rarity, same treatment and near-identical scarcity, and that is the gap between Nine-Tailed Fox and everything else in the set that I do not think a spreadsheet can close. The premium is riding on the character underneath the frame, not the frame.",
+      },
+      {
+        kind: "p",
+        text: "Ahri has been one of League of Legends' most recognisable champions since 2011 — one of the small handful of characters Riot reaches for whenever the franchise needs a face for something outside the game itself. That is the actual Charizard comparison, and I want to be precise about what it claims and what it does not. I am not predicting Nine-Tailed Fox reaches any specific dollar figure, and I have no read on Charizard's own market to borrow a number from even if I wanted to. The claim is narrower: Charizard's premium over comparably rare Pokémon has never been about being the rarest card in its set, and has stayed wide for three decades on character recognition alone. That is the only mechanism I am claiming transfers.",
+      },
+      { kind: "h2", text: "Kai'Sa's case, stated fairly" },
+      {
+        kind: "p",
+        text: "Daughter of the Void is not a weak second. Kai'Sa was one of the four original members of K/DA, Riot's crossover pop group, alongside Ahri herself — real, wide, global visibility that has nothing to do with this game. Judged purely on the artwork, community sentiment I have seen leans toward Daughter of the Void as the better piece: a sharper pose, a more dramatic palette, the kind of card that gets screenshotted on its own. If Showcase premiums were only about the art, I think this is a closer race than the current prices suggest, and possibly not Ahri's race at all.",
+      },
+      {
+        kind: "p",
+        text: "My read is that the art argument is real but not the one that compounds over a decade. A striking illustration sells the card once, to the buyer looking at it for the first time. A decade-old character with new skins, new cinematics and a new season of relevance every year or two sells the card over and over, to buyers who were not paying attention the first time. Ahri's premium over Kai'Sa is already visible today despite Kai'Sa's own real crossover fame and, by the account of people who have looked closely at both, the flashier art. That is the case, stated as fairly as I can put it: not that Nine-Tailed Fox is the better card, but that it is attached to the longer-running character, and I think that is the variable that keeps paying out after the art has been looked at for the thousandth time.",
+      },
+      { kind: "h2", text: "What ten years actually requires" },
+      {
+        kind: "p",
+        text: "The honest version of this call needs three things to hold, and I do not have ten years of data to check any of them: that Riftbound is still a printed, actively-drafted game in 2036, that Origins is not reprinted into a supplemental product that resets Signature scarcity the way a reprint wave already threatens the Rare-Legend thesis I wrote two months ago, and that no later set ships a Signature-tier Ahri treatment good enough to split her own demand in two. Any one of those failing changes this piece from a good call to a bad one, and I would rather say so now than discover it in year eight.",
+      },
+      {
+        kind: "p",
+        text: "What I am comfortable saying today, with the hedging it deserves: of the two character-driven Signatures the community already argues about, the one attached to the character with fifteen years of cultural runway ahead of a newer, equally beloved one is the one I would rather hold for ten years, and the current prices already agree with me by eleven percent. Whether that gap becomes a Charizard-sized chasm or stays a modest lead is the part I actually cannot forecast, and the part where the non-flashy art stops being a knock against it and starts being beside the point.",
+      },
+      {
+        kind: "quote",
+        text: "The art sells the card to the person looking at it today. The character sells it to everyone who wasn't.",
+      },
+    ],
+  },
 ];
 
 /**
