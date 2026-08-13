@@ -118,6 +118,23 @@ export const fetchCardListings = cache(async (card: RiftCard): Promise<CardListi
   };
 });
 
+/**
+ * Cheapest eBay listing price from an already-fetched listings grid, in cents —
+ * null when RiftCompare has no listings for this printing, or none of the ones
+ * it does have are from eBay.
+ *
+ * Deliberately reads the SAME grid `fetchCardListings` already fetches rather
+ * than a dedicated eBay lookup: RiftCompare refreshes eBay on its own schedule
+ * against its own quota and this just reads the cached result back over the
+ * public API, so showing an eBay price here never spends an eBay API call.
+ * `listings` is already sorted by delivered cost ascending (see
+ * `fetchCardListings`), so the first eBay match is the cheapest one.
+ */
+export function cheapestEbayCents(data: CardListings | null): number | null {
+  if (!data) return null;
+  return data.listings.find((l) => l.retailer.startsWith("ebay"))?.priceCents ?? null;
+}
+
 export interface RegionalPrices {
   AU: number | null;
   NZ: number | null;
