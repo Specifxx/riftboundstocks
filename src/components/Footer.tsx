@@ -76,21 +76,17 @@ export function Footer() {
               rel="noopener"
               className="mt-4 flex items-start gap-2.5 rounded-lg border border-line bg-surface-2 p-2.5 transition-colors hover:border-accent"
             >
+              {/* A generic external-link glyph, not RiftCompare's own mark —
+                  this site has no licence to reproduce their logo. */}
               <span
-                className="mt-0.5 inline-block h-6 w-6 shrink-0"
-                style={{
-                  backgroundImage: "linear-gradient(in oklch, #34d17e, #1ea65c)",
-                  WebkitMaskImage: "url(/logo-r.png)",
-                  maskImage: "url(/logo-r.png)",
-                  WebkitMaskSize: "contain",
-                  maskSize: "contain",
-                  WebkitMaskRepeat: "no-repeat",
-                  maskRepeat: "no-repeat",
-                  WebkitMaskPosition: "center",
-                  maskPosition: "center",
-                }}
+                className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-md"
+                style={{ backgroundColor: "#34d17e22" }}
                 aria-hidden
-              />
+              >
+                <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="#1ea65c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 6h9v9M18 6 6 18" />
+                </svg>
+              </span>
               <span className="min-w-0">
                 <span className="block text-[12.5px] font-semibold text-ink">
                   RiftCompare <span className="text-ink-dim">— our sister site</span>

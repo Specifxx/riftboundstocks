@@ -53,5 +53,5 @@ export function convert(cents: number, to: Currency): number {
   return Math.round(cents * (USD_TO[to] ?? 1));
 }
 
-export const CURRENCY_STORAGE_KEY = "rbs.currency";
-export const THEME_STORAGE_KEY = "rbs.theme";
+export const CURRENCY_STORAGE_KEY = "rl.currency";
+export const THEME_STORAGE_KEY = "rl.theme";

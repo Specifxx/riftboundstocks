@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ACCOUNTS_ENABLED } from "@/lib/site";
 
-const KEY = "rbs.notice-seen";
+const KEY = "rl.notice-seen";
 
 /**
  * A disclosure, not a consent gate.

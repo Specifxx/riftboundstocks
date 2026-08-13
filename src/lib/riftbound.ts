@@ -85,8 +85,7 @@ export function setBySlug(slug: string): SetInfo | undefined {
   return SETS.find((s) => s.slug === slug.toLowerCase());
 }
 
-// Riftbound's constructed formats. Adapted from the game's own format names —
-// this site's equivalent of MTGStocks' "legal formats" row.
+// Riftbound's constructed formats, adapted from the game's own format names.
 export const FORMATS = ["Standard", "Legacy", "Draft", "Sealed"] as const;
 export type Format = (typeof FORMATS)[number];
 

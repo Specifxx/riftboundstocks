@@ -1,5 +1,5 @@
 {
-  "name": "riftboundstocks",
+  "name": "riftledger",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -18,6 +18,7 @@
     "seed:promos": "tsx scripts/build-promos.ts",
     "seed:sealed": "tsx scripts/build-sealed.ts",
     "verify:reports": "tsx scripts/verify-reports.ts",
+    "verify:logic": "tsx scripts/verify-logic.ts",
     "seed:icons": "tsx scripts/gen-icons.ts"
   },
   "dependencies": {

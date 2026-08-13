@@ -5,7 +5,7 @@ import { SET_BY_CODE } from "@/lib/riftbound";
 // colour. It reads as an icon in a list, and it is unambiguously ours rather
 // than an imitation of an official mark.
 const SET_COLOR: Record<string, string> = {
-  OGN: "#4da3ff",
+  OGN: "#12897a",
   OGS: "#8b8f9a",
   SFD: "#a855f7",
   UNL: "#3fb950",

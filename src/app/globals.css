@@ -2,50 +2,58 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Dark is the default and the design's home state — the light palette is an
-   opt-in override on [data-theme="light"], set by ThemeToggle and applied before
-   first paint by the inline script in layout.tsx. Every colour the site uses is
-   declared here as an `R G B` triple so Tailwind's `<alpha-value>` syntax keeps
-   working (see tailwind.config.ts). */
+/* "Arcane Parchment" is the default and the design's home state — warm paper
+   tones and a rift-teal accent, deliberately far from a navy trading-desk
+   look. "Void" (dark) is an opt-in override on [data-theme="dark"], set by
+   ThemeToggle and applied before first paint by the inline script in
+   layout.tsx. Every colour the site uses is declared here as an `R G B`
+   triple so Tailwind's `<alpha-value>` syntax keeps working (see
+   tailwind.config.ts). The six Domain colours (Fury/Calm/Mind/Body/Chaos/
+   Order — see lib/riftbound.ts) are the OTHER half of this palette: they
+   drive rarity/domain chips and data-viz directly by hex and intentionally
+   sit outside this token set, which covers UI chrome only. */
 :root {
-  --surface-0: 13 27 42;
-  --surface-1: 18 34 51;
-  --surface-2: 24 43 63;
-  --surface-3: 31 54 78;
-  --line: 34 55 78;
-  --line-strong: 48 74 102;
-  --ink: 233 238 245;
-  --ink-muted: 158 176 196;
-  --ink-dim: 124 145 168;
-  --accent: 77 163 255;
-  --accent-soft: 24 58 96;
-  --accent-ink: 8 18 30;
-  --up: 63 185 80;
-  --down: 240 80 110;
-  --foil: 202 168 90;
-  color-scheme: dark;
+  --surface-0: 246 240 227;
+  --surface-1: 253 250 244;
+  --surface-2: 238 230 213;
+  --surface-3: 227 217 197;
+  --line: 214 201 176;
+  --line-strong: 191 174 140;
+  --ink: 41 31 21;
+  --ink-muted: 92 78 58;
+  --ink-dim: 122 106 82;
+  /* "Rift teal" — the single accent, chosen to read nothing like a generic
+     trading-app blue. */
+  --accent: 13 111 97;
+  --accent-soft: 214 233 227;
+  --accent-ink: 255 255 255;
+  --up: 27 122 61;
+  --down: 178 42 42;
+  --foil: 150 108 20;
+  color-scheme: light;
 }
 
-[data-theme="light"] {
-  --surface-0: 245 247 251;
-  --surface-1: 255 255 255;
-  --surface-2: 239 243 249;
-  --surface-3: 228 235 244;
-  --line: 214 223 234;
-  --line-strong: 184 197 214;
-  --ink: 16 28 43;
-  --ink-muted: 71 90 113;
-  --ink-dim: 98 118 142;
-  --accent: 20 96 186;
-  --accent-soft: 219 233 250;
-  --accent-ink: 255 255 255;
-  /* Darkened from the dark-theme values: #3fb950 and #f0506e both fail contrast
-     on a white panel, and these two colours carry meaning (gain/loss) rather
-     than decoration, so they cannot be allowed to go unreadable. */
-  --up: 22 122 55;
-  --down: 199 32 62;
-  --foil: 146 112 30;
-  color-scheme: light;
+[data-theme="dark"] {
+  /* Deep plum-charcoal, not navy — the dark theme is an opt-in variant of the
+     same rift-teal identity, not a return to a trading-desk look. */
+  --surface-0: 20 17 26;
+  --surface-1: 27 23 35;
+  --surface-2: 35 29 45;
+  --surface-3: 46 39 59;
+  --line: 51 43 64;
+  --line-strong: 70 59 87;
+  --ink: 238 233 245;
+  --ink-muted: 176 166 194;
+  --ink-dim: 140 130 158;
+  /* Brightened from the light-theme accent so it still reads at AA on the
+     dark surfaces below — the light value is too dim against near-black. */
+  --accent: 56 214 195;
+  --accent-soft: 27 56 52;
+  --accent-ink: 8 20 18;
+  --up: 74 199 107;
+  --down: 240 96 96;
+  --foil: 214 168 90;
+  color-scheme: dark;
 }
 
 html {
@@ -132,12 +140,6 @@ h3 {
   }
 }
 
-/* The ticker pauses on hover so a moving row can actually be clicked, and stops
-   entirely for anyone who asked for less motion. */
-.ticker-track:hover {
-  animation-play-state: paused;
-}
-
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -146,12 +148,5 @@ h3 {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
-  }
-
-  /* An infinite marquee is the one animation that can't simply be shortened —
-     collapsing its duration would leave the list scrolled off-screen. */
-  .ticker-track {
-    animation: none !important;
-    transform: none !important;
   }
 }

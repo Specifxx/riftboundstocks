@@ -49,7 +49,7 @@ export type SeriesKey = (typeof SERIES_KEYS)[number];
 
 export const SERIES_META: Record<SeriesKey, { label: string; color: string; foil: boolean }> = {
   low: { label: "Low", color: "#7f9bb8", foil: false },
-  mid: { label: "Average", color: "#4da3ff", foil: false },
+  mid: { label: "Average", color: "#12897a", foil: false },
   market: { label: "Market", color: "#3fb950", foil: false },
   foil: { label: "Foil", color: "#caa85a", foil: true },
   foilMarket: { label: "Market Foil", color: "#e0b978", foil: true },

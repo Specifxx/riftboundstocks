@@ -18,9 +18,9 @@ export type Category = (typeof CATEGORIES)[number];
 
 /** Category → accent colour for the label overlay on article cards. */
 export const CATEGORY_COLOR: Record<Category, string> = {
-  "Data Report": "#4da3ff",
+  "Data Report": "#12897a",
   "Weekly Winners": "#3fb950",
-  "Meta Report": "#4da3ff",
+  "Meta Report": "#12897a",
   "Hidden Gems": "#caa85a",
   "Set Review": "#a855f7",
   Speculation: "#f0506e",

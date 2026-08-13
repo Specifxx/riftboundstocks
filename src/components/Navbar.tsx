@@ -8,6 +8,7 @@ import { SearchBox } from "./SearchBox";
 import { CurrencySelector, ThemeToggle } from "./Prefs";
 import { NavUser } from "./NavUser";
 import { riftcompareUrl } from "@/lib/affiliate";
+import { SITE_NAME } from "@/lib/site";
 
 interface NavItem {
   label: string;
@@ -101,7 +102,7 @@ export function Navbar() {
     <nav ref={navRef} className="sticky top-0 z-40 border-b border-line bg-surface-1/95 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-[1400px] items-center gap-3 px-3 sm:px-5">
         {/* -mx-1/px-1 grows the touch target to 40px without moving the mark. */}
-        <Link href="/" className="-mx-1 flex h-10 shrink-0 items-center gap-2 px-1" aria-label="RiftboundStocks home">
+        <Link href="/" className="-mx-1 flex h-10 shrink-0 items-center gap-2 px-1" aria-label={`${SITE_NAME} home`}>
           <BrandLogo className="h-7 w-7" />
           <span className="hidden sm:block">
             <BrandWordmark />

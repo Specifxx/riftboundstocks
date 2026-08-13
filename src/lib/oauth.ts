@@ -4,9 +4,10 @@
 // client id + secret in env:
 //   GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET
 //   DISCORD_CLIENT_ID / DISCORD_CLIENT_SECRET
-// Redirect URI to register with each provider:
-//   https://riftboundstocks.com/api/auth/oauth/google/callback
-//   https://riftboundstocks.com/api/auth/oauth/discord/callback
+// Redirect URI to register with each provider (see SITE_URL in lib/site.ts
+// for the real domain once one is registered — TODO(config)):
+//   https://<your-domain>/api/auth/oauth/google/callback
+//   https://<your-domain>/api/auth/oauth/discord/callback
 import { SITE_URL } from "./site";
 
 export type OAuthProvider = "google" | "discord";

@@ -16,10 +16,12 @@ import { SITE_URL } from "./site";
  * ⚠ This is RiftCompare's approved base, reused because both sites belong to the
  * same Impact account — so clicks credit correctly from day one. Two things still
  * need doing in the Impact dashboard:
- *   1. Add riftboundstocks.com as a PROPERTY on the account. Driving traffic from
- *      a domain the program hasn't been told about is how partnerships get
- *      suspended, even when the account is right.
- *   2. Get this domain's own verification token (see IMPACT_SITE_VERIFICATION).
+ *   1. TODO(config): Add the real riftledger domain (once registered — see
+ *      SITE_URL in lib/site.ts) as a PROPERTY on the account. Driving traffic
+ *      from a domain the program hasn't been told about is how partnerships
+ *      get suspended, even when the account is right.
+ *   2. TODO(config): Get this domain's own verification token (see
+ *      IMPACT_SITE_VERIFICATION).
  * Once TCGplayer issues a base specific to this site, set TCGPLAYER_IMPACT_LINK.
  *
  * `||` not `??`, so an env var accidentally set to "" still falls back — an empty
@@ -33,7 +35,7 @@ export const TCGPLAYER_IMPACT_LINK =
  *
  * Deliberately NO fallback. The token is per-domain, and RiftCompare's would be
  * wrong here — pasting it would claim ownership of the wrong property. Impact
- * issues one when riftboundstocks.com is added as a site; put it in
+ * issues one once this site's real domain is added (TODO(config)); put it in
  * NEXT_PUBLIC_IMPACT_SITE_VERIFICATION and the meta tag appears.
  */
 export const IMPACT_SITE_VERIFICATION = process.env.NEXT_PUBLIC_IMPACT_SITE_VERIFICATION || "";
@@ -46,11 +48,11 @@ export const IMPACT_SITE_VERIFICATION = process.env.NEXT_PUBLIC_IMPACT_SITE_VERI
 // price table earn, or the article card panels?" — which is the question that
 // decides where the next placement goes.
 //
-// The `rbs-` prefix is what separates this site's revenue from RiftCompare's
+// The `rl-` prefix is what separates this site's revenue from RiftCompare's
 // (`rc-`) inside the SAME Impact account. Without it the two sites' earnings are
 // one undifferentiated number.
 //
-// Format: rbs-<placement>-<page>, e.g. `rbs-card-prices-card`, `rbs-article-news`.
+// Format: rl-<placement>-<page>, e.g. `rl-card-prices-card`, `rl-article-news`.
 // Sanitised hard: a sub-id containing unexpected characters can be dropped, and a
 // dropped click is unattributed revenue that looks exactly like no revenue.
 const SUBID_MAX = 60;
@@ -63,7 +65,7 @@ export function affiliateSubId(...parts: (string | null | undefined)[]): string 
     .replace(/[^a-z0-9_-]+/g, "-")
     .replace(/-{2,}/g, "-")
     .replace(/^-|-$/g, "");
-  return s ? `rbs-${s}`.slice(0, SUBID_MAX) : "rbs";
+  return s ? `rl-${s}`.slice(0, SUBID_MAX) : "rl";
 }
 
 /**
@@ -115,8 +117,8 @@ export function outboundRel(): string {
 
 // ── Sibling site ─────────────────────────────────────────────────────────────
 // RiftCompare is this project's sister site: it compares live prices across
-// stores in six markets (AU/NZ/US/UK/SG/CA), where RiftboundStocks tracks
-// TCGplayer market history. Genuinely complementary, so the cross-links point at
+// stores in six markets (AU/NZ/US/UK/SG/CA), where RiftLedger tracks TCGplayer
+// market history. Genuinely complementary, so the cross-links point at
 // something a reader on this page actually wants.
 //
 // NOT an affiliate link — same owner, no commission, so it carries no
@@ -125,7 +127,7 @@ export const RIFTCOMPARE_URL = "https://riftcompare.com";
 
 function tagged(url: string, source: string): string {
   const sep = url.includes("?") ? "&" : "?";
-  return `${url}${sep}ref=riftboundstocks&utm_source=riftboundstocks&utm_medium=referral&utm_campaign=${encodeURIComponent(source)}`;
+  return `${url}${sep}ref=riftledger&utm_source=riftledger&utm_medium=referral&utm_campaign=${encodeURIComponent(source)}`;
 }
 
 export function riftcompareUrl(path = "", source = "footer"): string {

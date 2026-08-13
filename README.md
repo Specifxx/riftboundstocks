@@ -1,6 +1,6 @@
-# RiftboundStocks
+# RiftLedger
 
-Price tracking, daily movers and market analysis for **Riftbound: League of Legends Trading Card Game** — an MTGStocks-style financial dashboard for a card game.
+Price tracking, daily movers and market analysis for **Riftbound: League of Legends Trading Card Game** — a Riftbound-native market dashboard built around the game's own Domains, Legends and sets.
 
 Sibling project to [RiftCompare](https://riftcompare.com); it shares that codebase's stack, conventions and card catalogue so code moves between the two without translation.
 

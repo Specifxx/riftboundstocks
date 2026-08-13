@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useMe } from "@/lib/use-me";
+import { SITE_NAME } from "@/lib/site";
 
 // Alert/Watch collapse into one button: this app has a single PriceAlert
 // model, so "watching" a card and "getting alerted" on it are the same
@@ -55,7 +56,7 @@ export function CardActions({ cardId, cardName }: { cardId: string; cardName: st
     const url = typeof window === "undefined" ? "" : window.location.href;
     try {
       if (navigator.share) {
-        await navigator.share({ title: `${cardName} — RiftboundStocks`, url });
+        await navigator.share({ title: `${cardName} — ${SITE_NAME}`, url });
         return;
       }
       await navigator.clipboard.writeText(url);

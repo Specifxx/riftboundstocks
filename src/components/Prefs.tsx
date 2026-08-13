@@ -23,7 +23,7 @@ interface Prefs {
 const Ctx = createContext<Prefs>({
   currency: DEFAULT_CURRENCY,
   setCurrency: () => {},
-  theme: "dark",
+  theme: "light",
   toggleTheme: () => {},
 });
 
@@ -38,13 +38,13 @@ const Ctx = createContext<Prefs>({
  */
 export function PrefsProvider({ children }: { children: React.ReactNode }) {
   const [currency, setCurrencyState] = useState<Currency>(DEFAULT_CURRENCY);
-  const [theme, setTheme] = useState<Theme>("dark");
+  const [theme, setTheme] = useState<Theme>("light");
 
   useEffect(() => {
     try {
       const c = localStorage.getItem(CURRENCY_STORAGE_KEY);
       if (c && (CURRENCIES as readonly string[]).includes(c)) setCurrencyState(c as Currency);
-      setTheme(document.documentElement.dataset.theme === "light" ? "light" : "dark");
+      setTheme(document.documentElement.dataset.theme === "dark" ? "dark" : "light");
     } catch {
       // Private-mode / blocked storage — defaults are fine.
     }
@@ -60,7 +60,11 @@ export function PrefsProvider({ children }: { children: React.ReactNode }) {
   const toggleTheme = useCallback(() => {
     setTheme((prev) => {
       const next: Theme = prev === "dark" ? "light" : "dark";
-      document.documentElement.dataset.theme = next;
+      // "light" is the design's home state, so only "dark" is ever persisted
+      // or written to the DOM as an explicit override — matches the inline
+      // THEME_SCRIPT in layout.tsx, which only sets the attribute on "dark".
+      if (next === "dark") document.documentElement.dataset.theme = "dark";
+      else delete document.documentElement.dataset.theme;
       try {
         localStorage.setItem(THEME_STORAGE_KEY, next);
       } catch {}

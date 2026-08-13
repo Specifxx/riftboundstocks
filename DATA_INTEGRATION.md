@@ -1,6 +1,6 @@
 # Data integration: two real sources, one card page
 
-RiftboundStocks reads real data from **two** independent sources, each responsible for a
+RiftLedger reads real data from **two** independent sources, each responsible for a
 different part of the page:
 
 | | Source | Backs |
@@ -21,12 +21,12 @@ of the original plan.
 
 ## Why two sources instead of one
 
-RiftboundStocks and RiftCompare are sibling projects (same owner, same stack, same card
-catalogue) but they answer different questions. RiftboundStocks is a **price history and
+RiftLedger and RiftCompare are sibling projects (same owner, same stack, same card
+catalogue) but they answer different questions. RiftLedger is a **price history and
 market-analysis** site — one number per printing per day, charted over time. RiftCompare
 is a **shopping comparison** site — every store's current listing, ranked by delivered
 cost, across six regional markets. Collapsing them into one pipeline would mean either
-site inheriting complexity it doesn't need: RiftboundStocks doesn't want to track
+site inheriting complexity it doesn't need: RiftLedger doesn't want to track
 per-store inventory and shipping policies, and RiftCompare's data model has no daily
 history series to chart.
 
@@ -75,7 +75,7 @@ against a non-production RiftCompare; unset, it defaults to production.
 
 Every card in this catalogue carries an `externalId` (`lib/catalog.ts`, e.g.
 `"ogn-001-298"`) that both projects' internal comments describe as the RiftScribe id
-shared across both catalogues — the obvious choice for joining a RiftboundStocks card to
+shared across both catalogues — the obvious choice for joining a RiftLedger card to
 its RiftCompare counterpart. **It doesn't work.** Querying RiftCompare's API by
 `externalId` returned `not_found` for every card tried (0/9 in the first pass). RiftCompare
 doesn't expose its cards by that id at all.
