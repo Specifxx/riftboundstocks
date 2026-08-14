@@ -19,14 +19,17 @@ export function VendorBadge({ label = "TCG" }: { label?: string }) {
 }
 
 /**
- * Large homepage tile: full art, name/number, and exactly two prices in one
+ * Large homepage tile: full art, name/number, and up to two prices in one
  * slim row, deliberately not the full Low/Mid/Market/Foil breakdown the card
  * page itself shows. TCGplayer is
  * `primaryPrice()` (market, falling back to foil market for a foil-only
  * printing — same headline figure used everywhere else on the site); eBay is
  * the cheapest eBay listing RiftCompare has already cached, passed in by the
  * caller (see `cheapestEbayCents` in lib/prices/riftcompare.ts) rather than
- * fetched here, so this stays a plain presentational component.
+ * fetched here, so this stays a plain presentational component. Omitted
+ * entirely (not shown as a dash) when RiftCompare has no match for this
+ * printing — common for the ultra-rare promos and Signatures that tend to
+ * rank highest here, and RiftCompare's own catalogue simply doesn't track.
  */
 export function TrendingTile({
   card,
@@ -68,10 +71,15 @@ export function TrendingTile({
             <VendorBadge label="TCG" />
             <Money cents={tcgCents} className={`num text-[12.5px] font-semibold ${isFoilOnly ? "text-foil" : "text-ink"}`} />
           </span>
-          <span className="flex items-center gap-1.5">
-            <VendorBadge label="EB" />
-            <Money cents={ebayCents ?? null} className="num text-[12.5px] font-semibold text-ink" />
-          </span>
+          {/* Omitted rather than a dash when RiftCompare has no match — expected
+              far more often than not for exactly the ultra-rare promos and
+              Signatures that dominate this tile, not a broken price. */}
+          {ebayCents != null && (
+            <span className="flex items-center gap-1.5">
+              <VendorBadge label="EB" />
+              <Money cents={ebayCents} className="num text-[12.5px] font-semibold text-ink" />
+            </span>
+          )}
         </div>
       </div>
     </Link>
