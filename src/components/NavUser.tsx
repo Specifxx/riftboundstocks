@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useMe, type MeUser } from "@/lib/use-me";
+import { isAdminEmail } from "@/lib/admin";
 
 // Signed-out and loading render the exact same CTAs the navbar always showed
 // (Log In / Sign Up) so there's no layout shift and no flash for anonymous
@@ -126,6 +127,16 @@ function DesktopMenu({ user }: { user: MeUser }) {
             >
               Premium
             </Link>
+            {isAdminEmail(user.email) && (
+              <Link
+                href="/admin"
+                role="menuitem"
+                onClick={() => setOpen(false)}
+                className="block px-3.5 py-2 text-[13px] font-semibold text-ink hover:bg-surface-2"
+              >
+                Admin
+              </Link>
+            )}
           </div>
           <div className="border-t border-line py-1">
             <button
@@ -162,6 +173,11 @@ function MobileSignedIn({ user }: { user: MeUser }) {
       <Link href="/alerts" className="rounded-md px-2.5 py-1.5 text-[13px] font-semibold text-ink-muted">
         Alerts
       </Link>
+      {isAdminEmail(user.email) && (
+        <Link href="/admin" className="rounded-md px-2.5 py-1.5 text-[13px] font-semibold text-ink-muted">
+          Admin
+        </Link>
+      )}
       <button onClick={signOut} className="rounded-md px-2.5 py-1.5 text-[13px] font-semibold text-ink-muted">
         Sign out
       </button>
