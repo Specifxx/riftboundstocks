@@ -9,6 +9,10 @@ import {
   latestQuote,
   topByMarket,
   primaryPrice,
+  quoteDaysAgo,
+  pctChange,
+  HISTORY_DAYS,
+  HAS_CHANGE_DATA,
   fetchCardListings,
   fetchRegionalPrices,
 } from "@/lib/prices";
@@ -114,6 +118,35 @@ export default async function CardPage({ params }: { params: { slug: string } })
     { label: "Market", cents: q.market, tone: "text-accent" },
     { label: "✨ Foil", cents: q.foilMarket, tone: "text-foil" },
   ];
+
+  // A plain-language summary of the numbers below. It answers the question the
+  // page is usually found for ("how much is X worth?") in words a search
+  // snippet or an AI answer can quote, and it's the only text that's unique
+  // to each card page. Built from the same data as the panels; says nothing
+  // when there's nothing to say.
+  const asOfDay = HISTORY_DAYS[HISTORY_DAYS.length - 1];
+  const weekPct = HAS_CHANGE_DATA ? pctChange(headline, primaryPrice(quoteDaysAgo(card, 7))) : null;
+  const legendChampion = card.type === "Legend" && !card.name.includes(",") && !card.name.includes(" - ") ? champion : null;
+  const summaryName = legendChampion ? `${legendChampion.name}, ${card.name}` : card.name;
+  const summaryText =
+    headline != null
+      ? [
+          `${summaryName} (${card.setName} ${card.collectorLabel}) is worth about ${formatMoney(headline)}${
+            asOfDay ? ` as of ${formatDate(`${asOfDay}T00:00:00Z`)}` : ""
+          } — TCGplayer's ${q.market == null ? "foil market price (this printing only exists in foil)" : "market price"}.`,
+          weekPct != null
+            ? Math.abs(weekPct) < 0.05
+              ? "That's unchanged over the past week."
+              : `That's ${weekPct > 0 ? "up" : "down"} ${Math.abs(weekPct).toFixed(1)}% over the past week.`
+            : "",
+          stats.allTimeLow && stats.allTimeHigh && stats.points > 1 && stats.allTimeHigh.cents !== stats.allTimeLow.cents
+            ? `Over the last ${stats.points} days it has ranged from ${formatMoney(stats.allTimeLow.cents)} to ${formatMoney(stats.allTimeHigh.cents)}.`
+            : "",
+          q.market != null && q.foilMarket != null ? `The foil printing sells for about ${formatMoney(q.foilMarket)}.` : "",
+        ]
+          .filter(Boolean)
+          .join(" ")
+      : `TCGplayer has no current market price for ${summaryName} (${card.setName} ${card.collectorLabel}) — usually because no copies have sold recently.`;
 
   const canonical = `${SITE_URL}/card/${card.slug}`;
   const structured = [
@@ -331,6 +364,7 @@ export default async function CardPage({ params }: { params: { slug: string } })
               <h2 className="font-display text-lg uppercase tracking-wide text-ink">Price History</h2>
               <span className="text-[11px] text-ink-dim">{stats.points} daily points</span>
             </div>
+            <p className="mb-3 max-w-[70ch] text-[13px] leading-relaxed text-ink-muted">{summaryText}</p>
             <PriceChart points={history} sources={[{ id: source.id, label: source.label }]} activeSourceId={source.id} />
             <DemoPricesNotice className="mt-3 border-t border-line pt-3" />
           </section>
