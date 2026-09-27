@@ -31,10 +31,18 @@ function quote(productId: number): QuoteTuple | null {
   return PRICES.cards?.[String(productId)] ?? null;
 }
 
+// "Today" for the presale check is the price snapshot's date, not the clock,
+// so the flag always agrees with the prices shown beside it.
+const AS_OF = (PRICES.fetchedAt || new Date().toISOString()).slice(0, 10);
+
 export const SEALED: SealedRow[] = (CATALOGUE.products ?? []).map((p) => {
   const t = quote(p.productId);
   return {
     ...p,
+    // TCGplayer's presale flag was captured when the catalogue was built and
+    // never refreshed, so boxes on shelves since 2025 were still badged
+    // "Presale". A product is presale only until its release date.
+    presale: p.presale && (!p.releaseDate || p.releaseDate > AS_OF),
     mid: t?.[1] ?? null,
     market: t?.[2] ?? null,
     typeLabel: SEALED_TYPE_LABEL[p.type],

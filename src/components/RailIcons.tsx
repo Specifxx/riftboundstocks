@@ -85,3 +85,21 @@ export function PremiumIcon({ className = base }: IconProps) {
     </svg>
   );
 }
+
+export function ChampionsIcon({ className = base }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M4 8.5 8 11l4-6.5 4 6.5 4-2.5-1.5 10h-13Z" />
+      <path d="M6 21.5h12" />
+    </svg>
+  );
+}
+
+export function NewsIcon({ className = base }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <rect x="3.5" y="4" width="17" height="16" rx="1.5" />
+      <path d="M7 8.5h10M7 12h10M7 15.5h6" />
+    </svg>
+  );
+}

@@ -11,6 +11,7 @@
 import { CARDS } from "../src/lib/catalog";
 import { SETS } from "../src/lib/riftbound";
 import { ARTICLES } from "../src/lib/content/articles";
+import { allChampions } from "../src/lib/champions";
 
 const BASE = (process.env.BASE_URL ?? "http://localhost:3000").replace(/\/$/, "");
 
@@ -21,7 +22,12 @@ function routes(): string[] {
     "/interests",
     "/interests?tab=foil&rarity=Epic",
     "/news",
-    "/news?category=Meta+Report",
+    "/champions",
+    "/feed.xml",
+    "/llms.txt",
+    // Repeated params used to 500 — must render.
+    "/search?q=a&q=b",
+    "/interests?set=origins&set=vendetta&min=abc",
     "/analytics",
     "/domains",
     "/decks",
@@ -47,6 +53,7 @@ function routes(): string[] {
     "/api/v1/movers",
     ...SETS.map((s) => `/sets/${s.slug}`),
     ...ARTICLES.map((a) => `/news/${a.slug}`),
+    ...allChampions().slice(0, 5).map((c) => `/champions/${c.slug}`),
     // A spread of card pages rather than all 950: one per set, plus the two
     // variant forms, which are the printings most likely to route wrong.
     ...SETS.map((s) => CARDS.find((c) => c.setCode === s.code)).filter(Boolean).map((c) => `/card/${c!.slug}`),
@@ -56,6 +63,7 @@ function routes(): string[] {
     // Must 404, not 500.
     "/card/does-not-exist",
     "/sets/does-not-exist",
+    "/champions/does-not-exist",
   ];
 }
 

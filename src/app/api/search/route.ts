@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { searchCards } from "@/lib/catalog";
-import { latestQuote } from "@/lib/prices";
+import { latestQuote, primaryPrice } from "@/lib/prices";
 
-// Search runs on the server so the client never downloads the 950-card index.
+// Search runs on the server so the client never downloads the card index.
 //
 // Must stay force-dynamic: this route's entire output depends on `?q=`, and
 // force-static previously prerendered it once at build time with no query
@@ -23,7 +23,9 @@ export async function GET(request: Request) {
     collectorLabel: c.collectorLabel,
     rarity: c.rarity,
     thumb: c.imageThumbUrl,
-    market: latestQuote(c).market,
+    // Headline price — foil market for foil-only printings, which are most of
+    // the valuable cards people search for.
+    market: primaryPrice(latestQuote(c)),
   }));
   return NextResponse.json({ results });
 }

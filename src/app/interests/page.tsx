@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { movers, topByMarket, HAS_CHANGE_DATA, type Mover } from "@/lib/prices";
+import { movers, topByMarket, HAS_CHANGE_DATA, HISTORY_DAYS, type Mover } from "@/lib/prices";
 import { SERIES_META, type SeriesKey } from "@/lib/prices/source";
 import { setBySlug, SET_BY_CODE } from "@/lib/riftbound";
 import { SITE_URL } from "@/lib/site";
 import { formatDate } from "@/lib/format";
 import { CardTable, type CardRow } from "@/components/CardTable";
-import { DemoPricesNotice, HistoryNotice } from "@/components/Bits";
+import { DemoPricesNotice, HistoryNotice } from "@/components/Notices";
 import { FilterBar } from "./FilterBar";
 
 export const metadata: Metadata = {
-  title: "Interests — Biggest Riftbound Movers",
+  title: "Riftbound Price Movers — Biggest Gainers & Losers",
   description:
     "The Riftbound TCG cards that moved most today and this week. Gainers and losers by market price, average price and foil price, filterable by set, rarity and domain.",
   alternates: { canonical: `${SITE_URL}/interests` },
@@ -28,14 +28,24 @@ const TABS: { key: SeriesKey; label: string }[] = [
   { key: "foilMarket", label: "Market Foil" },
 ];
 
+type Param = string | string[] | undefined;
+
 interface Query {
-  tab?: string;
-  set?: string;
-  setType?: string;
-  rarity?: string;
-  domain?: string;
-  min?: string;
+  tab?: Param;
+  set?: Param;
+  setType?: Param;
+  rarity?: Param;
+  domain?: Param;
+  min?: Param;
 }
+
+/** A repeated ?key= arrives as an array; take the first rather than crash. */
+const one = (v: Param): string | undefined => (Array.isArray(v) ? v[0] : v);
+
+// The FilterBar's floors. Anything else in ?min= is ignored: movers() caches
+// per floor, so an arbitrary value would grow that cache without bound (and
+// "abc" parsed to NaN, silently disabling the floor).
+const PRICE_FLOORS = new Set(["1", "5", "20", "50"]);
 
 function toRow(m: Mover): CardRow {
   return {
@@ -98,12 +108,20 @@ function MoverSection({
   );
 }
 
-export default function InterestsPage({ searchParams }: { searchParams: Query }) {
+export default function InterestsPage({ searchParams: raw }: { searchParams: Query }) {
+  const searchParams = {
+    tab: one(raw.tab),
+    set: one(raw.set),
+    setType: one(raw.setType),
+    rarity: one(raw.rarity),
+    domain: one(raw.domain),
+    min: one(raw.min),
+  };
   const tab = (TABS.find((t) => t.key === searchParams.tab)?.key ?? "market") as SeriesKey;
   const seriesLabel = SERIES_META[tab].label;
 
   const setCode = searchParams.set ? setBySlug(searchParams.set)?.code : undefined;
-  const minCents = searchParams.min ? Math.max(100, parseInt(searchParams.min, 10) * 100) : 100;
+  const minCents = searchParams.min && PRICE_FLOORS.has(searchParams.min) ? Number(searchParams.min) * 100 : 100;
 
   const matches = (m: Mover) => {
     const c = m.card;
@@ -125,10 +143,14 @@ export default function InterestsPage({ searchParams }: { searchParams: Query })
   const daily = split(1);
   const weekly = split(7);
   const monthly = split(30);
-  const today = new Date();
+  // The day the prices are FROM, not today's date: the snapshot lands in the
+  // morning UTC, so "today" was a day ahead of the data for most of the world.
+  const asOf = HISTORY_DAYS.length ? `${HISTORY_DAYS[HISTORY_DAYS.length - 1]}T00:00:00Z` : new Date();
 
   const qs = (key: SeriesKey) => {
-    const next = new URLSearchParams(searchParams as Record<string, string>);
+    const next = new URLSearchParams(
+      Object.entries(searchParams).filter((e): e is [string, string] => typeof e[1] === "string"),
+    );
     next.set("tab", key);
     return `/interests?${next.toString()}`;
   };
@@ -137,7 +159,7 @@ export default function InterestsPage({ searchParams }: { searchParams: Query })
     <div>
       <header className="mb-4">
         <h1 className="font-display text-3xl uppercase tracking-wide text-ink sm:text-4xl">
-          Interests of {formatDate(today)}
+          Riftbound Price Movers — {formatDate(asOf)}
         </h1>
         <p className="mt-1.5 max-w-2xl text-[14px] leading-relaxed text-ink-muted">
           The Riftbound cards that moved most, ranked by percentage change. Cards under the selected price floor are

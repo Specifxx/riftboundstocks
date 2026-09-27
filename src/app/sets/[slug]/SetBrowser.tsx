@@ -115,7 +115,7 @@ export function SetBrowser({ rows }: { rows: CardRow[] }) {
         <CardTable
           rows={visible}
           columns={["card", "rarity", "domain", "type", "now", "pct"]}
-          nowLabel="Market"
+          nowLabel="Price"
           initialSort="now"
         />
       ) : visible.length === 0 ? (

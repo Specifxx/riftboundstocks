@@ -3,6 +3,7 @@ import { CARDS } from "@/lib/catalog";
 import { SETS } from "@/lib/riftbound";
 import { ARTICLES } from "@/lib/content/articles";
 import { SITE_URL } from "@/lib/site";
+import { allChampions } from "@/lib/champions";
 
 export const dynamic = "force-static";
 
@@ -12,6 +13,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const staticPages: MetadataRoute.Sitemap = ([
     { url: SITE_URL, changeFrequency: "daily", priority: 1 },
     { url: `${SITE_URL}/sets`, changeFrequency: "weekly", priority: 0.8 },
+    { url: `${SITE_URL}/champions`, changeFrequency: "weekly", priority: 0.8 },
     { url: `${SITE_URL}/interests`, changeFrequency: "daily", priority: 0.9 },
     { url: `${SITE_URL}/news`, changeFrequency: "weekly", priority: 0.8 },
     { url: `${SITE_URL}/analytics`, changeFrequency: "daily", priority: 0.7 },
@@ -31,6 +33,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "daily" as const,
       priority: 0.7,
     })),
+    ...allChampions().map((c) => ({
+      url: `${SITE_URL}/champions/${c.slug}`,
+      lastModified: now,
+      changeFrequency: "daily" as const,
+      priority: 0.7,
+    })),
     ...ARTICLES.map((a) => ({
       url: `${SITE_URL}/news/${a.slug}`,
       lastModified: new Date(`${a.publishedOn}T00:00:00Z`),
@@ -38,7 +46,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.6,
     })),
     // Every card gets an entry — these are the pages the site exists to serve,
-    // and at 950 URLs the file stays far inside the 50k/50MB sitemap limits.
+    // and at ~1,400 URLs the file stays far inside the 50k/50MB sitemap limits.
     ...CARDS.map((c) => ({
       url: `${SITE_URL}/card/${c.slug}`,
       lastModified: now,

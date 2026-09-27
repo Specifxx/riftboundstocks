@@ -10,6 +10,7 @@ import {
   pctChange,
   priceHistory,
   pricedCount,
+  primaryPrice,
   quoteDaysAgo,
   totalMarketValue,
 } from "@/lib/prices";
@@ -19,7 +20,8 @@ import { formatDate } from "@/lib/format";
 import { SITE_URL } from "@/lib/site";
 import { PriceChart } from "@/components/PriceChart";
 import { Money } from "@/components/Prefs";
-import { Delta, DeltaArrow, DemoPricesNotice, Panel, RarityPill, SectionTitle } from "@/components/Bits";
+import { Delta, DeltaArrow, Panel, RarityPill, SectionTitle } from "@/components/Bits";
+import { DemoPricesNotice } from "@/components/Notices";
 
 export const metadata: Metadata = {
   title: "Market Analytics",
@@ -67,41 +69,72 @@ interface IndexSeries {
 
 function buildIndex(): IndexSeries {
   const eligible = eligibleSetCodes();
-  // Only cards TCGplayer prices can join the basket — an unpriced constituent
-  // would either drop the level to zero or fail the full-coverage filter below.
+  // Headline price (primaryPrice): Normal market, or foil market for a
+  // foil-only printing. Ranking on Normal market alone filled the "most
+  // valuable" basket with sub-dollar cards and left out every Showcase,
+  // Signature and chase promo.
   const basket = CARDS.filter((c) => eligible.has(c.setCode))
     .flatMap((card) => {
-      const market = latestQuote(card).market;
-      return market == null ? [] : [{ card, market }];
+      const cents = primaryPrice(latestQuote(card));
+      return cents == null ? [] : [{ card, cents }];
     })
-    .sort((a, b) => b.market - a.market)
+    .sort((a, b) => b.cents - a.cents)
     .slice(0, BASKET_SIZE)
     .map((x) => x.card);
 
-  const byDay = new Map<string, { total: number; n: number }>();
+  // day → card id → headline price
+  const byDay = new Map<string, Map<string, number>>();
   for (const card of basket) {
     for (const p of priceHistory(card).slice(-WINDOW_DAYS)) {
-      if (p.market == null) continue;
-      const entry = byDay.get(p.day) ?? { total: 0, n: 0 };
-      entry.total += p.market;
-      entry.n += 1;
-      byDay.set(p.day, entry);
+      const cents = p.market ?? p.foilMarket;
+      if (cents == null) continue;
+      let day = byDay.get(p.day);
+      if (!day) byDay.set(p.day, (day = new Map()));
+      day.set(card.id, cents);
     }
   }
+  const days = [...byDay.keys()].sort();
+  if (days.length === 0) return { points: [], constituents: basket.length };
 
-  const points = [...byDay.entries()]
-    // Only days every constituent priced — a partial day is a lower sum, not a drop.
-    .filter(([, e]) => e.n === basket.length)
-    .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([day, e]): PriceSnapshot => ({ day, low: e.total, mid: e.total, market: e.total, foil: null, foilMarket: null }));
+  // Chain-linked: each day's move is measured over the cards priced on BOTH
+  // that day and the one before, then compounded. Coverage gaps (a card with
+  // no listing that day) no longer delete the whole day, and a card dropping in
+  // or out never reads as a market move. Level starts at the first day's sum.
+  let level = [...byDay.get(days[0])!.values()].reduce((a, b) => a + b, 0);
+  const snap = (day: string, cents: number): PriceSnapshot => ({
+    day,
+    low: cents,
+    mid: cents,
+    market: cents,
+    foil: null,
+    foilMarket: null,
+  });
+  const points: PriceSnapshot[] = [snap(days[0], Math.round(level))];
+  for (let i = 1; i < days.length; i++) {
+    const prev = byDay.get(days[i - 1])!;
+    const cur = byDay.get(days[i])!;
+    let a = 0;
+    let b = 0;
+    for (const [id, cents] of cur) {
+      const before = prev.get(id);
+      if (before == null) continue;
+      a += cents;
+      b += before;
+    }
+    if (b > 0) level *= a / b;
+    points.push(snap(days[i], Math.round(level)));
+  }
 
   return { points, constituents: basket.length };
 }
 
+/** Change against the last point on or before `daysAgo` calendar days back. */
 function indexChange(points: PriceSnapshot[], daysAgo: number): number | null {
   const last = points[points.length - 1];
-  const prior = points[points.length - 1 - daysAgo];
-  if (!last || !prior) return null;
+  if (!last) return null;
+  const cutoff = new Date(Date.parse(`${last.day}T00:00:00Z`) - daysAgo * DAY_MS).toISOString().slice(0, 10);
+  const prior = [...points].reverse().find((p) => p.day <= cutoff);
+  if (!prior || prior === last) return null;
   return pctChange(last.market, prior.market);
 }
 
@@ -123,13 +156,13 @@ function setPerformance(): SetPerformance[] {
   return SETS.map((set) => {
     const cards = cardsInSet(set.code);
     const prices = cards.flatMap((c) => {
-      const m = latestQuote(c).market;
+      const m = primaryPrice(latestQuote(c));
       return m == null ? [] : [m];
     });
     const changes = (days: number) =>
       HAS_CHANGE_DATA
         ? cards
-            .map((c) => pctChange(latestQuote(c).market, quoteDaysAgo(c, days).market))
+            .map((c) => pctChange(primaryPrice(latestQuote(c)), primaryPrice(quoteDaysAgo(c, days))))
             .filter((p): p is number => p != null && isFinite(p))
         : [];
 
@@ -151,7 +184,7 @@ function setPerformance(): SetPerformance[] {
 
 function MoverList({ title, rows, tone }: { title: string; rows: ReturnType<typeof moverSplit>["gainers"]; tone: "up" | "down" }) {
   return (
-    <Panel>
+    <Panel className="min-w-0">
       <h3 className={`eyebrow mb-3 ${tone === "up" ? "text-up" : "text-down"}`}>{title}</h3>
       {rows.length === 0 ? (
         <p className="py-6 text-center text-[13px] text-ink-dim">Nothing moved enough to report this week.</p>
@@ -209,7 +242,7 @@ export default function AnalyticsPage() {
     { label: "7 days", value: <Delta pct={indexChange(points, 7)} className="text-lg sm:text-2xl" /> },
     { label: "30 days", value: <Delta pct={indexChange(points, 30)} className="text-lg sm:text-2xl" /> },
     {
-      label: `${points.length} days`,
+      label: first && latest ? `Since ${formatDate(`${first.day}T00:00:00Z`).replace(/, \d{4}$/, "")}` : "All time",
       value: <Delta pct={first && latest ? pctChange(latest.market, first.market) : null} className="text-lg sm:text-2xl" />,
     },
   ];
@@ -238,9 +271,10 @@ export default function AnalyticsPage() {
               <div>
                 <h2 className="font-display text-lg uppercase tracking-wide text-ink">RiftboundStocks Index</h2>
                 <p className="mt-1 max-w-xl text-[12px] leading-relaxed text-ink-dim">
-                  The combined market price of the {constituents} most valuable cards in the catalogue, one point per
-                  day. Constituents are fixed for the whole window and must have priced on every day in it, so the line
-                  moves only when prices move.
+                  The {constituents} most valuable cards in the catalogue (foil price for foil-only printings), one
+                  point per day. Each day&apos;s move is measured over the cards priced on both that day and the one
+                  before, then compounded — so the line moves only when prices move, not when a listing appears or
+                  disappears.
                 </p>
               </div>
               {/* Right-aligned only once it sits at the right of the header row.

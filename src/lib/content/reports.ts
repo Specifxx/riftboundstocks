@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// DATA REPORTS — real analysis, unlike ./articles.ts
+// DATA REPORTS — real analysis
 // ─────────────────────────────────────────────────────────────────────────────
 // Every figure quoted in the prose below was computed from the TCGplayer price
 // snapshot of 2026-08-12 and is re-derived by scripts/verify-reports.ts, which
@@ -8,9 +8,8 @@
 //
 // Two things follow from that, and both are deliberate:
 //
-//  1. The byline is the "data desk", not one of the fictional personas in
-//     ./authors.ts. Real analysis under an invented human byline would be worse
-//     than the demo articles, not better.
+//  1. The byline is the automated "data desk" (./authors.ts), not a person,
+//     because no person wrote the numbers.
 //  2. Prose figures are DATED and frozen; the embedded card tables read LIVE
 //     prices and will drift away from them as the market moves. Each report says
 //     so. The alternative — recomputing the prose — is not something a static

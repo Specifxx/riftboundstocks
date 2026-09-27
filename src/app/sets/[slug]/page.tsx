@@ -2,12 +2,15 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { SETS, setBySlug } from "@/lib/riftbound";
 import { cardsInSet } from "@/lib/catalog";
-import { latestQuote, quoteDaysAgo, pctChange } from "@/lib/prices";
+import { latestQuote, quoteDaysAgo, pctChange, primaryPrice } from "@/lib/prices";
 import { formatDate } from "@/lib/format";
 import { SITE_URL } from "@/lib/site";
+import { JsonLd, breadcrumbLd } from "@/components/JsonLd";
+import { RelatedReading } from "@/components/RiftComparePosts";
 import { SetSymbol } from "@/components/SetSymbol";
 import { Money } from "@/components/Prefs";
-import { Delta, DemoPricesNotice } from "@/components/Bits";
+import { Delta } from "@/components/Bits";
+import { DemoPricesNotice } from "@/components/Notices";
 import { SetBrowser } from "./SetBrowser";
 import type { CardRow } from "@/components/CardTable";
 
@@ -20,8 +23,8 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
   if (!set) return { title: "Set not found" };
   const count = cardsInSet(set.code).length;
   return {
-    title: `${set.name} — Card Prices`,
-    description: `All ${count} cards in ${set.name} (${set.code}), the Riftbound TCG ${set.setType.toLowerCase()} released ${formatDate(`${set.releasedOn}T00:00:00Z`)}. Market prices, rarities and weekly movement for every card.`,
+    title: `Riftbound ${set.name} Price List — All ${count} Cards`,
+    description: `Prices for all ${count} cards in Riftbound ${set.name} (${set.code}), the ${set.setType.toLowerCase()} released ${formatDate(`${set.releasedOn}T00:00:00Z`)}: market and foil prices, the most valuable cards, set value and weekly movement.`,
     alternates: { canonical: `${SITE_URL}/sets/${set.slug}` },
   };
 }
@@ -31,9 +34,13 @@ export default function SetPage({ params }: { params: { slug: string } }) {
   if (!set) notFound();
 
   const cards = cardsInSet(set.code);
+  // Headline price (lib/prices primaryPrice): Normal market, or foil market for
+  // a printing that only exists in foil. Reading `.market` alone left every
+  // Showcase, Signature and most promo printings unpriced — which dropped the
+  // most valuable cards out of the set total and "Most valuable" entirely.
   const rows: CardRow[] = cards.map((c) => {
-    const now = latestQuote(c).market;
-    const then = quoteDaysAgo(c, 7).market;
+    const now = primaryPrice(latestQuote(c));
+    const then = primaryPrice(quoteDaysAgo(c, 7));
     return {
       slug: c.slug,
       name: c.name,
@@ -57,7 +64,7 @@ export default function SetPage({ params }: { params: { slug: string } }) {
   const changes = rows.map((r) => r.pct).filter((p): p is number => p != null);
   const avg30 = (() => {
     const ch = cards
-      .map((c) => pctChange(latestQuote(c).market, quoteDaysAgo(c, 30).market))
+      .map((c) => pctChange(primaryPrice(latestQuote(c)), primaryPrice(quoteDaysAgo(c, 30))))
       .filter((p): p is number => p != null);
     return ch.length ? ch.reduce((a, b) => a + b, 0) / ch.length : null;
   })();
@@ -73,8 +80,17 @@ export default function SetPage({ params }: { params: { slug: string } }) {
     { label: "30d average", pct: avg30 },
   ];
 
+  // Set names as articles write them: "Spirit Forged" is also "Spiritforged".
+  const setTerms = [set.name, set.name.replace(/\s+/g, ""), set.name.replace(/^Origins: /, "")];
+
   return (
     <div>
+      <JsonLd
+        data={breadcrumbLd([
+          { name: "Sets", path: "/sets" },
+          { name: set.name, path: `/sets/${set.slug}` },
+        ])}
+      />
       <header className="mb-5 flex flex-wrap items-start justify-between gap-4 border-b border-line pb-4">
         <div className="flex items-center gap-3">
           <SetSymbol code={set.code} size={48} />
@@ -106,6 +122,9 @@ export default function SetPage({ params }: { params: { slug: string } }) {
 
       <SetBrowser rows={rows} />
       <DemoPricesNotice className="mt-5" />
+      {set.setType !== "Promo" && (
+        <RelatedReading terms={setTerms} title={`${set.name} news & guides`} limit={5} className="mt-6 max-w-3xl" />
+      )}
     </div>
   );
 }

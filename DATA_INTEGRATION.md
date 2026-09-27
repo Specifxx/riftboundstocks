@@ -214,10 +214,23 @@ this site's core purpose (price tracking). The navbar's new "Games" entry
 tagged the same way the existing footer cross-links are (`riftcompareUrl()` — `ref`/`utm_*`
 params for RiftCompare's own analytics, not an affiliate link).
 
+## News and guides
+
+RiftCompare's blog and guides (its public JSON Feed, `/feed.json`) are the site's written
+news. `lib/riftcompare-feed.ts` fetches the feed once an hour through Next's data cache —
+every page shares the one cached response — and returns `[]` on any failure, so a
+RiftCompare outage just hides the sections. Posts are **linked, not copied**: the news hub
+lists them, and card, set, champion and report pages show the ones that mention them
+(`postsMentioning()` — whole-word match on champion, card or set names, title hits ranked
+above summary hits). Copying the text would put two URLs in the index competing for the
+same article.
+
 ## Decks
 
 "Decks using this card" (`card/[slug]/page.tsx`) has no real data source on either side —
-neither this catalogue nor RiftCompare's API tracks deck lists. This is a different thing
+neither this catalogue nor RiftCompare's API tracks deck lists. (Update: the card page now
+replaces the empty "No recent decks found" panel with links to RiftCompare's deck builder and
+deck library, and to the card's champion page.) This is a different thing
 from the existing `/decks` page: that page mechanically assembles illustrative price
 baskets (highest-priced cards per domain/tier, explicitly and repeatedly disclaimed on the
 page itself as "not real competitive decklists — nobody plays these") to answer "what does

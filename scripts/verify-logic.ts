@@ -14,6 +14,9 @@ import { parsePortfolioCsv } from "../src/lib/portfolio-csv";
 import { PLAN_TIERS, PLANS, planLimits } from "../src/lib/plans";
 import { CARDS } from "../src/lib/catalog";
 import { DOMAIN_KEYS } from "../src/lib/riftbound";
+import { BANS, banFor } from "../src/lib/banlist";
+import { championOf, cardsForChampion } from "../src/lib/champions";
+import { postsMentioning, type RcPost } from "../src/lib/riftcompare-feed";
 
 let failures = 0;
 function check(label: string, actual: unknown, expected: unknown) {
@@ -94,6 +97,35 @@ check("costBasis dollars → cents", parsed.rows[0]?.costBasisCents, 1250);
 
 check("missing slug/cardId column → header error, zero rows", parsePortfolioCsv("name,qty\nfoo,1\n").rows.length, 0);
 check("empty input → no rows, no errors", parsePortfolioCsv(""), { rows: [], errors: [] });
+
+// ── ban list ─────────────────────────────────────────────────────────────────
+// A ban whose name matches no printing is a silent no-op: the card page would
+// go back to calling a banned card legal. Every entry must hit something.
+console.log("\nban list");
+for (const b of BANS) ok(`"${b.name}" matches at least one printing`, CARDS.some((c) => banFor(c) === b));
+const draven = CARDS.filter((c) => c.name === "Draven, Vanquisher");
+ok("a ban covers every printing of the card (Draven alt art too)", draven.length > 1 && draven.every((c) => banFor(c)));
+ok("an unbanned card has no ban", banFor(CARDS.find((c) => c.name === "Ahri, Alluring")!) === null);
+const yi = CARDS.find((c) => c.name === "Wuju Bladesman - Starter");
+check("starter Legend resolves to its 2v2-only ban", yi && banFor(yi)?.formats, ["2v2"]);
+
+// ── champions ────────────────────────────────────────────────────────────────
+console.log("\nchampions");
+const legends = CARDS.filter((c) => c.type === "Legend");
+check("every Legend resolves to a champion", legends.filter((c) => !championOf(c)).length, 0);
+check("Nine-Tailed Fox (Legend, no champion in name) → Ahri", championOf(CARDS.find((c) => c.name === "Nine-Tailed Fox")!)?.name, "Ahri");
+check("\"Yi, Meditative\" aliases to Master Yi", championOf(CARDS.find((c) => c.name === "Yi, Meditative")!)?.slug, "master-yi");
+ok("battlefields are not champions", CARDS.filter((c) => c.type === "Battlefield").every((c) => !championOf(c)));
+ok("Master Yi collects promos and Legends", cardsForChampion("master-yi").some((c) => c.kind === "promo") && cardsForChampion("master-yi").some((c) => c.type === "Legend"));
+
+// ── RiftCompare post matching ────────────────────────────────────────────────
+console.log("\nriftcompare post matching");
+const post = (title: string, summary = ""): RcPost => ({ url: title, href: title, title, summary, publishedAt: "2026-09-01", kind: "News" });
+const feed = [post("Vision control decks"), post("Every Vi card, priced"), post("Kai’Sa spoiler"), post("Set review", "Ahri shows up")];
+check("whole-word only: 'Vi' ignores 'Vision'", postsMentioning(feed, ["Vi"]).map((p) => p.title), ["Every Vi card, priced"]);
+check("curly apostrophe matches straight", postsMentioning(feed, ["Kai'Sa"]).length, 1);
+check("summary hits count, below title hits", postsMentioning(feed, ["Ahri"]).map((p) => p.title), ["Set review"]);
+check("no terms → nothing", postsMentioning(feed, []).length, 0);
 
 console.log(`\n${failures === 0 ? "All logic checks passed." : `${failures} CHECK(S) FAILED.`}`);
 process.exit(failures === 0 ? 0 : 1);

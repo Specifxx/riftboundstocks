@@ -16,11 +16,27 @@
  * and the expectation here, and move the report's `asOf` date.
  */
 import { CARDS, cardBySlug, cardsInSet } from "../src/lib/catalog";
-import { latestQuote, primaryPrice } from "../src/lib/prices";
+import { priceHistory, primaryPrice, EMPTY_QUOTE, type PriceQuote } from "../src/lib/prices";
 import { cardDetail } from "../src/lib/card-details";
 import { SEALED } from "../src/lib/sealed-data";
+import sealedCatalogue from "../src/data/sealed.json";
+import sealedHistory from "../src/data/sealed-history.json";
 import { REPORTS } from "../src/lib/content/reports";
 import { SETS } from "../src/lib/riftbound";
+
+// The reports' figures are FROZEN at their snapshot date, so they're checked
+// against that day's column of the price history — not today's prices, which
+// drift daily and made this fail by design.
+const AS_OF = REPORTS[0]?.asOf ?? "";
+const quoteCache = new Map<string, PriceQuote>();
+function latestQuote(c: (typeof CARDS)[number]): PriceQuote {
+  let q = quoteCache.get(c.id);
+  if (!q) {
+    q = priceHistory(c).find((p) => p.day === AS_OF) ?? EMPTY_QUOTE;
+    quoteCache.set(c.id, q);
+  }
+  return q;
+}
 
 const BOOSTER = new Set(["OGN", "OGS", "SFD", "UNL", "VEN"]);
 const money = (c: number | null) => (c == null ? "—" : `$${(c / 100).toFixed(2)}`);
@@ -137,16 +153,29 @@ for (const [set, total, med] of [
   check(`${set} singles total`, money(vs.reduce((a, b) => a + b, 0)), total);
   check(`${set} median single`, money(median(vs)), med);
 }
+// Sealed market on the report date, from the sealed history's AS_OF column.
+const sealedDay = (sealedHistory as { days: string[] }).days.indexOf(AS_OF);
+const sealedMarketOn = (productId: number | undefined): number | null => {
+  if (productId == null || sealedDay < 0) return null;
+  const row = (sealedHistory as { cards: Record<string, (number | null)[][]> }).cards[String(productId)];
+  return row?.[sealedDay]?.[2] ?? null;
+};
 for (const [set, box, pack] of [
   ["OGN", "$275.22", "$14.43"],
   ["SFD", "$211.71", "$7.90"],
   ["VEN", "$160.00", "$6.73"],
   ["UNL", "$155.03", "$6.29"],
 ] as const) {
-  check(`${set} booster display`, money(SEALED.find((p) => p.setCode === set && p.type === "booster_display")?.market ?? null), box);
-  check(`${set} booster pack`, money(SEALED.find((p) => p.setCode === set && p.type === "booster_pack")?.market ?? null), pack);
+  check(`${set} booster display`, money(sealedMarketOn(SEALED.find((p) => p.setCode === set && p.type === "booster_display")?.productId)), box);
+  check(`${set} booster pack`, money(sealedMarketOn(SEALED.find((p) => p.setCode === set && p.type === "booster_pack")?.productId)), pack);
 }
-check("all four displays presale", SEALED.filter((p) => p.type === "booster_display" && p.presale).length, 4);
+// TCGplayer's own flag as captured in the catalogue on the report date — not
+// SEALED's `presale`, which is now derived from release dates.
+check(
+  "all four displays presale",
+  (sealedCatalogue as { products: { type: string; presale: boolean }[] }).products.filter((p) => p.type === "booster_display" && p.presale).length,
+  4,
+);
 
 // ── liquidity ────────────────────────────────────────────────────────────────
 const thin = CARDS.filter((c) => {
@@ -155,7 +184,10 @@ const thin = CARDS.filter((c) => {
   return v != null && v >= 5000 && d != null && d.listings <= 2;
 });
 console.log("\nforty-three-thin-markets");
-check("printings >= $50 with <= 2 listings", thin.length, 43);
+// Listing counts are stored for the latest import only (card-details.json has
+// no history), so this can't be re-derived for the report date. Reported, not
+// failed — the price side of the claim is checked everywhere else.
+console.log(`  info  printings >= $50 with <= 2 listings — report said 43, today ${thin.length} (listings aren't historical)`);
 
 // ── asking vs sales ──────────────────────────────────────────────────────────
 const gaps = CARDS.map((c) => {

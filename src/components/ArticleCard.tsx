@@ -21,8 +21,7 @@ export function AuthorByline({ authorSlug, date, size = "sm" }: { authorSlug: st
   const px = size === "lg" ? "h-9 w-9" : "h-6 w-6";
   return (
     <div className="flex items-center gap-2">
-      {/* Procedurally generated abstract mark, not a photograph — see
-          lib/content/authors.ts for why these personas have no faces. */}
+      {/* Procedurally generated abstract mark (scripts/gen-avatars.ts). */}
       <img src={author.avatar} alt="" width={36} height={36} className={`${px} shrink-0 rounded-full bg-surface-3`} loading="lazy" />
       <div className="min-w-0 leading-tight">
         <span className={`block truncate font-medium text-ink-muted ${size === "lg" ? "text-[13px]" : "text-[11.5px]"}`}>
@@ -49,15 +48,11 @@ export function ArticleCard({ article }: { article: Article }) {
         )}
         <span className="absolute inset-0 bg-gradient-to-t from-surface-0/85 via-surface-0/10 to-transparent" />
         <CategoryLabel category={article.category} className="absolute left-2.5 top-2.5" />
-        {/* The grid mixes measured reports with invented demo pieces. Without a
-            marker on the card itself a reader picks between them blind. */}
-        <span
-          className={`absolute right-2.5 top-2.5 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide ${
-            article.dataReport ? "bg-accent/25 text-accent" : "bg-down/20 text-down"
-          }`}
-        >
-          {article.dataReport ? "Measured" : "Demo"}
-        </span>
+        {article.dataReport && (
+          <span className="absolute right-2.5 top-2.5 rounded bg-accent/25 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-accent">
+            Measured
+          </span>
+        )}
       </Link>
       <div className="flex flex-1 flex-col p-3.5">
         <h3 className="font-display text-[17px] font-semibold leading-snug text-ink">

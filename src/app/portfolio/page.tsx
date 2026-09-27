@@ -3,10 +3,10 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { cardById, type RiftCard } from "@/lib/catalog";
-import { latestQuote, primaryPrice } from "@/lib/prices";
+import { latestQuote } from "@/lib/prices";
 import { ACCOUNTS_ENABLED, SITE_NAME, SITE_URL } from "@/lib/site";
 import { planLimits } from "@/lib/plans";
-import { portfolioValueHistory, breakdownByDomain, breakdownBySet } from "@/lib/portfolio";
+import { portfolioValueHistory, breakdownByDomain, breakdownBySet, holdingPrice } from "@/lib/portfolio";
 import { Money } from "@/components/Prefs";
 import { Delta } from "@/components/Bits";
 import { AddHoldingForm } from "@/components/AddHoldingForm";
@@ -68,7 +68,7 @@ export default async function PortfolioPage({ searchParams }: { searchParams: { 
     .map((h): HoldingRow | null => {
       const card = cardById(h.cardId);
       if (!card) return null; // catalogue changed under us — skip rather than crash
-      const market = primaryPrice(latestQuote(card));
+      const market = holdingPrice(latestQuote(card), h.isFoil);
       const value = market != null ? market * h.quantity : null;
       const invested = h.costBasisCents != null ? h.costBasisCents * h.quantity : null;
       const pl = market != null && invested != null ? value! - invested : null;
@@ -100,8 +100,8 @@ export default async function PortfolioPage({ searchParams }: { searchParams: { 
   const account = await prisma.user.findUnique({ where: { id: user.id }, select: { planTier: true } });
   const limits = planLimits(account?.planTier);
 
-  const holdingsLite = holdings.map((h) => ({ cardId: h.cardId, quantity: h.quantity }));
-  const valueOf = (c: RiftCard): number | null => primaryPrice(latestQuote(c));
+  const holdingsLite = holdings.map((h) => ({ cardId: h.cardId, quantity: h.quantity, isFoil: h.isFoil }));
+  const valueOf = (c: RiftCard, isFoil?: boolean): number | null => holdingPrice(latestQuote(c), isFoil);
   const valueHistory = portfolioValueHistory(holdingsLite);
   const domainSlices = breakdownByDomain(holdingsLite, valueOf);
   const setSlices = breakdownBySet(holdingsLite, valueOf);

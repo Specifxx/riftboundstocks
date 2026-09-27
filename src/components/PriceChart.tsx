@@ -61,12 +61,16 @@ export function PriceChart({ points, sources, activeSourceId }: Props) {
   // Foil series are hidden by default: on most cards they sit several times
   // above the non-foil lines, and leaving them on squashes the three series a
   // visitor actually came to read into the bottom fifth of the chart.
+  // EXCEPT on a foil-only printing (most Showcase, Signature and promo cards —
+  // over half the catalogue), where the foil lines are the only data there is:
+  // hiding them rendered an empty chart on the most valuable cards.
+  const foilOnly = !points.some((p) => p.market != null);
   const [visible, setVisible] = useState<Record<SeriesKey, boolean>>({
     low: true,
     mid: true,
     market: true,
-    foil: false,
-    foilMarket: false,
+    foil: foilOnly,
+    foilMarket: foilOnly,
   });
 
   const n = points.length;

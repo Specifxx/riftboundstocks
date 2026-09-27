@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { OAuthButtons } from "@/components/OAuthButtons";
 import { getCurrentUser } from "@/lib/auth";
 import { enabledProviders } from "@/lib/oauth";
-import { ACCOUNTS_ENABLED, SITE_NAME, SITE_URL } from "@/lib/site";
+import { ACCOUNTS_ENABLED, SITE_NAME, SITE_URL, safeNext } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Log In",
@@ -13,13 +13,9 @@ export const metadata: Metadata = {
   robots: { index: false, follow: true },
 };
 
-function safe(next?: string): string {
-  return next && next.startsWith("/") && !next.startsWith("//") ? next : "/profile";
-}
-
-export default async function LoginPage({ searchParams }: { searchParams: { next?: string } }) {
+export default async function LoginPage({ searchParams }: { searchParams: { next?: string | string[] } }) {
   const user = ACCOUNTS_ENABLED ? await getCurrentUser() : null;
-  if (user) redirect(safe(searchParams.next));
+  if (user) redirect(safeNext(searchParams.next));
 
   return (
     <div className="mx-auto max-w-md py-6">

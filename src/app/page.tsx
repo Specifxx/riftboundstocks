@@ -1,29 +1,31 @@
+import type { Metadata } from "next";
 import { CARDS, type RiftCard } from "@/lib/catalog";
-import {
-  movers,
-  trendingCards,
-  topByMarket,
-  totalMarketValue,
-  pricedCount,
-  latestQuote,
-  quoteDaysAgo,
-  pctChange,
-  fetchCardListings,
-  cheapestEbayCents,
-  HAS_CHANGE_DATA,
-  HISTORY_LENGTH,
-} from "@/lib/prices";
+import { SITE_NAME, SITE_TAGLINE, SITE_URL } from "@/lib/site";
+import { movers, trendingCards, topByMarket, totalMarketValue, pricedCount, latestQuote, quoteDaysAgo, pctChange, fetchCardListings, cheapestEbayCents, HAS_CHANGE_DATA, HISTORY_LENGTH, primaryPrice } from "@/lib/prices";
 import { sortedArticles, featuredArticles } from "@/lib/content/articles";
+import { fetchRiftComparePosts } from "@/lib/riftcompare-feed";
+import { PostList, RiftCompareCredit } from "@/components/RiftComparePosts";
 import { SETS } from "@/lib/riftbound";
 import { TrendingTile } from "@/components/CardTile";
 import { ArticleCard } from "@/components/ArticleCard";
 import { CardTable, type CardRow } from "@/components/CardTable";
 import { Money } from "@/components/Prefs";
-import { Delta, DemoPricesNotice, HistoryNotice, SectionTitle } from "@/components/Bits";
+import { Delta, SectionTitle } from "@/components/Bits";
+import { DemoPricesNotice, HistoryNotice } from "@/components/Notices";
 import { BrandLogo } from "@/components/BrandLogo";
-import { SITE_TAGLINE } from "@/lib/site";
 
 export const revalidate = 3600;
+
+export const metadata: Metadata = {
+  alternates: { canonical: SITE_URL },
+  openGraph: {
+    type: "website",
+    siteName: SITE_NAME,
+    title: `${SITE_NAME} — ${SITE_TAGLINE}`,
+    description: "Daily price movers, history charts and market analysis for every Riftbound TCG card.",
+    url: SITE_URL,
+  },
+};
 
 /**
  * Percentage move of the whole market over `days`.
@@ -37,8 +39,10 @@ function basketChange(days: number): number | null {
   let now = 0;
   let then = 0;
   for (const c of CARDS) {
-    const a = latestQuote(c).market;
-    const b = quoteDaysAgo(c, days).market;
+    // Headline price, matching totalMarketValue() beside it — foil-only
+    // printings are most of the catalogue's value.
+    const a = primaryPrice(latestQuote(c));
+    const b = primaryPrice(quoteDaysAgo(c, days));
     if (a == null || b == null) continue;
     now += a;
     then += b;
@@ -101,7 +105,13 @@ function MarketSummary() {
       <BrandLogo className="pointer-events-none absolute -right-6 -top-8 h-40 w-40 opacity-[0.06] sm:h-48 sm:w-48" />
       <div className="relative p-5 sm:p-7">
         <p className="eyebrow text-accent">The Ledger</p>
-        <p className="mt-1 max-w-lg text-[13px] leading-relaxed text-ink-muted sm:text-sm">{SITE_TAGLINE}.</p>
+        <h1 className="mt-1 max-w-2xl font-display text-2xl font-semibold leading-tight text-ink sm:text-3xl">
+          Riftbound card prices &amp; market movers
+        </h1>
+        <p className="mt-1.5 max-w-xl text-[13px] leading-relaxed text-ink-muted sm:text-sm">
+          Daily TCGplayer prices and price history for every Riftbound: League of Legends TCG card and sealed product —
+          what&apos;s rising, what&apos;s falling, and what each set is worth.
+        </p>
         <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-3 lg:grid-cols-5">
           {items.map((i) => (
             <div key={i.label}>
@@ -133,7 +143,10 @@ const toRow = (card: RiftCard, now: number | null, then?: number | null, pct?: n
 export default async function HomePage() {
   const articles = sortedArticles();
   const featured = featuredArticles(1)[0];
-  const rest = articles.filter((a) => a.slug !== featured?.slug).slice(0, 6);
+  const rest = articles.filter((a) => a.slug !== featured?.slug).slice(0, 2);
+  // Riftbound news and guides from RiftCompare — [] if the feed is down, and
+  // the section simply isn't rendered.
+  const news = (await fetchRiftComparePosts()).slice(0, 6);
 
   // Movement needs two days of history. Until the importer has run twice, the
   // trending row and the movers table fall back to the most valuable cards —
@@ -159,8 +172,13 @@ export default async function HomePage() {
   // a dash for that price, same as an unpriced TCGplayer figure.
   const trendingListings = await Promise.all(trendingTiles.map((t) => fetchCardListings(t.card)));
 
+  // The ten biggest moves either way. movers() is sorted high→low, so taking
+  // its head showed only gainers — on a falling day, the mildest ones.
   const moverRows: CardRow[] = HAS_CHANGE_DATA
-    ? movers("market", 1, 300).slice(0, 10).map((m) => toRow(m.card, m.now, m.then, m.pct))
+    ? [...movers("market", 1, 300)]
+        .sort((a, b) => Math.abs(b.pct) - Math.abs(a.pct))
+        .slice(0, 10)
+        .map((m) => toRow(m.card, m.now, m.then, m.pct))
     : topValue.map(({ card, cents }) => toRow(card, cents));
 
   return (
@@ -187,23 +205,37 @@ export default async function HomePage() {
       </section>
 
       <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <section className="min-w-0">
-          <SectionTitle href="/news" linkLabel="All articles">
-            News &amp; Articles
-          </SectionTitle>
-
-          {featured && (
-            <div className="mb-4">
-              <ArticleCard article={featured} />
-            </div>
+        <div className="min-w-0 space-y-8">
+          {news.length > 0 && (
+            <section className="min-w-0">
+              <SectionTitle href="/news" linkLabel="All news">
+                Riftbound News
+              </SectionTitle>
+              <div className="panel p-4">
+                <PostList posts={news} />
+                <RiftCompareCredit className="mt-3 border-t border-line pt-2.5" />
+              </div>
+            </section>
           )}
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            {rest.map((a) => (
-              <ArticleCard key={a.slug} article={a} />
-            ))}
-          </div>
-        </section>
+          <section className="min-w-0">
+            <SectionTitle href="/news" linkLabel="All reports">
+              Market Reports
+            </SectionTitle>
+
+            {featured && (
+              <div className="mb-4">
+                <ArticleCard article={featured} />
+              </div>
+            )}
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              {rest.map((a) => (
+                <ArticleCard key={a.slug} article={a} />
+              ))}
+            </div>
+          </section>
+        </div>
 
         <aside className="min-w-0">
           <SectionTitle href="/interests">{HAS_CHANGE_DATA ? "Today's Movers" : "Top by Market"}</SectionTitle>
@@ -212,7 +244,7 @@ export default async function HomePage() {
               rows={moverRows}
               columns={HAS_CHANGE_DATA ? ["card", "now", "pct"] : ["card", "now"]}
               nowLabel="Market"
-              initialSort="now"
+              initialSort={HAS_CHANGE_DATA ? "pct" : "now"}
               pageSize={10}
             />
           </div>

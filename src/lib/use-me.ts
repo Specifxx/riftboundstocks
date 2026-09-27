@@ -11,6 +11,8 @@ export interface MeUser {
   email: string;
   avatarUrl: string | null;
   emailVerified: boolean;
+  /** Only controls whether the Admin link shows; /admin checks on the server. */
+  isAdmin?: boolean;
 }
 
 const EMPTY: MeUser | null = null;

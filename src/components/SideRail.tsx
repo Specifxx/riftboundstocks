@@ -11,10 +11,14 @@ import {
   SealedIcon,
   PortfolioIcon,
   AlertsIcon,
+  ChampionsIcon,
+  NewsIcon,
 } from "./RailIcons";
 
 interface RailItem {
   label: string;
+  /** Full name for the tooltip when `label` is abbreviated to fit the rail. */
+  title?: string;
   href: string;
   icon: (p: { className?: string }) => React.ReactElement;
 }
@@ -28,10 +32,12 @@ interface RailItem {
 const ITEMS: RailItem[] = [
   { label: "Home", href: "/", icon: HomeIcon },
   { label: "Sets", href: "/sets", icon: SetsIcon },
+  { label: "Champs", title: "Champions", href: "/champions", icon: ChampionsIcon },
   { label: "Domains", href: "/domains", icon: DomainsIcon },
   { label: "Interests", href: "/interests", icon: InterestsIcon },
   { label: "Analytics", href: "/analytics", icon: AnalyticsIcon },
   { label: "Sealed", href: "/sealed", icon: SealedIcon },
+  { label: "News", href: "/news", icon: NewsIcon },
   { label: "Portfolio", href: "/portfolio", icon: PortfolioIcon },
   { label: "Alerts", href: "/alerts", icon: AlertsIcon },
 ];
@@ -52,7 +58,7 @@ export function SideRail() {
           <Link
             key={item.href}
             href={item.href}
-            title={item.label}
+            title={item.title ?? item.label}
             aria-current={active ? "page" : undefined}
             className={`group relative flex w-12 flex-col items-center gap-1 rounded-lg py-2 text-[9.5px] font-semibold uppercase tracking-wide transition-colors ${
               active ? "bg-accent-soft text-accent" : "text-ink-dim hover:bg-surface-2 hover:text-ink"

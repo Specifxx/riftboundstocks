@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { searchCards } from "@/lib/catalog";
-import { latestQuote, quoteDaysAgo, pctChange } from "@/lib/prices";
+import { latestQuote, quoteDaysAgo, pctChange, primaryPrice } from "@/lib/prices";
 import { SITE_URL } from "@/lib/site";
 import { CardTable, type CardRow } from "@/components/CardTable";
-import { DemoPricesNotice } from "@/components/Bits";
+import { DemoPricesNotice } from "@/components/Notices";
 
 export const metadata: Metadata = {
   title: "Search Riftbound Cards",
@@ -13,13 +13,15 @@ export const metadata: Metadata = {
   robots: { index: false, follow: true },
 };
 
-export default function SearchPage({ searchParams }: { searchParams: { q?: string } }) {
-  const q = (searchParams.q ?? "").trim();
+export default function SearchPage({ searchParams }: { searchParams: { q?: string | string[] } }) {
+  // A repeated ?q= arrives as an array; take the first rather than crash.
+  const raw = Array.isArray(searchParams.q) ? searchParams.q[0] : searchParams.q;
+  const q = (raw ?? "").trim();
   const results = q ? searchCards(q, 200) : [];
 
   const rows: CardRow[] = results.map((c) => {
-    const now = latestQuote(c).market;
-    const then = quoteDaysAgo(c, 7).market;
+    const now = primaryPrice(latestQuote(c));
+    const then = primaryPrice(quoteDaysAgo(c, 7));
     return {
       slug: c.slug,
       name: c.name,

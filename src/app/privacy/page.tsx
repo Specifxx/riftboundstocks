@@ -5,7 +5,7 @@ import { ACCOUNTS_ENABLED, CONTACT_EMAIL, SITE_NAME, SITE_URL } from "@/lib/site
 
 export const metadata: Metadata = {
   title: "Privacy",
-  description: `What ${SITE_NAME} stores and what it doesn't. No tracking, no analytics, no ad networks and no third-party scripts — theme and currency live in your browser's local storage.`,
+  description: `What ${SITE_NAME} stores and what it doesn't. No tracking cookies and no ad networks — visits are counted cookielessly, and theme and currency live in your browser's local storage.`,
   alternates: { canonical: `${SITE_URL}/privacy` },
 };
 
@@ -32,7 +32,8 @@ export default function PrivacyPage() {
       <header className="mb-5">
         <h1 className="font-display text-3xl uppercase tracking-wide text-ink sm:text-4xl">Privacy</h1>
         <p className="mt-1.5 text-[14px] leading-relaxed text-ink-muted">
-          The short version: {SITE_NAME} runs no analytics and loads no advertising.{" "}
+          The short version: {SITE_NAME} loads no advertising and sets no tracking cookies, and counts visits with a
+          cookieless analytics tool that doesn&apos;t identify you.{" "}
           {ACCOUNTS_ENABLED
             ? "Two preferences are kept in your own browser, and the only cookie this site sets is the one that keeps you signed in if you create an account."
             : "Two preferences are kept in your own browser, and this deployment has no accounts system configured, so it sets no cookies at all."}{" "}
@@ -89,9 +90,25 @@ export default function PrivacyPage() {
 
         <Section id="analytics" title="Analytics, ads and third-party scripts">
           <p>
-            There are <strong className="font-semibold text-ink">none</strong>. No Google Analytics or any other
-            measurement tool, no advertising network, no pixels, no tag manager, no embedded social widgets, no chat
-            widget, no A/B testing script. No JavaScript from another company runs on this site.
+            <strong className="font-semibold text-ink">One: Vercel Web Analytics</strong>, from the company that hosts
+            this site. It counts page views so we can see which pages people use. It sets no cookies and stores nothing
+            in your browser; it records the page, the referring site, your country and your browser, device and
+            operating system type. To count unique visitors it uses a hash of the request that is discarded after 24
+            hours, so it can&apos;t recognise you on a later day or follow you to other sites. Its script is served from
+            this site&apos;s own domain. See{" "}
+            <a
+              href="https://vercel.com/docs/analytics/privacy-policy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-accent hover:underline"
+            >
+              Vercel&apos;s analytics privacy policy
+            </a>
+            .
+          </p>
+          <p>
+            Nothing else: no Google Analytics, no advertising network, no pixels, no tag manager, no embedded social
+            widgets, no chat widget, no A/B testing script.
           </p>
           <p>
             Web fonts are self-hosted: they are downloaded at build time and served from this site&apos;s own domain, so
@@ -199,8 +216,8 @@ export default function PrivacyPage() {
             .
           </p>
           <p>
-            If this site ever adds analytics or advertising, this page changes first and the corner notice is replaced
-            with a real consent control that blocks those scripts until you choose. A dismissed disclosure is not
+            If this site ever adds tracking cookies, cross-site analytics or advertising, this page changes first and the
+            corner notice is replaced with a real consent control that blocks those scripts until you choose. A dismissed disclosure is not
             consent and will never be treated as one.
           </p>
         </Section>

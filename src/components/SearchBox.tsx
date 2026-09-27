@@ -22,6 +22,10 @@ export function SearchBox({ className = "" }: { className?: string }) {
   const router = useRouter();
   const [q, setQ] = useState("");
   const [hits, setHits] = useState<Hit[]>([]);
+  // The query `hits` answer. Enter only jumps to a hit when this matches what
+  // is in the box — otherwise a fast "vi" → "viktor" + Enter opened the first
+  // "vi" result before the "viktor" response arrived.
+  const [hitsFor, setHitsFor] = useState("");
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
@@ -74,6 +78,7 @@ export function SearchBox({ className = "" }: { className?: string }) {
         const res = await fetch(`/api/search?q=${encodeURIComponent(term)}`, { signal: ctrl.signal });
         const data = (await res.json()) as { results: Hit[] };
         setHits(data.results ?? []);
+        setHitsFor(term);
         setActive(0);
       } catch (err) {
         if ((err as Error).name !== "AbortError") setHits([]);
@@ -93,7 +98,7 @@ export function SearchBox({ className = "" }: { className?: string }) {
       setActive((a) => Math.max(a - 1, 0));
     } else if (e.key === "Enter") {
       e.preventDefault();
-      const hit = hits[active];
+      const hit = hitsFor === q.trim() ? hits[active] : undefined;
       if (hit) {
         setOpen(false);
         setQ("");

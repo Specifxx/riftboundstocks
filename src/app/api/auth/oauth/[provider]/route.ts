@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { randomBytes } from "node:crypto";
 import { accountsDisabledResponse } from "@/lib/auth";
 import { providerConfig, isProviderEnabled, isOAuthProvider, redirectUri } from "@/lib/oauth";
+import { safeNext } from "@/lib/site";
 
 // Kick off the OAuth flow: set a CSRF state cookie and redirect to the provider.
 export async function GET(req: Request, { params }: { params: { provider: string } }) {
@@ -16,6 +17,15 @@ export async function GET(req: Request, { params }: { params: { provider: string
   const cfg = providerConfig(provider);
   const state = randomBytes(16).toString("hex");
   cookies().set(`oauth_state_${provider}`, state, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 600,
+  });
+  // Where to land afterwards (e.g. back on the card the visitor clicked
+  // "Watch" on). Validated now and again in the callback.
+  cookies().set("oauth_next", safeNext(new URL(req.url).searchParams.get("next")), {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",

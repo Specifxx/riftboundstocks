@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import { SETS } from "@/lib/riftbound";
 import { cardsInSet } from "@/lib/catalog";
-import { latestQuote, quoteDaysAgo, pctChange } from "@/lib/prices";
+import { latestQuote, quoteDaysAgo, pctChange, primaryPrice } from "@/lib/prices";
 import { SITE_URL } from "@/lib/site";
 import { SetsIndex, type SetSummary } from "./SetsIndex";
-import { DemoPricesNotice } from "@/components/Bits";
+import { DemoPricesNotice } from "@/components/Notices";
 
 export const metadata: Metadata = {
-  title: "Riftbound Sets",
+  title: "Riftbound Sets — Set Values & Price Lists",
   description:
     "Every Riftbound: League of Legends TCG set — Origins, Proving Grounds, Spirit Forged, Unleashed and Vendetta, plus the Organized Play, Judge and Secret Garden promo distributions. Card counts, set values and market performance for each.",
   alternates: { canonical: `${SITE_URL}/sets` },
@@ -25,9 +25,11 @@ export default function SetsPage() {
     const cards = cardsInSet(set.code);
     // Unpriced cards are dropped, never counted as zero — a set total that
     // silently includes $0 for cards TCGplayer has no price for is wrong.
-    const prices = cards.map((c) => latestQuote(c).market).filter((v): v is number => v != null);
+    // Headline price, so foil-only printings (Showcase, Signature, most
+    // promos — the chase cards) count toward the set rather than vanishing.
+    const prices = cards.map((c) => primaryPrice(latestQuote(c))).filter((v): v is number => v != null);
     const changes = cards
-      .map((c) => pctChange(latestQuote(c).market, quoteDaysAgo(c, 30).market))
+      .map((c) => pctChange(primaryPrice(latestQuote(c)), primaryPrice(quoteDaysAgo(c, 30))))
       .filter((p): p is number => p != null);
 
     return {

@@ -1,21 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CARDS, type RiftCard } from "@/lib/catalog";
-import {
-  HAS_CHANGE_DATA,
-  HISTORY_START,
-  latestQuote,
-  pctChange,
-  pricedCount,
-  quoteDaysAgo,
-  totalMarketValue,
-} from "@/lib/prices";
+import { HAS_CHANGE_DATA, HISTORY_START, latestQuote, pctChange, pricedCount, quoteDaysAgo, totalMarketValue, primaryPrice } from "@/lib/prices";
 import { DOMAINS, DOMAIN_KEYS, type DomainKey } from "@/lib/riftbound";
 import { formatDate } from "@/lib/format";
 import { SITE_URL } from "@/lib/site";
 import { CardGridTile } from "@/components/CardTile";
 import { Money } from "@/components/Prefs";
-import { Delta, DemoPricesNotice } from "@/components/Bits";
+import { Delta } from "@/components/Bits";
+import { DemoPricesNotice } from "@/components/Notices";
 
 export const metadata: Metadata = {
   title: "Riftbound Domains",
@@ -48,14 +41,14 @@ function summarise(key: DomainKey): DomainSummary {
   // pull the median down and sit at the top of a cheapest-first sort.
   const priced = cards
     .flatMap((card) => {
-      const market = latestQuote(card).market;
+      const market = primaryPrice(latestQuote(card));
       return market == null ? [] : [{ card, market }];
     })
     .sort((a, b) => b.market - a.market);
 
   const changes = HAS_CHANGE_DATA
     ? cards
-        .map((c) => pctChange(latestQuote(c).market, quoteDaysAgo(c, 30).market))
+        .map((c) => pctChange(primaryPrice(latestQuote(c)), primaryPrice(quoteDaysAgo(c, 30))))
         .filter((p): p is number => p != null && isFinite(p))
     : [];
 

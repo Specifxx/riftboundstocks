@@ -40,7 +40,20 @@ const LG = "lg:table-cell";
 const XL = "xl:table-cell";
 const NOW_W = "w-[30%] sm:w-[18%]";
 
-const RARITY_ORDER: Record<string, number> = { Common: 0, Uncommon: 1, Rare: 2, Epic: 3, Showcase: 4 };
+const RARITY_ORDER: Record<string, number> = { Common: 0, Uncommon: 1, Rare: 2, Epic: 3, Showcase: 4, Promo: 5 };
+
+/**
+ * Collector-number order within a set: plain numbers first ("001", "007a",
+ * "299*"), then specials, runes and tokens ("SP1", "R01", "T03"), each in
+ * numeric order. Parsing the bare label turned "R01" into 0 and put every rune
+ * above card 001.
+ */
+function numberKey(label: string): string {
+  const token = label.split("/")[0];
+  const digits = /^\d/.test(token);
+  const n = parseInt(token.replace(/^\D+/, ""), 10) || 0;
+  return `${digits ? 0 : 1}${(token.match(/^[a-z]+/i)?.[0] ?? "").toUpperCase().padEnd(2, " ")}${String(n).padStart(5, "0")}${token}`;
+}
 
 export function CardTable({
   rows,
@@ -66,22 +79,23 @@ export function CardTable({
 
   const sorted = useMemo(() => {
     const mul = dir === "asc" ? 1 : -1;
-    const value = (r: CardRow): number | string => {
+    const value = (r: CardRow): number | string | null => {
       switch (sort) {
         case "name": return r.name;
-        case "set": return `${r.setCode}${r.collectorLabel}`;
+        case "set": return `${r.setCode} ${numberKey(r.collectorLabel)}`;
         case "rarity": return RARITY_ORDER[r.rarity] ?? 0;
-        case "number": return parseInt(r.collectorLabel, 10) || 0;
-        // Unpriced rows sort to the bottom in either direction rather than
-        // pretending to be worth zero.
-        case "now": return r.now ?? -1;
-        case "then": return r.then ?? -1;
-        case "pct": return r.pct ?? 0;
+        case "number": return `${r.setCode} ${numberKey(r.collectorLabel)}`;
+        case "now": return r.now;
+        case "then": return r.then ?? null;
+        case "pct": return r.pct ?? null;
       }
     };
     return [...rows].sort((a, b) => {
       const va = value(a);
       const vb = value(b);
+      // Unpriced rows sort to the bottom in EITHER direction rather than
+      // pretending to be worth zero (or topping an ascending sort).
+      if (va == null || vb == null) return va == null ? (vb == null ? 0 : 1) : -1;
       if (typeof va === "string" || typeof vb === "string") return String(va).localeCompare(String(vb)) * mul;
       return (va - vb) * mul;
     });

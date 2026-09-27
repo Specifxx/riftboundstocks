@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { BrandLogo, BrandWordmark } from "./BrandLogo";
 import { SETS } from "@/lib/riftbound";
-import { CONTACT_EMAIL, PRICES_ARE_DEMO, SITE_NAME } from "@/lib/site";
+import { CONTACT_EMAIL, SITE_NAME } from "@/lib/site";
+import { PRICES_ARE_DEMO } from "@/lib/prices/demo-flag";
 import { riftcompareUrl } from "@/lib/affiliate";
 
-const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
+const COLUMNS: { title: string; links: { label: string; href: string; external?: boolean }[] }[] = [
   {
     title: "Market",
     links: [
@@ -18,6 +19,7 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
     title: "Browse",
     links: [
       { label: "All Sets", href: "/sets" },
+      { label: "Champions", href: "/champions" },
       { label: "Domains", href: "/domains" },
       { label: "Legends", href: "/browse?type=Legend" },
       { label: "Search", href: "/search" },
@@ -26,10 +28,10 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
   {
     title: "Read",
     links: [
-      { label: "News & Articles", href: "/news" },
-      { label: "Weekly Winners", href: "/news?category=Weekly+Winners" },
-      { label: "Meta Report", href: "/news?category=Meta+Report" },
-      { label: "Hidden Gems", href: "/news?category=Hidden+Gems" },
+      { label: "News & Analysis", href: "/news" },
+      { label: "Riftbound Guides", href: riftcompareUrl("/guides", "footer"), external: true },
+      { label: "Ban List", href: riftcompareUrl("/guides/riftbound-banlist-explained", "footer"), external: true },
+      { label: "Market Reports (RSS)", href: "/feed.xml" },
     ],
   },
   {
@@ -99,7 +101,7 @@ export function Footer() {
                   RiftCompare <span className="text-ink-dim">— our sister site</span>
                 </span>
                 <span className="block text-[11.5px] leading-relaxed text-ink-muted">
-                  Compare live Riftbound singles prices across stores in AU, NZ, US, UK, SG and CA.
+                  Compare live Riftbound prices across stores in the US, UK, EU, Australia, Canada and Singapore.
                 </span>
               </span>
             </a>
@@ -113,12 +115,23 @@ export function Footer() {
               <ul className="sm:space-y-1.5">
                 {col.links.map((l) => (
                   <li key={l.href}>
-                    <Link
-                      href={l.href}
-                      className="inline-flex min-h-[32px] items-center text-[13px] text-ink-muted hover:text-accent sm:min-h-0"
-                    >
-                      {l.label}
-                    </Link>
+                    {l.external ? (
+                      <a
+                        href={l.href}
+                        target="_blank"
+                        rel="noopener"
+                        className="inline-flex min-h-[32px] items-center text-[13px] text-ink-muted hover:text-accent sm:min-h-0"
+                      >
+                        {l.label} <span className="ml-1 text-ink-dim">↗</span>
+                      </a>
+                    ) : (
+                      <Link
+                        href={l.href}
+                        className="inline-flex min-h-[32px] items-center text-[13px] text-ink-muted hover:text-accent sm:min-h-0"
+                      >
+                        {l.label}
+                      </Link>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -129,9 +142,8 @@ export function Footer() {
         {/* ───────────────────────────────────────────────────────────────────
             The disclaimers. These are load-bearing, not boilerplate: this site
             uses Riot's game data and card art, publishes prices attributed to
-            TCGplayer, and — in this build — shows generated numbers under
-            fictional bylines. Each of those needs saying plainly and in a place
-            every page reaches.
+            TCGplayer, and links to a sister site under the same ownership. Each
+            of those needs saying plainly and in a place every page reaches.
             ─────────────────────────────────────────────────────────────────── */}
         <div className="mt-10 space-y-2.5 border-t border-line pt-6 text-[11.5px] leading-relaxed text-ink-dim">
           <p>
@@ -151,10 +163,6 @@ export function Footer() {
             purchases made through them — at no extra cost to you. Commission never influences which prices are shown
             or how cards are ranked; the figures come from the pricing data, not from what pays.
           </p>
-          {/* Two SEPARATE disclosures, because the two facts became independent
-              the day real prices landed. Bundling them meant switching prices to
-              live would have silently removed the fictional-author disclosure
-              along with the demo-price one — and the articles are still invented. */}
           {PRICES_ARE_DEMO && (
             <p>
               <strong className="font-semibold text-down">Demo prices.</strong> This build ships{" "}
@@ -163,12 +171,10 @@ export function Footer() {
             </p>
           )}
           <p>
-            <strong className="font-semibold text-down">Editorial.</strong> Articles marked{" "}
-            <strong className="font-semibold text-down">Demo</strong> are illustrative content under{" "}
-            <strong className="font-semibold text-ink-muted">invented personas, not real people</strong> — the analysis
-            and market events in them did not happen. Articles marked{" "}
-            <strong className="font-semibold text-accent">Measured</strong> are data reports whose figures are computed
-            from the price snapshot and re-derived from the source data on every build. Neither is financial advice. See{" "}
+            <strong className="font-semibold text-ink-muted">Editorial.</strong> Market reports on this site are
+            computed from the price data and re-checked against it on every build. News and guides are published by
+            RiftCompare, our sister site under the same ownership, and open there. Nothing here is financial advice.
+            See{" "}
             <Link href="/about" className="text-accent hover:underline">
               About &amp; Disclaimers
             </Link>

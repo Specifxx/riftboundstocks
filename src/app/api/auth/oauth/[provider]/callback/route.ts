@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
 import { accountsDisabledResponse, createSession } from "@/lib/auth";
 import { providerConfig, isProviderEnabled, isOAuthProvider, redirectUri, type OAuthProvider } from "@/lib/oauth";
+import { safeNext } from "@/lib/site";
 
 function fail(req: Request, code: string) {
   return NextResponse.redirect(new URL(`/login?error=${code}`, req.url));
@@ -60,18 +61,26 @@ export async function GET(req: Request, { params }: { params: { provider: string
   let email: string | undefined;
   let name: string | undefined;
   let avatar: string | null = null;
+  // Whether the PROVIDER has verified the address. Accounts are linked and
+  // created by email below, so an unverified one must never get that far:
+  // Discord lets anyone register with an address they don't own, and without
+  // this check that person would be signed straight into the owner's account.
+  let emailVerified = false;
   if (provider === "google") {
     providerId = profile.sub as string;
     email = (profile.email as string)?.toLowerCase();
     name = profile.name as string;
     avatar = (profile.picture as string) ?? null;
+    emailVerified = profile.email_verified === true || profile.email_verified === "true";
   } else {
     providerId = profile.id as string;
     email = (profile.email as string)?.toLowerCase();
     name = (profile.global_name as string) || (profile.username as string);
     avatar = profile.avatar ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.png` : null;
+    emailVerified = profile.verified === true;
   }
   if (!providerId || !email) return fail(req, "oauth_noemail");
+  if (!emailVerified) return fail(req, "oauth_unverified");
 
   // 4) Find-or-create the user (by provider id, then by email) and link the identity.
   //
@@ -89,8 +98,11 @@ export async function GET(req: Request, { params }: { params: { provider: string
     console.error(`[oauth/${provider}/callback] failed to create session:`, e);
     return fail(req, "oauth_account");
   }
-  // Land new/returning sign-ins on their profile by default.
-  return NextResponse.redirect(new URL("/profile", req.url));
+  // Back to wherever sign-in started (the card they clicked "Watch" on, say),
+  // or their profile by default.
+  const next = safeNext(cookies().get("oauth_next")?.value);
+  cookies().set("oauth_next", "", { path: "/", maxAge: 0 });
+  return NextResponse.redirect(new URL(next, req.url));
 }
 
 async function upsertOAuthUser(
@@ -116,7 +128,7 @@ async function upsertOAuthUser(
   }
 
   // Otherwise link to an existing account with the same email (the provider has
-  // verified this email, so it's the same person). Security: if that account was
+  // verified this email — checked in GET above — so it's the same person). Security: if that account was
   // NEVER email-verified yet has a password (from before this site went
   // OAuth-only — email/password sign-up no longer exists, so no NEW row can
   // ever set this), the password was set without proving inbox ownership (a

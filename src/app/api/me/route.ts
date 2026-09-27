@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
+import { isAdminEmail } from "@/lib/admin";
 
 // Session endpoint for the client-side chrome (NavUser). WHY THIS EXISTS: calling
 // getCurrentUser() (which reads cookies()) directly from the root layout or Navbar
@@ -21,6 +22,8 @@ export async function GET() {
             email: user.email,
             avatarUrl: user.avatarUrl,
             emailVerified: user.emailVerified,
+            // Decided here so the admin allowlist never ships to the browser.
+            isAdmin: isAdminEmail(user.email),
           }
         : null,
     },

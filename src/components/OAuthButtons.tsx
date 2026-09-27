@@ -8,6 +8,7 @@ const OAUTH_ERRORS: Record<string, string> = {
   oauth_token: "Couldn't complete sign-in with that provider. Please try again.",
   oauth_profile: "Couldn't read your profile from that provider. Please try again.",
   oauth_noemail: "That provider didn't share an email address, which we need to create your account.",
+  oauth_unverified: "That account's email address isn't verified with the provider yet. Verify it there, then try again.",
   oauth_account: "Signed in with the provider, but couldn't finish setting up your account. Please try again shortly.",
 };
 
@@ -17,11 +18,17 @@ const OAUTH_ERRORS: Record<string, string> = {
 export function OAuthButtons({ mode, providers }: { mode: "login" | "signup"; providers: ("google" | "discord")[] }) {
   const isSignup = mode === "signup";
   const [error, setError] = useState<string | null>(null);
+  // Carried through the provider round-trip so sign-in returns to the page
+  // that sent them here (validated server-side — see safeNext in lib/site).
+  const [nextQs, setNextQs] = useState("");
 
   // Surface OAuth failures redirected back as ?error=…
   useEffect(() => {
-    const e = new URLSearchParams(window.location.search).get("error");
+    const params = new URLSearchParams(window.location.search);
+    const e = params.get("error");
     if (e) setError(OAUTH_ERRORS[e] ?? "Sign-in failed — please try again.");
+    const next = params.get("next");
+    if (next) setNextQs(`?next=${encodeURIComponent(next)}`);
   }, []);
 
   return (
@@ -37,7 +44,7 @@ export function OAuthButtons({ mode, providers }: { mode: "login" | "signup"; pr
         <div className="mt-4 flex flex-col gap-2">
           {providers.includes("google") && (
             <a
-              href="/api/auth/oauth/google"
+              href={`/api/auth/oauth/google${nextQs}`}
               className="flex h-10 items-center justify-center gap-2.5 rounded-md border border-line bg-surface-1 text-[13px] font-semibold text-ink hover:border-line-strong"
             >
               <GoogleIcon /> Continue with Google
@@ -45,7 +52,7 @@ export function OAuthButtons({ mode, providers }: { mode: "login" | "signup"; pr
           )}
           {providers.includes("discord") && (
             <a
-              href="/api/auth/oauth/discord"
+              href={`/api/auth/oauth/discord${nextQs}`}
               className="flex h-10 items-center justify-center gap-2.5 rounded-md bg-[#5865F2] text-[13px] font-semibold text-white hover:brightness-110"
             >
               <DiscordIcon /> Continue with Discord

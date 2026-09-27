@@ -1,21 +1,21 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CARDS, type RiftCard } from "@/lib/catalog";
-import { HAS_CHANGE_DATA, HISTORY_START, latestQuote, pctChange, pricedCount, quoteDaysAgo } from "@/lib/prices";
+import { HAS_CHANGE_DATA, HISTORY_START, latestQuote, pctChange, pricedCount, quoteDaysAgo, primaryPrice } from "@/lib/prices";
 import { CARD_TYPES, DOMAIN_KEYS, RARITY_KEYS, SETS } from "@/lib/riftbound";
 import { formatDate, normalizeSearch } from "@/lib/format";
 import { SITE_URL } from "@/lib/site";
 import { CardTable, type CardRow, type ColumnKey } from "@/components/CardTable";
-import { DemoPricesNotice } from "@/components/Bits";
+import { DemoPricesNotice } from "@/components/Notices";
 
 export const metadata: Metadata = {
-  title: "Browse Cards",
+  title: "Browse All Riftbound Cards — Prices & Filters",
   description:
-    "Filter all 950 Riftbound TCG printings by domain, card type, rarity and set, then sort by market price or 7-day movement. Every card in Origins, Proving Grounds, Spirit Forged and Unleashed.",
+    "Filter every Riftbound TCG printing by domain, card type, rarity and set, then sort by price or 7-day movement. Every card from Origins to Vendetta, plus promos.",
   alternates: { canonical: `${SITE_URL}/browse` },
 };
 
-/** The whole catalogue is 950 rows; a cap keeps the client payload sane. */
+/** The whole catalogue is ~1,400 rows; a cap keeps the client payload sane. */
 const MAX_ROWS = 300;
 
 const SORTS = {
@@ -146,8 +146,9 @@ export default function BrowsePage({ searchParams }: { searchParams: SearchParam
 
   const matchedCards = CARDS.filter((c) => matches(c, f, term));
   const matched = matchedCards.map((card) => {
-    const now = latestQuote(card).market;
-    const then = HAS_CHANGE_DATA ? quoteDaysAgo(card, 7).market : null;
+    // Headline price: foil market for foil-only printings (see primaryPrice).
+    const now = primaryPrice(latestQuote(card));
+    const then = HAS_CHANGE_DATA ? primaryPrice(quoteDaysAgo(card, 7)) : null;
     return { card, now, then, pct: pctChange(now, then) };
   });
 

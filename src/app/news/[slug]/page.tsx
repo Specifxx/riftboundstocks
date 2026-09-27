@@ -5,10 +5,12 @@ import { ARTICLES, articleBySlug, sortedArticles } from "@/lib/content/articles"
 import { authorOr } from "@/lib/content/authors";
 import { cardBySlug } from "@/lib/catalog";
 import { formatDate } from "@/lib/format";
-import { SITE_URL } from "@/lib/site";
+import { SITE_NAME, SITE_URL } from "@/lib/site";
 import { ArticleBody } from "@/components/ArticleBody";
 import { ArticleCard, AuthorByline, CategoryLabel } from "@/components/ArticleCard";
-import { DemoPricesNotice } from "@/components/Bits";
+import { DemoPricesNotice } from "@/components/Notices";
+import { JsonLd, breadcrumbLd } from "@/components/JsonLd";
+import { RelatedReading } from "@/components/RiftComparePosts";
 
 export function generateStaticParams() {
   return ARTICLES.map((a) => ({ slug: a.slug }));
@@ -41,19 +43,46 @@ export default function ArticlePage({ params }: { params: { slug: string } }) {
 
   const author = authorOr(article.author);
   const related = sortedArticles()
-    .filter((a) => a.slug !== article.slug && a.category === article.category)
+    .filter((a) => a.slug !== article.slug)
     .slice(0, 2);
+  const hero = cardBySlug(article.heroCard);
+  // Cards the report discusses, for matching RiftCompare coverage of them.
+  const mentioned = [
+    ...new Set(
+      article.body.flatMap((b) => (b.kind === "card" ? [b.slug] : b.kind === "cardTable" ? b.slugs : [])),
+    ),
+  ]
+    .map((slug) => cardBySlug(slug)?.name.split(/,| - /)[0].trim())
+    .filter((n): n is string => !!n);
 
   return (
     <article>
+      <JsonLd
+        data={[
+          breadcrumbLd([
+            { name: "News", path: "/news" },
+            { name: article.title, path: `/news/${article.slug}` },
+          ]),
+          {
+            "@context": "https://schema.org",
+            "@type": "Article",
+            headline: article.title,
+            description: article.excerpt,
+            datePublished: `${article.publishedOn}T00:00:00Z`,
+            dateModified: `${article.asOf ?? article.publishedOn}T00:00:00Z`,
+            mainEntityOfPage: `${SITE_URL}/news/${article.slug}`,
+            image: hero ? [hero.imageUrl] : undefined,
+            author: { "@type": "Organization", name: author.name, url: SITE_URL },
+            publisher: { "@id": `${SITE_URL}/#organization`, "@type": "Organization", name: SITE_NAME },
+          },
+        ]}
+      />
       <nav className="mb-3 flex items-center gap-1.5 text-[11px] text-ink-dim">
         <Link href="/news" className="hover:text-accent">
           News
         </Link>
         <span>/</span>
-        <Link href={`/news?category=${encodeURIComponent(article.category)}`} className="hover:text-accent">
-          {article.category}
-        </Link>
+        <span>{article.category}</span>
       </nav>
 
       <header className="mb-5 border-b border-line pb-5">
@@ -69,9 +98,6 @@ export default function ArticlePage({ params }: { params: { slug: string } }) {
 
       <ArticleBody blocks={article.body} />
 
-      {/* Restated at the foot of the piece as well as in the opening quote: a
-          reader who lands mid-article and scrolls to the end should not be able
-          to miss that the author does not exist. */}
       <aside className="mt-8 max-w-[68ch] rounded-xl border border-line bg-surface-1 p-4">
         <div className="flex items-start gap-3">
           <img src={author.avatar} alt="" width={44} height={44} className="h-11 w-11 shrink-0 rounded-full" />
@@ -80,42 +106,24 @@ export default function ArticlePage({ params }: { params: { slug: string } }) {
               {author.name} <span className="ml-1 text-[12px] font-normal text-ink-dim">{author.role}</span>
             </p>
             <p className="mt-1 text-[13px] leading-relaxed text-ink-muted">{author.bio}</p>
-            {/* Two different disclosures, because these are two different kinds
-                of article. Applying the "fictional persona" line to a data report
-                would be false; applying the "measured" line to a demo article
-                would be far worse. */}
-            {author.isDesk ? (
-              <p className="mt-2 text-[12px] leading-relaxed text-ink-dim">
-                <strong className="font-semibold text-accent">This is a data report, not a written article.</strong>{" "}
-                Every figure in it was computed from the TCGplayer price snapshot of{" "}
-                {article.asOf ? formatDate(`${article.asOf}T00:00:00Z`) : "the day it was published"} and is re-derived
-                from the source data on every build. It describes the market rather than predicting it, and it is not
-                advice. See{" "}
-                <Link href="/about" className="text-accent hover:underline">
-                  About &amp; Disclaimers
-                </Link>
-                .
-              </p>
-            ) : (
-              <p className="mt-2 text-[12px] leading-relaxed text-ink-dim">
-                <strong className="font-semibold text-down">{author.name} is a fictional demo persona</strong> — not a
-                real person, and not based on one. This article is illustrative content written to populate the site, and
-                the prices, results and analysis in it are invented. See{" "}
-                <Link href="/about" className="text-accent hover:underline">
-                  About &amp; Disclaimers
-                </Link>
-                .
-              </p>
-            )}
+            <p className="mt-2 text-[12px] leading-relaxed text-ink-dim">
+              <strong className="font-semibold text-accent">This is a data report, not a written article.</strong>{" "}
+              Every figure in it was computed from the TCGplayer price snapshot of{" "}
+              {article.asOf ? formatDate(`${article.asOf}T00:00:00Z`) : "the day it was published"} and is re-derived
+              from the source data on every build. It describes the market rather than predicting it, and it is not
+              advice.
+            </p>
           </div>
         </div>
       </aside>
 
       <DemoPricesNotice className="mt-4 max-w-[68ch]" />
 
+      <RelatedReading terms={mentioned} title="In the news" className="mt-6 max-w-[68ch]" />
+
       {related.length > 0 && (
         <section className="mt-10">
-          <h2 className="mb-3 font-display text-xl uppercase tracking-wide text-ink">More {article.category}</h2>
+          <h2 className="mb-3 font-display text-xl uppercase tracking-wide text-ink">More market reports</h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:max-w-3xl">
             {related.map((a) => (
               <ArticleCard key={a.slug} article={a} />

@@ -1,29 +1,13 @@
-// Editorial data model.
-//
-// ALL ARTICLES ON THIS SITE ARE DEMO CONTENT written to populate the templates.
-// They describe real Riftbound cards but the analysis, the tournament results
-// they cite and every price they quote are invented, and their bylines are
-// fictional personas (see ./authors.ts). Nothing here is journalism or advice.
+// Editorial data model. Every article on the site is a data report (see
+// ./reports.ts) computed from the real price snapshot.
 
-export const CATEGORIES = [
-  "Data Report",
-  "Weekly Winners",
-  "Meta Report",
-  "Hidden Gems",
-  "Set Review",
-  "Speculation",
-] as const;
+export const CATEGORIES = ["Data Report"] as const;
 
 export type Category = (typeof CATEGORIES)[number];
 
 /** Category → accent colour for the label overlay on article cards. */
 export const CATEGORY_COLOR: Record<Category, string> = {
   "Data Report": "#12897a",
-  "Weekly Winners": "#3fb950",
-  "Meta Report": "#12897a",
-  "Hidden Gems": "#caa85a",
-  "Set Review": "#a855f7",
-  Speculation: "#f0506e",
 };
 
 /**
@@ -49,10 +33,8 @@ export interface Article {
    * A DATA REPORT: every figure in it was computed from the price snapshot on
    * `asOf`, and scripts/verify-reports.ts re-derives them on every build.
    *
-   * The distinction from the demo articles is not cosmetic. Those are invented
-   * — fictional bylines describing market events that never happened. These are
-   * arithmetic over real TCGplayer data. Mixing the two without a visible marker
-   * would let a reader take an invented claim for a measured one.
+   * Every article on the site is one of these now; the flag is kept so the
+   * UI can keep saying so explicitly.
    */
   dataReport?: boolean;
   /** Snapshot date the figures were computed from (yyyy-mm-dd). Data reports only. */

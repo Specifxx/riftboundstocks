@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CARDS, cardBySlug, otherPrintings } from "@/lib/catalog";
+import { CARDS, cardBySlug } from "@/lib/catalog";
 import {
   activeSource,
   cardStats,
@@ -14,18 +14,23 @@ import {
 } from "@/lib/prices";
 import { cardDetail } from "@/lib/card-details";
 import { tcgSearchUrl } from "@/lib/prices/tcgplayer";
-import { affiliateUrl, outboundRel } from "@/lib/affiliate";
-import { FORMATS, SET_BY_CODE, domainInfo } from "@/lib/riftbound";
+import { affiliateUrl, outboundRel, riftcompareUrl } from "@/lib/affiliate";
+import { SET_BY_CODE, domainInfo } from "@/lib/riftbound";
+import { championOf, otherPrintingsOf } from "@/lib/champions";
+import { BANLIST_URL, banFor, rulesName } from "@/lib/banlist";
 import { formatMoney, formatDate } from "@/lib/format";
-import { OFFICIAL_CARD_DB_URL, SITE_NAME, SITE_URL } from "@/lib/site";
+import { OFFICIAL_CARD_DB_URL, SITE_URL } from "@/lib/site";
 import { CardImage } from "@/components/CardImage";
 import { PriceChart } from "@/components/PriceChart";
 import { CardActions } from "@/components/CardActions";
 import { StoreListings } from "@/components/StoreListings";
 import { ShoppingRegions } from "@/components/ShoppingRegions";
 import { AltCurrencyCell, AltCurrencyHeader, Money } from "@/components/Prefs";
-import { Delta, DemoPricesNotice, DomainPill, RarityPill } from "@/components/Bits";
+import { Delta, DomainPill, RarityPill } from "@/components/Bits";
+import { DemoPricesNotice } from "@/components/Notices";
 import { AffiliateDisclosure } from "@/components/AffiliateDisclosure";
+import { JsonLd, breadcrumbLd } from "@/components/JsonLd";
+import { RelatedReading } from "@/components/RiftComparePosts";
 
 // Pre-render the most valuable cards at build time and stream the rest on first
 // request. Building all 1,180 would multiply build time for pages nobody opens.
@@ -40,14 +45,22 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
   const card = cardBySlug(params.slug);
   if (!card) return { title: "Card not found" };
   const q = latestQuote(card);
-  const title = `${card.name} (${card.setCode} ${card.collectorLabel}) Price History`;
+  // "Riftbound" is what people type ("jinx loose cannon riftbound price"), and
+  // the brand suffix "RiftboundStocks" doesn't match it as a word.
+  // Legends are named by title alone ("Nine-Tailed Fox"); searchers type the
+  // champion too ("ahri nine-tailed fox"), so it's prefixed back on.
+  const champ = card.type === "Legend" && !card.name.includes(",") && !card.name.includes(" - ") ? championOf(card) : null;
+  const displayName = champ ? `${champ.name}, ${card.name}` : card.name;
+  const title = `${displayName} Price — Riftbound ${card.setCode} ${card.collectorLabel}`;
   // An unpriced card gets a description with no price claim in it, rather than
-  // "$0.00" in a search result.
+  // "$0.00" in a search result. Foil-only printings (most Showcase, Signature
+  // and promo cards) have no Normal market, so the headline is the foil price.
+  const headline = primaryPrice(q);
   const priceLine =
-    q.market != null
-      ? `TCGplayer market price ${formatMoney(q.market)}${q.low != null ? `, from ${formatMoney(q.low)}` : ""}.`
+    headline != null
+      ? `TCGplayer ${q.market == null ? "foil " : ""}market price ${formatMoney(headline)}${q.low != null ? `, listings from ${formatMoney(q.low)}` : ""}.`
       : "Live TCGplayer pricing and daily history.";
-  const description = `${card.name} from ${card.setName} — ${card.rarity} ${card.domain} ${card.type}. ${priceLine} Price history and market data on ${SITE_NAME}.`;
+  const description = `${displayName} (${card.setName} ${card.collectorLabel}) — ${card.rarity} ${card.domain} ${card.type}. ${priceLine} Daily price history chart, foil prices and store comparison.`;
   return {
     title,
     description,
@@ -78,11 +91,14 @@ export default async function CardPage({ params }: { params: { slug: string } })
   const stats = cardStats(card);
   const history = priceHistory(card);
   const q = stats.latest;
-  const printings = otherPrintings(card);
+  const printings = otherPrintingsOf(card);
   const set = SET_BY_CODE[card.setCode];
   const source = activeSource();
   const detail = cardDetail(card.id);
   const domain = domainInfo(card.domain);
+  const champion = championOf(card);
+  const ban = banFor(card);
+  const headline = primaryPrice(q);
 
   // RiftCompare supplementary data — genuinely independent of everything
   // above (which is all synchronous, catalogue-file-backed), fetched once in
@@ -99,8 +115,44 @@ export default async function CardPage({ params }: { params: { slug: string } })
     { label: "✨ Foil", cents: q.foilMarket, tone: "text-foil" },
   ];
 
+  const canonical = `${SITE_URL}/card/${card.slug}`;
+  const structured = [
+    breadcrumbLd([
+      { name: "Sets", path: "/sets" },
+      ...(set ? [{ name: set.name, path: `/sets/${set.slug}` }] : []),
+      { name: card.name, path: `/card/${card.slug}` },
+    ]),
+    {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      name: `${card.name} (${card.setName} ${card.collectorLabel})`,
+      image: [card.imageUrl],
+      description:
+        detail?.description ?? `${card.rarity} ${card.domain} ${card.type} from Riftbound: League of Legends TCG — ${card.setName}.`,
+      sku: card.id,
+      brand: { "@type": "Brand", name: "Riftbound" },
+      category: "Collectible Card Games",
+      url: canonical,
+      // Price data only when there is some: an AggregateOffer with no price is
+      // invalid, and a $0 one would be false. `lowPrice` is the cheapest live
+      // listing where TCGplayer has one, otherwise the market price.
+      ...(headline != null
+        ? {
+            offers: {
+              "@type": "AggregateOffer",
+              priceCurrency: "USD",
+              lowPrice: ((q.low ?? headline) / 100).toFixed(2),
+              ...(detail?.listings ? { offerCount: detail.listings } : {}),
+              url: canonical,
+            },
+          }
+        : {}),
+    },
+  ];
+
   return (
     <div>
+      <JsonLd data={structured} />
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <header className="mb-4 flex flex-wrap items-end justify-between gap-x-6 gap-y-3 border-b border-line pb-4">
         <div className="min-w-0">
@@ -192,6 +244,13 @@ export default async function CardPage({ params }: { params: { slug: string } })
               <StatRow label="Rarity">
                 <span className="text-ink">{card.rarity}</span>
               </StatRow>
+              {champion && (
+                <StatRow label="Champion">
+                  <Link href={`/champions/${champion.slug}`} className="text-accent hover:underline">
+                    {champion.name}
+                  </Link>
+                </StatRow>
+              )}
               {card.energy != null && (
                 <StatRow label="Energy">
                   <span className="num text-ink">{card.energy}</span>
@@ -209,12 +268,27 @@ export default async function CardPage({ params }: { params: { slug: string } })
               )}
               <StatRow label="Set">
                 <span className="text-ink">
-                  {card.setName}
+                  {set ? (
+                    <Link href={`/sets/${set.slug}`} className="text-accent hover:underline">
+                      {card.setName}
+                    </Link>
+                  ) : (
+                    card.setName
+                  )}
                   {set && <span className="ml-1 text-ink-dim">({formatDate(`${set.releasedOn}T00:00:00Z`)})</span>}
                 </span>
               </StatRow>
-              <StatRow label="Legal formats">
-                <span className="text-ink">{FORMATS.join(", ")}</span>
+              {/* Driven by lib/banlist.ts — the catalogue's own ban flag is
+                  stale (false for every card), so it isn't read. */}
+              <StatRow label="Ban status">
+                {ban ? (
+                  <a href={BANLIST_URL} target="_blank" rel="noopener" className="font-semibold text-down hover:underline">
+                    Banned in {ban.formats.join(" & ")}
+                    <span className="ml-1 font-normal text-ink-dim">since {formatDate(`${ban.since}T00:00:00Z`)}</span>
+                  </a>
+                ) : (
+                  <span className="text-ink">Not banned</span>
+                )}
               </StatRow>
             </dl>
 
@@ -451,12 +525,54 @@ export default async function CardPage({ params }: { params: { slug: string } })
             )}
           </section>
 
-          {/* Decks: no real deck-building data source exists yet (this site
-              tracks prices, not deck lists), so this says so plainly instead
-              of shipping empty or fabricated placeholder decks. */}
+          {/* RiftCompare's news and guides that mention this card or its
+              champion. Renders nothing when there are none. */}
+          <RelatedReading
+            terms={[
+              champion?.name ?? "",
+              // Non-champion names only when distinctive enough not to
+              // match ordinary words ("Flash" would hit "flash sale").
+              !champion && (rulesName(card).length >= 6 || rulesName(card).includes(" ")) ? rulesName(card) : "",
+            ]}
+            title={`${champion?.name ?? rulesName(card)} in the news`}
+            className="order-6"
+          />
+
+          {/* No deck-list data exists on this site, so rather than an empty
+              "decks using this card" box this points at RiftCompare's deck
+              builder and library, which price a whole list across stores. */}
           <section className="panel order-6 min-w-0 p-4">
-            <h2 className="eyebrow mb-2">Decks using this card</h2>
-            <p className="text-[13px] text-ink-dim">No recent decks found.</p>
+            <h2 className="eyebrow mb-2">Build a deck with it</h2>
+            <p className="text-[13px] leading-relaxed text-ink-muted">
+              Paste a decklist into RiftCompare&apos;s deck builder to price every card at its cheapest store, or browse
+              community decks{champion ? ` running ${champion.name}` : ""}.
+            </p>
+            <p className="mt-2.5 flex flex-wrap gap-2">
+              <a
+                href={riftcompareUrl("/deck", "card-decks")}
+                target="_blank"
+                rel="noopener"
+                className="rounded-md border border-line px-2.5 py-1 text-[12px] font-semibold text-accent hover:border-accent"
+              >
+                Deck builder ↗
+              </a>
+              <a
+                href={riftcompareUrl("/decks", "card-decks")}
+                target="_blank"
+                rel="noopener"
+                className="rounded-md border border-line px-2.5 py-1 text-[12px] font-semibold text-accent hover:border-accent"
+              >
+                Deck library ↗
+              </a>
+              {champion && (
+                <Link
+                  href={`/champions/${champion.slug}`}
+                  className="rounded-md border border-line px-2.5 py-1 text-[12px] font-semibold text-accent hover:border-accent"
+                >
+                  All {champion.name} cards →
+                </Link>
+              )}
+            </p>
           </section>
         </div>
       </div>

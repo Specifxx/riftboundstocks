@@ -10,9 +10,9 @@ export const metadata: Metadata = {
 };
 
 const DESTINATIONS = [
-  { href: "/sets", title: "Sets", body: "Origins, Proving Grounds, Spirit Forged and Unleashed — card counts and set values." },
+  { href: "/sets", title: "Sets", body: "Every set from Origins to Vendetta, plus promos — price lists and set values." },
   { href: "/interests", title: "Biggest Movers", body: "What gained and what bled today, ranked by percentage." },
-  { href: "/news", title: "News & Articles", body: "Weekly winners, meta reports and hidden gems." },
+  { href: "/champions", title: "Champions", body: "Every printing of every champion, from Ahri to Zed." },
 ];
 
 export default function NotFound() {
@@ -22,7 +22,7 @@ export default function NotFound() {
       <h1 className="mt-2 font-display text-2xl uppercase tracking-wide text-ink sm:text-3xl">Page not found</h1>
       <p className="mx-auto mt-2 max-w-lg text-[14px] leading-relaxed text-ink-muted">
         No page lives at that address. If you were after a card, the fastest way there is its name — the catalogue holds
-        every printing across all four sets.
+        every printing in every set.
       </p>
 
       <div className="mx-auto mt-5 max-w-sm text-left">

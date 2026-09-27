@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useMe } from "@/lib/use-me";
 import { SITE_NAME } from "@/lib/site";
@@ -15,6 +16,7 @@ import { SITE_NAME } from "@/lib/site";
 // per signed-in visitor.
 export function CardActions({ cardId, cardName }: { cardId: string; cardName: string }) {
   const { user, loaded } = useMe();
+  const pathname = usePathname();
   const [copied, setCopied] = useState(false);
   const [watching, setWatching] = useState(false);
   const [pending, setPending] = useState(false);
@@ -77,7 +79,10 @@ export function CardActions({ cardId, cardName }: { cardId: string; cardName: st
   // for the same reason: most visitors are anonymous, so that's the state
   // that should render without waiting on a client fetch.
   if (!loaded || !user) {
-    const nextPath = typeof window === "undefined" ? "" : window.location.pathname;
+    // usePathname, not window: reading window during render made the server
+    // HTML ("next=") and the client ("next=/card/…") disagree — a hydration
+    // mismatch in which React kept the server's empty value.
+    const nextPath = pathname;
     return (
       <div className="mt-3 flex gap-1.5">
         <Link href={`/login?next=${encodeURIComponent(nextPath)}`} title="Get emailed when this price drops — needs an account" className={base}>

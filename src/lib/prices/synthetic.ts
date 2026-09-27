@@ -5,7 +5,7 @@
 // never populated src/data/prices.json in this build, so rather than ship
 // empty charts the site renders a plausible synthetic market. Nothing here is
 // a real valuation, and every surface that prints one of these figures
-// carries the demo disclaimer (see PRICES_ARE_DEMO in lib/site.ts and the
+// carries the demo disclaimer (see PRICES_ARE_DEMO in lib/prices/demo-flag.ts and the
 // DemoPricesNotice component).
 //
 // Swap it for real data by running `npm run prices:import` (needs no

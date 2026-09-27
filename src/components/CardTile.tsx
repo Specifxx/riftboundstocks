@@ -89,7 +89,8 @@ export function TrendingTile({
 /** Compact grid tile for set pages and browse results. */
 export function CardGridTile({ card }: { card: RiftCard }) {
   const q = latestQuote(card);
-  const pct = pctChange(q.market, quoteDaysAgo(card, 7).market);
+  const price = primaryPrice(q);
+  const pct = pctChange(price, primaryPrice(quoteDaysAgo(card, 7)));
   return (
     <Link href={`/card/${card.slug}`} className="group flex flex-col">
       <div className="aspect-[5/7] w-full overflow-hidden rounded-lg border border-line bg-surface-2 transition-colors group-hover:border-accent">
@@ -97,7 +98,7 @@ export function CardGridTile({ card }: { card: RiftCard }) {
       </div>
       <h3 className="mt-1.5 truncate text-[12.5px] font-medium text-ink group-hover:text-accent">{card.name}</h3>
       <div className="flex items-baseline justify-between gap-2">
-        <Money cents={q.market} className="num text-[13px] font-semibold text-ink" />
+        <Money cents={price} className="num text-[13px] font-semibold text-ink" />
         <Delta pct={pct} className="text-[11px]" />
       </div>
       <p className="truncate font-mono text-[10px] text-ink-dim">{card.collectorLabel}</p>

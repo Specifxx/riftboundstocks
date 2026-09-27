@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useMe, type MeUser } from "@/lib/use-me";
-import { isAdminEmail } from "@/lib/admin";
 
 // Signed-out and loading render the exact same CTAs the navbar always showed
 // (Log In / Sign Up) so there's no layout shift and no flash for anonymous
@@ -127,7 +126,7 @@ function DesktopMenu({ user }: { user: MeUser }) {
             >
               Premium
             </Link>
-            {isAdminEmail(user.email) && (
+            {user.isAdmin && (
               <Link
                 href="/admin"
                 role="menuitem"
@@ -173,7 +172,7 @@ function MobileSignedIn({ user }: { user: MeUser }) {
       <Link href="/alerts" className="rounded-md px-2.5 py-1.5 text-[13px] font-semibold text-ink-muted">
         Alerts
       </Link>
-      {isAdminEmail(user.email) && (
+      {user.isAdmin && (
         <Link href="/admin" className="rounded-md px-2.5 py-1.5 text-[13px] font-semibold text-ink-muted">
           Admin
         </Link>

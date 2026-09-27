@@ -74,7 +74,10 @@ function riftcompareSlug(card: RiftCard): string {
 
 async function fetchJson<T>(path: string, revalidate: number): Promise<T | null> {
   try {
-    const res = await fetch(`${API_BASE}${path}`, { next: { revalidate } });
+    // Bounded: this runs inside the card page and homepage render, so a SLOW
+    // RiftCompare (not a down one — that fails fast) would otherwise hold the
+    // whole page, and on-demand card pages would hit the function timeout.
+    const res = await fetch(`${API_BASE}${path}`, { next: { revalidate }, signal: AbortSignal.timeout(2500) });
     if (!res.ok) return null;
     return (await res.json()) as T;
   } catch {

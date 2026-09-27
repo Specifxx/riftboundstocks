@@ -20,10 +20,12 @@ Read this before doing anything with the numbers on the site.
 | Sealed products | ✅ Real — 54 boxes, packs, decks, kits and bundles |
 | Rules and flavour text | ✅ Real — from TCGplayer's product data |
 | **Price history** | ⏳ Accumulates daily from the first import. TCGplayer publishes none, so it is **not** backfilled |
-| **Articles and authors** | ❌ **Invented.** All 13 articles are demo content; all 5 bylines are fictional personas |
+| **Market reports** | ✅ Real — 9 data reports computed from the 12 Aug 2026 snapshot, re-verified by `prebuild` |
+| **News and guides** | ✅ Real — RiftCompare's blog, linked (not copied) via its JSON Feed — see `lib/riftcompare-feed.ts` |
+| **Ban list** | ✅ Real — Riot's three ban waves, in `lib/banlist.ts` (the catalogue's `is_banned` flag is stale) |
 | Artist credits | ⛔ Not published by either source — not guessed at |
 
-Prices are imported from TCGplayer by `npm run prices:import` and committed to the repo. The **editorial is still invented** — 13 demo articles under 5 fictional bylines — and says so on every article, in the footer and on `/about`.
+Prices are imported from TCGplayer by `npm run prices:import` and committed to the repo. The site's own editorial is the data reports in `lib/content/reports.ts`; written news and guides are RiftCompare's, linked from `/news`, the homepage and the card, set and champion pages they mention. (Fourteen invented demo articles under fictional bylines used to live here; they were removed and their URLs 308 to `/news` — see `next.config.js`.)
 
 A fresh clone with no imported data falls back to `src/lib/prices/synthetic.ts`, a generator, and every surface then renders a prominent demo-data warning. That switch is driven by the data itself (`PRICES_ARE_DEMO` in `lib/prices/demo-flag.ts`), not by an env var someone has to remember to set.
 
@@ -67,7 +69,9 @@ src/
     card/[slug]/          card detail — the most important page
     sets/, sets/[slug]/   set index + set detail
     interests/            biggest movers, the /interests tabs
-    news/, news/[slug]/   editorial
+    news/, news/[slug]/   news hub (RiftCompare feed) + data reports
+    champions/, champions/[slug]/  every printing of each champion
+    feed.xml, llms.txt    RSS for the reports; site map for AI assistants
     analytics/, domains/, decks/, sealed/, browse/
     about/, privacy/, premium/, login/, signup/
     sitemap.ts, robots.ts
@@ -84,7 +88,10 @@ src/
       store.ts            the on-disk file shapes
       index.ts            public pricing API + movers/stats analytics
       riftcompare.ts      multi-vendor + regional prices — see DATA_INTEGRATION.md
-    content/              articles, fictional authors, editorial types
+    content/              data reports, the data-desk byline, editorial types
+    champions.ts          champion attribution (incl. Legends, via TCGplayer URLs) + printing groups
+    banlist.ts            Riot's ban waves; the card page's "Ban status"
+    riftcompare-feed.ts   RiftCompare's blog/guides feed, matched to cards/sets/champions
   data/
     riftbound-cards.json  booster-set catalogue (RiftScribe)
     promo-cards.json      OPP/PR/SGN/JDG printings (TCGplayer)
@@ -168,13 +175,19 @@ Every colour is a CSS custom property in `globals.css`; Tailwind maps tokens ont
 
 ## Privacy
 
-The site sets **no cookies**. Theme and currency live in `localStorage`; there is no analytics, no ad network and no third-party script. `CookieNotice` is a disclosure, not a consent gate — **if you add analytics or ads, replace it with a real consent manager first.** A dismissal is not consent.
+The site sets **no tracking cookies**. Theme and currency live in `localStorage`. Page views are counted with **Vercel Web Analytics**, which is cookieless and stores nothing on the device — `/privacy` and `CookieNotice` say so. There is no ad network. `CookieNotice` is a disclosure, not a consent gate — **if you add cookie-based analytics or ads, replace it with a real consent manager first.** A dismissal is not consent.
 
 Card images are hot-linked from the RiftScribe CDN, so that CDN sees visitors' IP addresses. `/privacy` says so.
 
 ## Content and attribution
 
-The `src/lib/content/` articles and authors are **fictional demo content**, labelled as such in the source, on every article page, on `/about` and in the footer. If you replace them with real editorial, the disclaimers in `Footer.tsx` and `/about` need updating to match — they are load-bearing, not boilerplate.
+`src/lib/content/` holds only the data reports, bylined to the automated data desk. Every figure in them is re-derived from that day's column of the price history by `scripts/verify-reports.ts`, which runs as `prebuild` — a report that stops matching the data fails the build. News and guides are RiftCompare's and are linked, never republished, so each article has one canonical URL.
+
+## Growth checklist (things only the owner can do)
+
+- **Google Search Console + Bing Webmaster Tools:** verify the domain and submit `/sitemap.xml` (1,500+ URLs incl. 97 champion pages).
+- **Link from RiftCompare:** a "Price history on RiftboundStocks" link on RiftCompare's card pages is the single biggest traffic lever — both sites share the card catalogue, so `/card/<slug>` links are mechanical.
+- **Set `CRON_SECRET`** in Vercel — the price-alert cron now refuses to run in production without it.
 
 Author avatars are procedurally generated abstract SVG, not faces. No real person's photograph, name, likeness or work appears anywhere in this project.
 

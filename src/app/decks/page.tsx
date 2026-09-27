@@ -1,20 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CARDS, type RiftCard } from "@/lib/catalog";
-import {
-  HAS_CHANGE_DATA,
-  HISTORY_START,
-  latestQuote,
-  pctChange,
-  quoteDaysAgo,
-  totalMarketValue,
-} from "@/lib/prices";
+import { HAS_CHANGE_DATA, HISTORY_START, latestQuote, pctChange, quoteDaysAgo, totalMarketValue, primaryPrice } from "@/lib/prices";
 import { DOMAINS, type CardType, type DomainKey, type RarityKey } from "@/lib/riftbound";
 import { formatDate } from "@/lib/format";
 import { SITE_URL } from "@/lib/site";
 import { CardGridTile } from "@/components/CardTile";
 import { Money } from "@/components/Prefs";
-import { Delta, DemoPricesNotice, DomainPill, RarityPill } from "@/components/Bits";
+import { Delta, DomainPill, RarityPill } from "@/components/Bits";
+import { DemoPricesNotice } from "@/components/Notices";
 
 export const metadata: Metadata = {
   title: "Deck Archetypes",
@@ -69,8 +63,8 @@ function basketChange(cards: RiftCard[], days: number): number | null {
   let now = 0;
   let then = 0;
   for (const c of cards) {
-    const a = latestQuote(c).market;
-    const b = quoteDaysAgo(c, days).market;
+    const a = primaryPrice(latestQuote(c));
+    const b = primaryPrice(quoteDaysAgo(c, days));
     if (a == null || b == null) continue;
     now += a;
     then += b;
@@ -87,7 +81,7 @@ function basketChange(cards: RiftCard[], days: number): number | null {
 function build(spec: ArchetypeSpec): Basket {
   const pool = CARDS.filter((c) => c.domain === spec.domain && spec.types.includes(c.type))
     .flatMap((card) => {
-      const market = latestQuote(card).market;
+      const market = primaryPrice(latestQuote(card));
       return market == null ? [] : [{ card, market }];
     })
     .sort((a, b) => b.market - a.market || a.card.slug.localeCompare(b.card.slug))

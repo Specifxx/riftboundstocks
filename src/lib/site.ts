@@ -27,21 +27,34 @@ export const OFFICIAL_CARD_DB_URL = "https://riftbound.leagueoflegends.com/en-us
 // forbid presenting their data as your own, so this string is not decorative.
 export const PRICE_SOURCE_NOTE = "Prices sourced from TCGplayer.";
 
-// True only when the site is falling back to the generator in
-// lib/prices/synthetic.ts — i.e. the price data files are empty because
-// `npm run prices:import` has never run. Every surface that prints a number
-// reads this, so the demo disclaimer can never be left off a build that is
-// showing generated figures.
-//
-// Derived from the DATA, not from an env var. It was previously
-// `!process.env.TCGPLAYER_PUBLIC_KEY`, which is a flag someone has to remember
-// to set — and it was already wrong: real prices are imported by the public
-// endpoints, which need no key, so the disclaimers would have stayed up over
-// genuine market data.
-export { PRICES_ARE_DEMO } from "./prices/demo-flag";
+// PRICES_ARE_DEMO lives in ./prices/demo-flag and is imported from there
+// directly. It used to be re-exported from this file, but site.ts is imported
+// by client components (Navbar, CardActions, CookieNotice) and the flag's
+// module reads the price JSON — so the re-export was a path for megabytes of
+// data into the browser bundle. Server code imports it from the flag module.
 
 // Accounts (src/lib/auth.ts) need somewhere to put a User row, so the whole
 // feature is off — /login and /signup render their forms disabled, same
 // treatment as an unconfigured OAuth provider — until DATABASE_URL is set. A
 // fresh clone with zero env config must still build and run.
 export const ACCOUNTS_ENABLED = !!process.env.DATABASE_URL;
+
+/**
+ * A post-login destination, or `fallback` if it isn't a same-site path.
+ *
+ * `startsWith("/") && !startsWith("//")` isn't enough on its own: browsers read
+ * "/\evil.com" as "//evil.com", so a backslash anywhere is refused and the
+ * result is resolved against SITE_URL and origin-checked. Arrays (a repeated
+ * ?next=) take the first value instead of crashing the page.
+ */
+export function safeNext(next: unknown, fallback = "/profile"): string {
+  const v = Array.isArray(next) ? next[0] : next;
+  if (typeof v !== "string" || !v.startsWith("/") || v.startsWith("//") || v.includes("\\")) return fallback;
+  try {
+    const base = new URL(SITE_URL);
+    const u = new URL(v, base);
+    return u.origin === base.origin ? `${u.pathname}${u.search}${u.hash}` : fallback;
+  } catch {
+    return fallback;
+  }
+}

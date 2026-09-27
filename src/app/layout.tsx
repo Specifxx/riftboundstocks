@@ -11,6 +11,7 @@ import { THEME_STORAGE_KEY } from "@/lib/currency";
 import { SITE_NAME, SITE_TAGLINE, SITE_URL } from "@/lib/site";
 import { IMPACT_SITE_VERIFICATION } from "@/lib/affiliate";
 import { Analytics } from "@vercel/analytics/next";
+import { JsonLd, siteLd } from "@/components/JsonLd";
 
 // Body/UI: a clean humanist sans, for readability. Section titles: Cinzel, an
 // angular heroic display serif — the "illuminated ledger" voice the identity
@@ -27,14 +28,15 @@ export const metadata: Metadata = {
     template: `%s — ${SITE_NAME}`,
   },
   description:
-    "Track Riftbound: League of Legends TCG card prices. Daily market movers, price history charts, set indexes and market analysis for every card across Origins, Proving Grounds, Spirit Forged and Unleashed.",
+    "Track Riftbound: League of Legends TCG card prices. Daily market movers, price history charts, set indexes and market analysis for every card and sealed product, from Origins to Vendetta.",
   applicationName: SITE_NAME,
+  // Site-wide fields only. A title/url here was inherited by every page that
+  // doesn't set its own openGraph, so sharing /sets or /interests previewed as
+  // the homepage. Without them, link previews fall back to each page's own
+  // <title> and description. The homepage sets its own in app/page.tsx.
   openGraph: {
     type: "website",
     siteName: SITE_NAME,
-    title: `${SITE_NAME} — ${SITE_TAGLINE}`,
-    description: "Daily price movers, history charts and market analysis for every Riftbound TCG card.",
-    url: SITE_URL,
   },
   twitter: { card: "summary_large_image" },
   robots: { index: true, follow: true },
@@ -66,6 +68,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${inter.variable} ${cinzel.variable} ${mono.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+        <link rel="alternate" type="application/rss+xml" title={`${SITE_NAME} market reports`} href="/feed.xml" />
+        <JsonLd data={siteLd()} />
       </head>
       <body className="min-h-screen">
         <PrefsProvider>

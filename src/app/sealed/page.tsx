@@ -4,7 +4,8 @@ import { affiliateUrl, outboundRel } from "@/lib/affiliate";
 import { formatDate } from "@/lib/format";
 import { SITE_URL } from "@/lib/site";
 import { Money } from "@/components/Prefs";
-import { DemoPricesNotice, HistoryNotice, Panel, SectionTitle } from "@/components/Bits";
+import { Panel, SectionTitle } from "@/components/Bits";
+import { DemoPricesNotice, HistoryNotice } from "@/components/Notices";
 import { AffiliateDisclosure } from "@/components/AffiliateDisclosure";
 import { SealedTable, type SealedTableRow } from "./SealedTable";
 

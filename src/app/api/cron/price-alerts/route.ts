@@ -5,8 +5,19 @@ import { ACCOUNTS_ENABLED } from "@/lib/site";
 // CRON_SECRET so the endpoint can't be triggered by anyone who guesses the
 // path; Vercel Cron sets this header automatically when CRON_SECRET is
 // configured as a project env var (https://vercel.com/docs/cron-jobs).
+//
+// force-dynamic: without it, a deployment with no CRON_SECRET never reads the
+// request, so Next treats this GET as static — it would run the alert job once
+// during `next build` and serve that cached response to every later cron call.
+export const dynamic = "force-dynamic";
+
 export async function GET(req: Request) {
   const secret = process.env.CRON_SECRET;
+  if (!secret && process.env.VERCEL_ENV === "production") {
+    // Open in production would let anyone trigger (and spam) the digest run.
+    console.error("[cron/price-alerts] CRON_SECRET is not set — refusing to run. Add it in Vercel's env vars.");
+    return Response.json({ error: "CRON_SECRET not configured" }, { status: 503 });
+  }
   if (secret) {
     const auth = req.headers.get("authorization");
     if (auth !== `Bearer ${secret}`) return Response.json({ error: "Unauthorized" }, { status: 401 });

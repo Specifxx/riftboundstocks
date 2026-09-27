@@ -22,6 +22,7 @@ interface NavItem {
 // rather than borrowing Magic's format names.
 const NAV: NavItem[] = [
   { label: "Sets", href: "/sets" },
+  { label: "Champions", href: "/champions" },
   {
     label: "Sealed",
     href: "/sealed",
@@ -50,6 +51,7 @@ const NAV: NavItem[] = [
       { label: "Legends", href: "/browse?type=Legend", hint: "Every Legend by price" },
     ],
   },
+  { label: "News", href: "/news" },
   {
     // Riftle and the pack simulator run against RiftCompare's live card database
     // (the daily answer/pack pulls have to stay server-side to mean anything),
@@ -168,7 +170,7 @@ export function Navbar() {
         </ul>
 
         <div className="ml-auto flex items-center gap-2">
-          <SearchBox className="hidden w-40 md:block lg:w-56" />
+          <SearchBox className="hidden w-40 md:block xl:w-56" />
           <div className="hidden items-center gap-2 sm:flex">
             <CurrencySelector />
             <ThemeToggle />
@@ -182,7 +184,7 @@ export function Navbar() {
             onClick={() => setMobileOpen((o) => !o)}
             aria-expanded={mobileOpen}
             aria-label="Menu"
-            className="grid h-8 w-8 place-items-center rounded-md border border-line bg-surface-2 text-ink-muted lg:hidden"
+            className="grid h-8 w-8 place-items-center rounded-md border border-line bg-surface-2 text-ink-muted xl:hidden"
           >
             <svg viewBox="0 0 24 24" className="h-4 w-4 stroke-current" strokeWidth="2" strokeLinecap="round" fill="none" aria-hidden>
               {mobileOpen ? <path d="M6 6l12 12M18 6L6 18" /> : <path d="M4 7h16M4 12h16M4 17h16" />}
@@ -192,7 +194,7 @@ export function Navbar() {
       </div>
 
       {mobileOpen && (
-        <div className="border-t border-line bg-surface-1 px-3 py-3 lg:hidden">
+        <div className="border-t border-line bg-surface-1 px-3 py-3 xl:hidden">
           <SearchBox className="mb-3 md:hidden" />
           <ul className="space-y-0.5">
             {NAV.map((item) => (

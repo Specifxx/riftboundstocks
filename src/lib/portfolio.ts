@@ -3,12 +3,22 @@
 // same way lib/prices/index.ts's movers/domainHeat functions are.
 
 import { cardById, type RiftCard } from "./catalog";
-import { priceHistory, primaryPrice } from "./prices";
+import { priceHistory, primaryPrice, type PriceQuote } from "./prices";
 import { domainInfo, type DomainKey } from "./riftbound";
 
 export interface HoldingLite {
   cardId: string;
   quantity: number;
+  isFoil?: boolean;
+}
+
+/**
+ * What one copy of a holding is worth: the FOIL market for a foil copy, the
+ * headline price otherwise. A foil copy valued at the Normal market price
+ * (typically a third of the foil's) under-reports the collection.
+ */
+export function holdingPrice(q: PriceQuote, isFoil = false): number | null {
+  return isFoil ? q.foilMarket ?? q.foil ?? primaryPrice(q) : primaryPrice(q);
 }
 
 export interface PortfolioValuePoint {
@@ -36,7 +46,7 @@ export function portfolioValueHistory(holdings: HoldingLite[]): PortfolioValuePo
     const card = cardById(h.cardId);
     if (!card || h.quantity <= 0) continue;
     for (const snap of priceHistory(card)) {
-      const v = primaryPrice(snap);
+      const v = holdingPrice(snap, h.isFoil);
       if (v == null) continue;
       const bucket = byDay.get(snap.day) ?? { cents: 0, coverage: 0 };
       bucket.cents += v * h.quantity;
@@ -59,12 +69,15 @@ export interface BreakdownSlice {
 }
 
 /** Portfolio value grouped by Domain, for the breakdown panel. */
-export function breakdownByDomain(holdings: HoldingLite[], valueOf: (card: RiftCard) => number | null): BreakdownSlice[] {
+export function breakdownByDomain(
+  holdings: HoldingLite[],
+  valueOf: (card: RiftCard, isFoil?: boolean) => number | null,
+): BreakdownSlice[] {
   const buckets = new Map<DomainKey, { value: number; count: number }>();
   for (const h of holdings) {
     const card = cardById(h.cardId);
     if (!card) continue;
-    const v = valueOf(card);
+    const v = valueOf(card, h.isFoil);
     if (v == null) continue;
     const b = buckets.get(card.domain) ?? { value: 0, count: 0 };
     b.value += v * h.quantity;
@@ -77,12 +90,15 @@ export function breakdownByDomain(holdings: HoldingLite[], valueOf: (card: RiftC
 }
 
 /** Portfolio value grouped by Set, for the breakdown panel. */
-export function breakdownBySet(holdings: HoldingLite[], valueOf: (card: RiftCard) => number | null): BreakdownSlice[] {
+export function breakdownBySet(
+  holdings: HoldingLite[],
+  valueOf: (card: RiftCard, isFoil?: boolean) => number | null,
+): BreakdownSlice[] {
   const buckets = new Map<string, { label: string; value: number; count: number }>();
   for (const h of holdings) {
     const card = cardById(h.cardId);
     if (!card) continue;
-    const v = valueOf(card);
+    const v = valueOf(card, h.isFoil);
     if (v == null) continue;
     const b = buckets.get(card.setCode) ?? { label: card.setName, value: 0, count: 0 };
     b.value += v * h.quantity;

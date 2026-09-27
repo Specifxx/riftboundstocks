@@ -100,7 +100,11 @@ export interface CardStats {
 
 export function cardStats(card: RiftCard): CardStats {
   const history = priceHistory(card);
-  const latest = history.length ? history[history.length - 1] : latestQuote(card);
+  // Today's snapshot, NOT the last history row: a printing missing from
+  // today's import still has old rows, and reading the last one presented a
+  // weeks-old price (and a stale "24 hours" change) as current — while search,
+  // browse and the page metadata correctly showed it as unpriced.
+  const latest = latestQuote(card);
 
   // Tracked on the headline price, so a foil-only printing (which has no Normal
   // market price at all) still gets a high/low rather than a pair of dashes.
@@ -299,12 +303,21 @@ export function domainHeat(): DomainHeatEntry[] {
   }
 
   if (HAS_CHANGE_DATA) {
-    for (const m of movers("market", 1, 100)) {
-      const b = buckets.get(m.card.domain);
+    // Averaged over EVERY card of $1+ priced on both days, flat ones included.
+    // Averaging only the cards that moved (movers() drops 0% changes) turned a
+    // domain where one card rose and fifteen sat still into a big up-day.
+    // Headline price, so foil-only printings count too.
+    for (const card of CARDS) {
+      const b = buckets.get(card.domain);
       if (!b) continue;
-      b.sumPct += m.pct;
+      const now = primaryPrice(latestQuote(card));
+      const then = primaryPrice(quoteDaysAgo(card, 1));
+      if (now == null || then == null || now < 100) continue;
+      const pct = pctChange(now, then);
+      if (pct == null || !isFinite(pct)) continue;
+      b.sumPct += pct;
       b.nPct++;
-      if (!b.top || Math.abs(m.pct) > Math.abs(b.top.pct)) b.top = m;
+      if (pct !== 0 && (!b.top || Math.abs(pct) > Math.abs(b.top.pct))) b.top = { card, now, then, pct };
     }
   }
 

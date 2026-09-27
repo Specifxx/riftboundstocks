@@ -1,4 +1,4 @@
-// Generates one avatar SVG per fictional author into public/authors/.
+// Generates one avatar SVG per byline into public/authors/ (today: just the data desk).
 //
 // ABSTRACT GEOMETRY, NOT FACES — deliberately.
 //
@@ -100,4 +100,4 @@ for (const a of AUTHORS) {
   writeFileSync(new URL(`${a.slug}.svg`, dir), avatar(a.name, a.slug));
   console.log(`wrote public/authors/${a.slug}.svg`);
 }
-console.log(`\n${AUTHORS.length} avatars generated. All authors are fictional demo personas.`);
+console.log(`\n${AUTHORS.length} avatar(s) generated.`);

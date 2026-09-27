@@ -3,7 +3,7 @@ import { cardBySlug, cardById } from "@/lib/catalog";
 import { latestQuote, cardStats } from "@/lib/prices";
 import { resolveApiKey } from "@/lib/api-key";
 import { rateLimit, tooManyRequests } from "@/lib/rate-limit";
-import { PRICES_ARE_DEMO } from "@/lib/site";
+import { PRICES_ARE_DEMO } from "@/lib/prices/demo-flag";
 
 // GET /api/v1/prices?slug=blazing-scorcher-ogn-1  (or ?id=<RiftScribe id>)
 // One printing's latest quote plus the same stats the card page's Data panel
