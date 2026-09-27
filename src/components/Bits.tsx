@@ -85,3 +85,13 @@ export function SectionTitle({
 export function Panel({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return <section className={`panel p-4 ${className}`}>{children}</section>;
 }
+
+/**
+ * A small card thumbnail for table rows. 14 promo printings have no art at
+ * all; an empty `src` rendered the browser's broken-image icon, so those get
+ * a plain placeholder of the same size instead.
+ */
+export function Thumb({ src, width, height, className }: { src: string; width: number; height: number; className: string }) {
+  if (!src) return <span aria-hidden className={`inline-block bg-surface-3 ${className}`} />;
+  return <img src={src} alt="" width={width} height={height} className={className} loading="lazy" />;
+}

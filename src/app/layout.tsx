@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     template: `%s — ${SITE_NAME}`,
   },
   description:
-    "Track Riftbound: League of Legends TCG card prices. Daily market movers, price history charts, set indexes and market analysis for every card and sealed product, from Origins to Vendetta.",
+    "Riftbound TCG card prices, updated daily: price history charts, biggest movers, set values and champion pages for every card from Origins to Vendetta.",
   applicationName: SITE_NAME,
   // Site-wide fields only. A title/url here was inherited by every page that
   // doesn't set its own openGraph, so sharing /sets or /interests previewed as
@@ -39,7 +39,8 @@ export const metadata: Metadata = {
     siteName: SITE_NAME,
   },
   twitter: { card: "summary_large_image" },
-  robots: { index: true, follow: true },
+  // No site-wide `robots`: index/follow is the default, and declaring it here
+  // put a second, contradicting robots tag on noindex pages like the 404.
   // Impact needs a verification token in <head> to confirm this domain belongs
   // to the partner account before TCGplayer commissions pay out. Omitted
   // entirely until the token is configured — an empty meta tag verifies nothing

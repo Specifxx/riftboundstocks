@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Money } from "./Prefs";
-import { RarityPill } from "./Bits";
+import { RarityPill, Thumb } from "./Bits";
 
 interface Hit {
   slug: string;
@@ -161,7 +161,7 @@ export function SearchBox({ className = "" }: { className?: string }) {
                   onMouseEnter={() => setActive(i)}
                   className={`flex items-center gap-2.5 px-2.5 py-2 ${i === active ? "bg-surface-2" : ""}`}
                 >
-                  <img src={h.thumb} alt="" width={28} height={39} className="h-9 w-7 shrink-0 rounded object-cover" loading="lazy" />
+                  <Thumb src={h.thumb} width={28} height={39} className="h-9 w-7 shrink-0 rounded object-cover" />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-medium text-ink">{h.name}</span>
                     <span className="block truncate text-[11px] text-ink-dim">

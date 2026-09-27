@@ -20,7 +20,7 @@ import { formatDate } from "@/lib/format";
 import { SITE_URL } from "@/lib/site";
 import { PriceChart } from "@/components/PriceChart";
 import { Money } from "@/components/Prefs";
-import { Delta, DeltaArrow, Panel, RarityPill, SectionTitle } from "@/components/Bits";
+import { Delta, DeltaArrow, Panel, RarityPill, SectionTitle, Thumb } from "@/components/Bits";
 import { DemoPricesNotice } from "@/components/Notices";
 
 export const metadata: Metadata = {
@@ -197,14 +197,7 @@ function MoverList({ title, rows, tone }: { title: string; rows: ReturnType<type
                 className="flex items-center gap-2.5 rounded-md px-1.5 py-1.5 hover:bg-surface-2"
               >
                 <span className="num w-4 shrink-0 text-right text-[11px] text-ink-dim">{i + 1}</span>
-                <img
-                  src={m.card.imageThumbUrl}
-                  alt=""
-                  width={28}
-                  height={39}
-                  loading="lazy"
-                  className="h-9 w-7 shrink-0 rounded object-cover"
-                />
+                <Thumb src={m.card.imageThumbUrl} width={28} height={39} className="h-9 w-7 shrink-0 rounded object-cover" />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[13px] font-medium text-ink">{m.card.name}</span>
                   <span className="block truncate text-[11px] text-ink-dim">

@@ -4,11 +4,16 @@ import { SETS } from "@/lib/riftbound";
 import { ARTICLES } from "@/lib/content/articles";
 import { SITE_URL } from "@/lib/site";
 import { allChampions } from "@/lib/champions";
+import { HISTORY_DAYS } from "@/lib/prices";
 
 export const dynamic = "force-static";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const now = new Date();
+  // Price-driven pages change when the prices do, so their lastmod is the
+  // latest snapshot's date rather than the build time (every entry sharing
+  // one build timestamp tells a crawler nothing). Static pages carry none.
+  const lastDay = HISTORY_DAYS[HISTORY_DAYS.length - 1];
+  const now = lastDay ? new Date(`${lastDay}T00:00:00Z`) : new Date();
 
   const staticPages: MetadataRoute.Sitemap = ([
     { url: SITE_URL, changeFrequency: "daily", priority: 1 },
@@ -21,12 +26,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${SITE_URL}/decks`, changeFrequency: "weekly", priority: 0.6 },
     { url: `${SITE_URL}/sealed`, changeFrequency: "weekly", priority: 0.6 },
     { url: `${SITE_URL}/browse`, changeFrequency: "weekly", priority: 0.6 },
+  ] as const).map((e) => ({ ...e, lastModified: now }));
+  const policyPages: MetadataRoute.Sitemap = [
     { url: `${SITE_URL}/about`, changeFrequency: "monthly", priority: 0.5 },
     { url: `${SITE_URL}/privacy`, changeFrequency: "yearly", priority: 0.3 },
-  ] as const).map((e) => ({ ...e, lastModified: now }));
+  ];
 
   return [
     ...staticPages,
+    ...policyPages,
     ...SETS.map((s) => ({
       url: `${SITE_URL}/sets/${s.slug}`,
       lastModified: now,

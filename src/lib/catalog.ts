@@ -207,14 +207,26 @@ function normalise(c: RawCard): RiftCard {
 // thumbnail too — 28px table rows downloading full-size art. Their CDN serves
 // every product at 400×400 as well (verified for all of them), about half the
 // bytes and still sharp in a grid tile; the card page keeps the full image.
-const promoThumb = (c: RiftCard): RiftCard =>
-  /_in_1000x1000\.jpg$/.test(c.imageThumbUrl)
+//
+// Promo stats: the promo builder writes 0/0/0 where TCGplayer publishes no
+// stats (every promo Legend, rune and battlefield), and the card page printed
+// "Energy 0 · Might 0 · Power 0" under them. No real card is 0/0/0, so all
+// three zero means "not published" and becomes null, like the booster cards.
+const normalisePromo = (c: RiftCard): RiftCard => {
+  const out = /_in_1000x1000\.jpg$/.test(c.imageThumbUrl)
     ? { ...c, imageThumbUrl: c.imageThumbUrl.replace(/_in_1000x1000\.jpg$/, "_in_400x400.jpg") }
-    : c;
+    : { ...c };
+  if (!out.energy && !out.might && !out.power) {
+    out.energy = null;
+    out.might = null;
+    out.power = null;
+  }
+  return out;
+};
 
 export const CARDS: RiftCard[] = [
   ...(raw as RawCard[]).map(normalise),
-  ...(promos as unknown as RiftCard[]).map(promoThumb),
+  ...(promos as unknown as RiftCard[]).map(normalisePromo),
 ];
 
 const BY_SLUG = new Map(CARDS.map((c) => [c.slug, c]));

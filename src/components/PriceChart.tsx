@@ -114,9 +114,12 @@ export function PriceChart({ points, sources, activeSourceId }: Props) {
 
   const money = useCallback((cents: number) => formatMoney(convert(cents, currency), currency), [currency]);
   // Axis ticks only; the tooltip and the header keep full precision.
+  // Compact on phones, and on desktop too once full labels outgrow the
+  // gutter: "US$23,540.86" is wider than 56px and lost its "US$" to the edge.
+  const compactAxis = narrow || money(max).length > 10;
   const axisMoney = useCallback(
-    (cents: number) => (narrow ? formatMoneyCompact(convert(cents, currency), currency) : money(cents)),
-    [narrow, currency, money],
+    (cents: number) => (compactAxis ? formatMoneyCompact(convert(cents, currency), currency) : money(cents)),
+    [compactAxis, currency, money],
   );
 
   const linePath = useCallback(

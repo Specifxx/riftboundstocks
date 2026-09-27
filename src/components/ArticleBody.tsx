@@ -5,7 +5,7 @@ import { latestQuote, priceHistory, quoteDaysAgo, pctChange, primaryPrice } from
 import { CardImage } from "./CardImage";
 import { Sparkline } from "./PriceChart";
 import { Money } from "./Prefs";
-import { Delta, DomainPill, RarityPill } from "./Bits";
+import { Delta, DomainPill, RarityPill, Thumb } from "./Bits";
 import { AffiliateDisclosure } from "./AffiliateDisclosure";
 import { affiliateUrl, outboundRel } from "@/lib/affiliate";
 import { tcgSearchUrl } from "@/lib/prices/tcgplayer";
@@ -110,7 +110,7 @@ function CardTableBlock({ title, slugs }: { title: string; slugs: string[] }) {
               <tr key={c.id} className="border-b border-line last:border-0">
                 <td className="px-2.5 py-1.5 sm:px-3.5">
                   <Link href={`/card/${c.slug}`} className="flex items-center gap-2">
-                    <img src={c.imageThumbUrl} alt="" width={24} height={34} className="h-8 w-6 shrink-0 rounded object-cover" loading="lazy" />
+                    <Thumb src={c.imageThumbUrl} width={24} height={34} className="h-8 w-6 shrink-0 rounded object-cover" />
                     <span className="min-w-0">
                       <span className="block truncate font-medium text-ink hover:text-accent">{c.name}</span>
                       <span className="block text-[10.5px] text-ink-dim">

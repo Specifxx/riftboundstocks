@@ -8,6 +8,9 @@ export const metadata: Metadata = {
   title: "Premium",
   description: `Compare ${SITE_NAME} plans — alerts, watchlist size, history depth, CSV import and public API access.`,
   alternates: { canonical: `${SITE_URL}/premium` },
+  // Plans can't be bought yet (no billing), so this isn't a page to send
+  // search visitors to.
+  robots: { index: false, follow: true },
 };
 
 function limitLabel(n: number | null, unit: string): string {
@@ -39,10 +42,10 @@ export default async function PremiumPage() {
       {!BILLING_CONFIGURED && (
         <div className="mb-6 rounded-xl border border-down/40 bg-down/10 p-4">
           <p className="text-[13px] leading-relaxed text-ink-muted">
-            <strong className="font-semibold text-down">Billing isn&apos;t connected yet.</strong> Every tier below is
-            real — the limits it lists are enforced today — but there is no payment flow to move a Free account onto
-            it. <code className="font-mono text-[12px] text-ink">TODO(config)</code>: wire a payment processor; see the
-            comment at the top of <code className="font-mono text-[12px] text-ink">src/lib/plans.ts</code>.
+            {/* Developer note (not shown): billing is wired up per the comment at the
+                top of src/lib/plans.ts. */}
+            <strong className="font-semibold text-down">Paid plans aren&apos;t on sale yet.</strong> Everyone is on Free
+            for now — the limits below are the ones each plan will have when upgrades open.
           </p>
         </div>
       )}

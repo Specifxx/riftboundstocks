@@ -17,7 +17,10 @@ export const DOMAINS: Record<DomainKey, DomainInfo> = {
   Mind: { key: "Mind", label: "Mind", color: "#3b82f6", tagline: "Control & knowledge" },
   Body: { key: "Body", label: "Body", color: "#f5a524", tagline: "Endurance & power" },
   Chaos: { key: "Chaos", label: "Chaos", color: "#a855f7", tagline: "Disruption & risk" },
-  Order: { key: "Order", label: "Order", color: "#cbd5e1", tagline: "Structure & protection" },
+  // Darker than TCGEmpire's #cbd5e1, which was 1.3:1 against this site's
+  // light parchment theme — the "Order" label was effectively invisible.
+  // #6b7a8f holds ~4:1 on both the light and dark surfaces.
+  Order: { key: "Order", label: "Order", color: "#6b7a8f", tagline: "Structure & protection" },
   Colorless: { key: "Colorless", label: "Colorless", color: "#8b8f9a", tagline: "Neutral staples" },
 };
 

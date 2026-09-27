@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Money, usePrefs } from "./Prefs";
-import { DeltaArrow, DomainPill, RarityPill } from "./Bits";
+import { DeltaArrow, DomainPill, RarityPill, Thumb } from "./Bits";
 import { convert } from "@/lib/currency";
 import { formatMoney } from "@/lib/format";
 
@@ -171,13 +171,11 @@ export function CardTable({
                 {columns.includes("card") && (
                   <td className="py-1.5 pr-2">
                     <Link href={`/card/${r.slug}`} className="flex items-center gap-2 sm:gap-2.5">
-                      <img
+                      <Thumb
                         src={r.thumb}
-                        alt=""
                         width={28}
                         height={39}
                         className="h-8 w-[23px] shrink-0 rounded object-cover sm:h-9 sm:w-7"
-                        loading="lazy"
                       />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate font-medium leading-tight text-ink hover:text-accent">{r.name}</span>

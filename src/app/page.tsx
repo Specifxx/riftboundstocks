@@ -61,11 +61,11 @@ function MarketSummary() {
   const down = day.filter((m) => m.pct < 0).length;
 
   const items = [
-    { label: "Catalogue value", node: <Money cents={now} className="num text-2xl font-bold text-ink" /> },
+    { label: "Catalogue value", node: <Money cents={now} className="num text-xl font-bold text-ink sm:text-2xl" /> },
     {
       label: "Cards priced",
       node: (
-        <span className="num text-2xl font-bold text-ink">
+        <span className="num text-xl font-bold text-ink sm:text-2xl">
           {priced}
           <span className="ml-1 text-[13px] font-normal text-ink-dim">/ {CARDS.length}</span>
         </span>
@@ -102,7 +102,12 @@ function MarketSummary() {
       {/* Oversized, faint mark watermark — the signature module this identity
           is actually built around, so it gets its own visual weight rather
           than reusing the generic `.panel` treatment every other card uses. */}
-      <BrandLogo className="pointer-events-none absolute -right-6 -top-8 h-40 w-40 opacity-[0.06] sm:h-48 sm:w-48" />
+      {/* Positioned by a wrapper: BrandLogo puts className on its inner mark,
+          so passing `absolute` there left the wrapper — and the mark's "S" —
+          in normal flow at the top-left of the panel. */}
+      <div className="pointer-events-none absolute -right-6 -top-8 opacity-[0.06]">
+        <BrandLogo className="h-40 w-40 sm:h-48 sm:w-48" />
+      </div>
       <div className="relative p-5 sm:p-7">
         <p className="eyebrow text-accent">The Ledger</p>
         <h1 className="mt-1 max-w-2xl font-display text-2xl font-semibold leading-tight text-ink sm:text-3xl">

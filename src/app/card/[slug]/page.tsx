@@ -55,7 +55,11 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
   // champion too ("ahri nine-tailed fox"), so it's prefixed back on.
   const champ = card.type === "Legend" && !card.name.includes(",") && !card.name.includes(" - ") ? championOf(card) : null;
   const displayName = champ ? `${champ.name}, ${card.name}` : card.name;
-  const title = `${displayName} Price — Riftbound ${card.setCode} ${card.collectorLabel}`;
+  // The treatment is what collectors search for ("…signature price") and what
+  // tells a base card and its alt art apart in results — without it the two
+  // pages had identical titles and descriptions.
+  const variantLabel = card.variant === "s" ? " Signature" : card.variant ? " Alt Art" : "";
+  const title = `${displayName}${variantLabel} Price — Riftbound ${card.setCode} ${card.collectorLabel}`;
   // An unpriced card gets a description with no price claim in it, rather than
   // "$0.00" in a search result. Foil-only printings (most Showcase, Signature
   // and promo cards) have no Normal market, so the headline is the foil price.
@@ -64,7 +68,7 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
     headline != null
       ? `TCGplayer ${q.market == null ? "foil " : ""}market price ${formatMoney(headline)}${q.low != null ? `, listings from ${formatMoney(q.low)}` : ""}.`
       : "Live TCGplayer pricing and daily history.";
-  const description = `${displayName} (${card.setName} ${card.collectorLabel}) — ${card.rarity} ${card.domain} ${card.type}. ${priceLine} Daily price history chart, foil prices and store comparison.`;
+  const description = `${displayName}${variantLabel} (${card.setName} ${card.collectorLabel}) — ${card.rarity} ${card.domain} ${card.type}. ${priceLine} Daily price history chart, foil prices and store comparison.`;
   return {
     title,
     description,
@@ -74,7 +78,9 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
       description,
       type: "article",
       url: `${SITE_URL}/card/${card.slug}`,
-      images: [{ url: card.imageUrl, alt: card.name }],
+      // No art (a handful of promos) → omit, so the site-wide image applies
+      // instead of an empty og:image.
+      images: card.imageUrl ? [{ url: card.imageUrl, alt: card.name }] : undefined,
     },
   };
 }

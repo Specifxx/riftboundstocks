@@ -6,7 +6,8 @@ import { SITE_NAME } from "@/lib/site";
 export const metadata: Metadata = {
   title: "Page not found",
   description: `That page doesn't exist on ${SITE_NAME}. Search the Riftbound catalogue by card name, or jump to the sets, movers and news indexes.`,
-  robots: { index: false, follow: true },
+  // No `robots` here: Next already emits noindex on not-found responses, and a
+  // second tag duplicated it.
 };
 
 const DESTINATIONS = [

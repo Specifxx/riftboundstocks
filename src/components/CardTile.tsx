@@ -92,12 +92,14 @@ export function CardGridTile({ card }: { card: RiftCard }) {
   const price = primaryPrice(q);
   const pct = pctChange(price, primaryPrice(quoteDaysAgo(card, 7)));
   return (
-    <Link href={`/card/${card.slug}`} className="group flex flex-col">
+    <Link href={`/card/${card.slug}`} className="group flex min-w-0 flex-col">
       <div className="aspect-[5/7] w-full overflow-hidden rounded-lg border border-line bg-surface-2 transition-colors group-hover:border-accent">
         <CardImage card={card} className="h-full w-full" />
       </div>
       <h3 className="mt-1.5 truncate text-[12.5px] font-medium text-ink group-hover:text-accent">{card.name}</h3>
-      <div className="flex items-baseline justify-between gap-2">
+      {/* Wraps rather than overflowing: a four-figure price plus a delta
+          doesn't fit a third of a phone screen. */}
+      <div className="flex flex-wrap items-baseline justify-between gap-x-2">
         <Money cents={price} className="num text-[13px] font-semibold text-ink" />
         <Delta pct={pct} className="text-[11px]" />
       </div>
