@@ -202,7 +202,20 @@ function normalise(c: RawCard): RiftCard {
 // Promo printings (OPP/PR/SGN/JDG) come from TCGplayer rather than RiftScribe,
 // which carries only booster-set cards. Built by scripts/build-promos.ts and
 // already in RiftCard shape, so they simply join the catalogue.
-export const CARDS: RiftCard[] = [...(raw as RawCard[]).map(normalise), ...(promos as unknown as RiftCard[])];
+//
+// TCGplayer's promo images are 1000×1000 (~75 KB) and were used as-is for the
+// thumbnail too — 28px table rows downloading full-size art. Their CDN serves
+// every product at 400×400 as well (verified for all of them), about half the
+// bytes and still sharp in a grid tile; the card page keeps the full image.
+const promoThumb = (c: RiftCard): RiftCard =>
+  /_in_1000x1000\.jpg$/.test(c.imageThumbUrl)
+    ? { ...c, imageThumbUrl: c.imageThumbUrl.replace(/_in_1000x1000\.jpg$/, "_in_400x400.jpg") }
+    : c;
+
+export const CARDS: RiftCard[] = [
+  ...(raw as RawCard[]).map(normalise),
+  ...(promos as unknown as RiftCard[]).map(promoThumb),
+];
 
 const BY_SLUG = new Map(CARDS.map((c) => [c.slug, c]));
 const BY_ID = new Map(CARDS.map((c) => [c.id, c]));
