@@ -115,6 +115,10 @@ export function riftcompareSlugCandidates(card: RiftCard, champion?: string | nu
   if (untiered !== card.name) names.push(untiered);
   if (card.type === "Legend" && champion && !card.name.includes(",") && !card.name.startsWith(`${champion} -`)) {
     names.push(`${champion} ${untiered}`);
+    // RiftCompare is dropping the " - Starter" label from Proving Grounds
+    // Legends (its DECISIONS.md, 2026-09-27), so cover the renamed spelling too.
+    const unlabelled = untiered.replace(/\s+-\s+Starter$/i, "");
+    if (unlabelled !== untiered) names.push(`${champion} ${unlabelled}`);
   }
 
   const renumbered: string[] = [];
