@@ -149,3 +149,8 @@ for (const c of CARDS) {
 export function otherPrintingsOf(card: RiftCard): RiftCard[] {
   return (BY_RULES_NAME.get(printingKey(card)) ?? []).filter((c) => c.id !== card.id);
 }
+
+/** Every printing of the card with this rules name ("Ahri, Nine-Tailed Fox"). */
+export function printingsNamed(rules: string): RiftCard[] {
+  return BY_RULES_NAME.get(rules.toLowerCase().replace(/[^a-z0-9]/g, "")) ?? [];
+}

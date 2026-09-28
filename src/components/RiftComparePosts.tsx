@@ -1,10 +1,11 @@
+import Link from "next/link";
 import { fetchRiftComparePosts, postsMentioning, type RcPost } from "@/lib/riftcompare-feed";
 import { riftcompareUrl } from "@/lib/affiliate";
 import { formatDateShort } from "@/lib/format";
 
-// Links out to RiftCompare's articles. These open on riftcompare.com — they
-// are the sister site's writing, not this site's — so every list says so, and
-// the links are plain referrals (same owner, no commission: no `sponsored`).
+// RiftCompare's articles, which this site also publishes at /news/<slug>
+// (see lib/riftcompare-feed.ts). Lists link to our copy, so a reader stays
+// here; every list still says where the writing comes from.
 
 function KindBadge({ kind }: { kind: RcPost["kind"] }) {
   return (
@@ -23,18 +24,18 @@ export function PostList({ posts, showSummary = true }: { posts: RcPost[]; showS
     <ul className="divide-y divide-line">
       {posts.map((p) => (
         <li key={p.url} className="py-2.5 first:pt-0 last:pb-0">
-          <a href={p.href} target="_blank" rel="noopener" className="group block">
+          <Link href={`/news/${p.slug}`} className="group block">
             <span className="flex items-center gap-2 text-[11px] text-ink-dim">
               <KindBadge kind={p.kind} />
               <time dateTime={p.publishedAt}>{formatDateShort(p.publishedAt)}</time>
             </span>
             <span className="mt-1 block text-[14px] font-semibold leading-snug text-ink group-hover:text-accent">
-              {p.title} <span className="text-[11px] font-normal text-ink-dim">↗</span>
+              {p.title}
             </span>
             {showSummary && p.summary && (
               <span className="mt-0.5 line-clamp-2 block text-[12.5px] leading-relaxed text-ink-muted">{p.summary}</span>
             )}
-          </a>
+          </Link>
         </li>
       ))}
     </ul>
@@ -44,11 +45,11 @@ export function PostList({ posts, showSummary = true }: { posts: RcPost[]; showS
 export function RiftCompareCredit({ className = "" }: { className?: string }) {
   return (
     <p className={`text-[11px] leading-relaxed text-ink-dim ${className}`}>
-      Articles open on{" "}
+      News and guides by{" "}
       <a href={riftcompareUrl("/blog", "news-credit")} target="_blank" rel="noopener" className="text-accent hover:underline">
         RiftCompare
       </a>
-      , our sister site for live store prices, news and guides.
+      , our sister site for live store prices across six markets.
     </p>
   );
 }

@@ -219,11 +219,26 @@ params for RiftCompare's own analytics, not an affiliate link).
 RiftCompare's blog and guides (its public JSON Feed, `/feed.json`) are the site's written
 news. `lib/riftcompare-feed.ts` fetches the feed once an hour through Next's data cache —
 every page shares the one cached response — and returns `[]` on any failure, so a
-RiftCompare outage just hides the sections. Posts are **linked, not copied**: the news hub
-lists them, and card, set, champion and report pages show the ones that mention them
-(`postsMentioning()` — whole-word match on champion, card or set names, title hits ranked
-above summary hits). Copying the text would put two URLs in the index competing for the
-same article.
+RiftCompare outage just hides the sections.
+
+**Every article is also published here**, at `/news/<slug>`, rendered from RiftCompare's
+markdown mirror (`/llm/<blog|guides>/<slug>`, cached six hours) by `components/Markdown.tsx`
+— a renderer for exactly the subset those articles use, emitting React elements, never raw
+HTML. Each copy:
+
+- declares **RiftCompare's page as canonical** and is left out of our sitemap. Two domains
+  publishing the same text otherwise compete in search; this way RiftCompare keeps the
+  ranking and readers here stay here.
+- adds a **price panel** for every card the article names (`lib/article-cards.ts` — name
+  matching tuned against all of RiftCompare's articles; they carry no machine-readable card
+  references), linked to our card pages, plus the champions involved.
+- points **links inside the article** at our own pages where we have one — another article we
+  carry, a card, champion or set (via `lib/riftcompare-map.ts`), the movers — and everything
+  else at RiftCompare (`lib/article-links.ts`). Non-http(s) links and images are dropped.
+
+The news hub, homepage and the card, set, champion and report pages list the posts that
+mention them (`postsMentioning()` — whole-word match, title hits above summary hits), and
+all of those lists link to the copies here.
 
 ## Decks
 

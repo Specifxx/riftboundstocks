@@ -26,8 +26,11 @@ export const metadata: Metadata = {
 
 export default async function NewsPage() {
   const posts = await fetchRiftComparePosts();
-  const news = posts.filter((p) => p.kind === "News").slice(0, 12);
-  const guides = posts.filter((p) => p.kind === "Guide").slice(0, 10);
+  // Every post is readable here, so the hub is the whole archive: the latest
+  // dozen of each kind with summaries, the rest as a compact list.
+  const news = posts.filter((p) => p.kind === "News");
+  const guides = posts.filter((p) => p.kind === "Guide");
+  const SHOWN = 12;
   const reports = sortedArticles();
 
   return (
@@ -36,35 +39,43 @@ export default async function NewsPage() {
       <header className="mb-6">
         <h1 className="font-display text-3xl uppercase tracking-wide text-ink sm:text-4xl">News &amp; Analysis</h1>
         <p className="mt-1.5 max-w-2xl text-[14px] leading-relaxed text-ink-muted">
-          What&apos;s happening in Riftbound, and what it&apos;s doing to prices. News and guides come from{" "}
+          What&apos;s happening in Riftbound, and what it&apos;s doing to prices. News and guides are written by{" "}
           <a href={riftcompareUrl("/blog", "news-intro")} target="_blank" rel="noopener" className="text-accent hover:underline">
             RiftCompare
           </a>
-          , our sister site; the market reports are measured here, from real TCGplayer prices.
+          , our sister site, and each comes with today&apos;s prices for the cards it mentions; the market reports are
+          measured here, from real TCGplayer prices.
         </p>
       </header>
 
       {posts.length > 0 && (
         <div className="mb-10 grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-          {news.length > 0 && (
-            <section className="min-w-0">
-              <SectionTitle href={riftcompareUrl("/blog", "news-hub")} linkLabel="All news">
-                Latest News
-              </SectionTitle>
-              <div className="panel p-4">
-                <PostList posts={news} />
-              </div>
-            </section>
-          )}
-          {guides.length > 0 && (
-            <section className="min-w-0">
-              <SectionTitle href={riftcompareUrl("/guides", "news-hub")} linkLabel="All guides">
-                Guides
-              </SectionTitle>
-              <div className="panel p-4">
-                <PostList posts={guides} />
-              </div>
-            </section>
+          {(
+            [
+              ["Latest News", news, "/blog"],
+              ["Guides", guides, "/guides"],
+            ] as const
+          ).map(([title, list, rcPath]) =>
+            list.length > 0 ? (
+              <section key={title} className="min-w-0">
+                <SectionTitle href={riftcompareUrl(rcPath, "news-hub")} linkLabel="On RiftCompare">
+                  {title}
+                </SectionTitle>
+                <div className="panel p-4">
+                  <PostList posts={list.slice(0, SHOWN)} />
+                  {list.length > SHOWN && (
+                    <details className="mt-3 border-t border-line pt-2.5">
+                      <summary className="cursor-pointer text-[12.5px] font-semibold text-accent">
+                        {list.length - SHOWN} more {title === "Guides" ? "guides" : "stories"}
+                      </summary>
+                      <div className="mt-2.5">
+                        <PostList posts={list.slice(SHOWN)} showSummary={false} />
+                      </div>
+                    </details>
+                  )}
+                </div>
+              </section>
+            ) : null,
           )}
           <RiftCompareCredit className="lg:col-span-2" />
         </div>

@@ -1,12 +1,13 @@
-// RiftCompare's blog and guides, surfaced here as links.
+// RiftCompare's blog and guides, published here too.
 //
 // RiftCompare (same owner — see DATA_INTEGRATION.md) publishes real, dated
 // Riftbound news and guides: spoilers, ban-list reaction, set guides, buying
-// guides. This site publishes prices. Rather than copy those articles over —
-// which would put two URLs in Google's index competing for the same text, and
-// the original would win anyway — pages here LINK to them: the news hub lists
-// the latest, and card, set and champion pages show the posts that mention
-// them. Readers get context for a price move; RiftCompare gets the click.
+// guides. Each one is also readable on this site at /news/<slug>, rendered
+// from RiftCompare's own markdown (/llm/<section>/<slug>) with a panel of our
+// prices for the cards it mentions. Those copies declare RiftCompare's page as
+// canonical: two sites publishing the same text would otherwise compete in
+// search, and neither should be penalised for it. Readers stay here; search
+// credit stays with the original.
 //
 // Read from RiftCompare's public JSON Feed (https://jsonfeed.org), cached for
 // an hour by Next's data cache, so the whole site costs one request an hour no
@@ -25,10 +26,14 @@ const cache: <T extends (...args: never[]) => unknown>(fn: T) => T =
 const FEED_URL = process.env.RIFTCOMPARE_FEED_URL || `${RIFTCOMPARE_URL}/feed.json`;
 
 export interface RcPost {
-  /** Canonical URL on riftcompare.com (untagged — use `href` for links). */
+  /** Canonical URL on riftcompare.com — the original, and our copy's canonical. */
   url: string;
-  /** Link target, with RiftCompare's referral params. */
+  /** Link to the original, with RiftCompare's referral params. */
   href: string;
+  /** "riftbound-heartsteel-cards" — also our copy's path: /news/<slug>. */
+  slug: string;
+  /** Path on riftcompare.com, e.g. "/blog/riftbound-heartsteel-cards". */
+  path: string;
   title: string;
   summary: string;
   /** ISO timestamp. */
@@ -64,9 +69,15 @@ export const fetchRiftComparePosts = cache(async (): Promise<RcPost[]> => {
       } catch {
         continue;
       }
+      const m = path.match(/^\/(blog|guides)\/([a-z0-9-]+)\/?$/);
+      if (!m) continue;
+      // First wins if a blog post and a guide ever share a slug.
+      if (posts.some((p) => p.slug === m[2])) continue;
       posts.push({
         url,
         href: riftcompareUrl(path, "news-feed"),
+        slug: m[2],
+        path: `/${m[1]}/${m[2]}`,
         title: it.title,
         summary: it.summary ?? it.content_text ?? "",
         publishedAt: it.date_published,
@@ -109,3 +120,28 @@ export function postsMentioning(posts: RcPost[], terms: string[], limit = 4): Rc
     .slice(0, limit)
     .map((s) => s.post);
 }
+
+export async function rcPostBySlug(slug: string): Promise<RcPost | null> {
+  return (await fetchRiftComparePosts()).find((p) => p.slug === slug) ?? null;
+}
+
+/**
+ * The article's markdown, from RiftCompare's /llm/ mirror of it. Cached for
+ * six hours — articles are edited far less often than they're read — and null
+ * on any failure, in which case our page falls back to the summary and a link.
+ */
+export const fetchRiftCompareArticle = cache(async (post: RcPost): Promise<string | null> => {
+  try {
+    const res = await fetch(`${RIFTCOMPARE_URL}/llm${post.path}`, {
+      next: { revalidate: 21600 },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) return null;
+    const text = await res.text();
+    // A real article starts with its "# Title"; anything else (an error page,
+    // a redirect body) isn't rendered.
+    return text.startsWith("# ") ? text : null;
+  } catch {
+    return null;
+  }
+});

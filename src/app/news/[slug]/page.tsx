@@ -11,14 +11,39 @@ import { ArticleCard, AuthorByline, CategoryLabel } from "@/components/ArticleCa
 import { DemoPricesNotice } from "@/components/Notices";
 import { JsonLd, breadcrumbLd } from "@/components/JsonLd";
 import { RelatedReading } from "@/components/RiftComparePosts";
+import { SyndicatedArticle } from "@/components/SyndicatedArticle";
+import { rcPostBySlug } from "@/lib/riftcompare-feed";
+
+// Two kinds of page live here: our data reports (prerendered below), and
+// RiftCompare's articles, published here too and rendered on first request
+// (see lib/riftcompare-feed.ts). Refreshed hourly, like the feed.
+export const revalidate = 3600;
 
 export function generateStaticParams() {
   return ARTICLES.map((a) => ({ slug: a.slug }));
 }
 
-export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const article = articleBySlug(params.slug);
-  if (!article) return { title: "Article not found" };
+  if (!article) {
+    const post = await rcPostBySlug(params.slug);
+    if (!post) return { title: "Article not found" };
+    return {
+      title: post.title,
+      description: post.summary,
+      // The original is RiftCompare's. Declaring it canonical keeps the two
+      // copies from competing in search; this one is for reading here.
+      alternates: { canonical: post.url },
+      openGraph: {
+        type: "article",
+        title: post.title,
+        description: post.summary,
+        url: post.url,
+        publishedTime: post.publishedAt,
+        authors: ["RiftCompare"],
+      },
+    };
+  }
   const hero = cardBySlug(article.heroCard);
   const author = authorOr(article.author);
   return {
@@ -37,9 +62,13 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
   };
 }
 
-export default function ArticlePage({ params }: { params: { slug: string } }) {
+export default async function ArticlePage({ params }: { params: { slug: string } }) {
   const article = articleBySlug(params.slug);
-  if (!article) notFound();
+  if (!article) {
+    const post = await rcPostBySlug(params.slug);
+    if (!post) notFound();
+    return <SyndicatedArticle post={post} />;
+  }
 
   const author = authorOr(article.author);
   const related = sortedArticles()

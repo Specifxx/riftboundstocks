@@ -21,11 +21,11 @@ Read this before doing anything with the numbers on the site.
 | Rules and flavour text | ✅ Real — from TCGplayer's product data |
 | **Price history** | ⏳ Accumulates daily from the first import. TCGplayer publishes none, so it is **not** backfilled |
 | **Market reports** | ✅ Real — 9 data reports computed from the 12 Aug 2026 snapshot, re-verified by `prebuild` |
-| **News and guides** | ✅ Real — RiftCompare's blog, linked (not copied) via its JSON Feed — see `lib/riftcompare-feed.ts` |
+| **News and guides** | ✅ Real — RiftCompare's articles, published here at `/news/<slug>` with RiftCompare as canonical, plus our prices for the cards each one names — see `lib/riftcompare-feed.ts` |
 | **Ban list** | ✅ Real — Riot's three ban waves, in `lib/banlist.ts` (the catalogue's `is_banned` flag is stale) |
 | Artist credits | ⛔ Not published by either source — not guessed at |
 
-Prices are imported from TCGplayer by `npm run prices:import` and committed to the repo. The site's own editorial is the data reports in `lib/content/reports.ts`; written news and guides are RiftCompare's, linked from `/news`, the homepage and the card, set and champion pages they mention. (Fourteen invented demo articles under fictional bylines used to live here; they were removed and their URLs 308 to `/news` — see `next.config.js`.)
+Prices are imported from TCGplayer by `npm run prices:import` and committed to the repo. The site's own editorial is the data reports in `lib/content/reports.ts`; written news and guides are RiftCompare's, published here too (`/news/<slug>`, rendered from its markdown by `components/Markdown.tsx`) and listed on `/news`, the homepage and the card, set and champion pages they mention. (Fourteen invented demo articles under fictional bylines used to live here; they were removed and their URLs 308 to `/news` — see `next.config.js`.)
 
 A fresh clone with no imported data falls back to `src/lib/prices/synthetic.ts`, a generator, and every surface then renders a prominent demo-data warning. That switch is driven by the data itself (`PRICES_ARE_DEMO` in `lib/prices/demo-flag.ts`), not by an env var someone has to remember to set.
 
@@ -91,7 +91,10 @@ src/
     content/              data reports, the data-desk byline, editorial types
     champions.ts          champion attribution (incl. Legends, via TCGplayer URLs) + printing groups
     banlist.ts            Riot's ban waves; the card page's "Ban status"
-    riftcompare-feed.ts   RiftCompare's blog/guides feed, matched to cards/sets/champions
+    riftcompare-feed.ts   RiftCompare's blog/guides feed + article markdown
+    riftcompare-map.ts    RiftCompare slugs → our pages (served at /api/riftcompare-links)
+    article-cards.ts      which cards an article names (for its price panel)
+    article-links.ts      where links inside a syndicated article point
   data/
     riftbound-cards.json  booster-set catalogue (RiftScribe)
     promo-cards.json      OPP/PR/SGN/JDG printings (TCGplayer)
@@ -181,7 +184,7 @@ Card images are hot-linked from the RiftScribe CDN, so that CDN sees visitors' I
 
 ## Content and attribution
 
-`src/lib/content/` holds only the data reports, bylined to the automated data desk. Every figure in them is re-derived from that day's column of the price history by `scripts/verify-reports.ts`, which runs as `prebuild` — a report that stops matching the data fails the build. News and guides are RiftCompare's and are linked, never republished, so each article has one canonical URL.
+`src/lib/content/` holds only the data reports, bylined to the automated data desk. Every figure in them is re-derived from that day's column of the price history by `scripts/verify-reports.ts`, which runs as `prebuild` — a report that stops matching the data fails the build. News and guides are RiftCompare's. They're published here too, but every copy declares RiftCompare's page as canonical (and stays out of our sitemap), so the two sites never compete for the same article in search. What each copy adds is ours: a panel of today's prices for the cards it names, and in-article links pointed at our card, set and champion pages.
 
 ## Growth checklist (things only the owner can do)
 

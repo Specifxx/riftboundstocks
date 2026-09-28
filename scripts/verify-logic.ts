@@ -19,6 +19,9 @@ import { championOf, cardsForChampion } from "../src/lib/champions";
 import { postsMentioning, type RcPost } from "../src/lib/riftcompare-feed";
 import { riftcompareSlugCandidates } from "../src/lib/prices/riftcompare";
 import { cardBySlug } from "../src/lib/catalog";
+import { parseMarkdown } from "../src/components/Markdown";
+import { resolveArticleHref, resolveArticleImage } from "../src/lib/article-links";
+import { cardsMentioned } from "../src/lib/article-cards";
 
 let failures = 0;
 function check(label: string, actual: unknown, expected: unknown) {
@@ -137,12 +140,51 @@ ok("tiers ascend", cand("daughter-of-the-void-ogn-299").every((k, i, a) => i ===
 
 // ── RiftCompare post matching ────────────────────────────────────────────────
 console.log("\nriftcompare post matching");
-const post = (title: string, summary = ""): RcPost => ({ url: title, href: title, title, summary, publishedAt: "2026-09-01", kind: "News" });
+const post = (title: string, summary = ""): RcPost => ({ url: title, href: title, slug: title, path: `/blog/${title}`, title, summary, publishedAt: "2026-09-01", kind: "News" });
 const feed = [post("Vision control decks"), post("Every Vi card, priced"), post("Kai’Sa spoiler"), post("Set review", "Ahri shows up")];
 check("whole-word only: 'Vi' ignores 'Vision'", postsMentioning(feed, ["Vi"]).map((p) => p.title), ["Every Vi card, priced"]);
 check("curly apostrophe matches straight", postsMentioning(feed, ["Kai'Sa"]).length, 1);
 check("summary hits count, below title hits", postsMentioning(feed, ["Ahri"]).map((p) => p.title), ["Set review"]);
 check("no terms → nothing", postsMentioning(feed, []).length, 0);
+
+// ── syndicated RiftCompare articles ──────────────────────────────────────────
+console.log("\nsyndicated articles");
+const md = [
+  "# Title",
+  "",
+  "_2026-09-26 · RiftCompare_",
+  "",
+  "Summary line.",
+  "",
+  "[[embed:0]]",
+  "",
+  "## Heading",
+  "",
+  "| Card | Price |",
+  "| --- | --- |",
+  "| **Ahri, Alluring** | $1 |",
+  "",
+  "- one",
+  "- two",
+].join("\n");
+const blocks = parseMarkdown(md);
+check("title and byline dropped, placeholder skipped", blocks.map((b) => b.t), ["p", "h", "table", "ul"]);
+check("table header parsed", blocks[2].t === "table" ? blocks[2].head : null, ["Card", "Price"]);
+const carried = new Set(["riftbound-heartsteel-cards"]);
+check("link to a carried post stays on this site", resolveArticleHref("/blog/riftbound-heartsteel-cards", carried), { href: "/news/riftbound-heartsteel-cards", external: false });
+check("link to a card we price goes to our card page", resolveArticleHref("/card/kai-sa-daughter-of-the-void-ogn-299s-298", carried)?.href, "/card/daughter-of-the-void-ogn-299s");
+check("RiftCompare champion slug maps to ours", resolveArticleHref("/champions/kai-sa", carried)?.href, "/champions/kaisa");
+ok("anything else goes to RiftCompare", resolveArticleHref("/tools/box-ev", carried)?.href.startsWith("https://riftcompare.com/tools/box-ev") === true);
+check("javascript: link is dropped", resolveArticleHref("javascript:alert(1)", carried), null);
+check("bare anchor is dropped", resolveArticleHref("#section", carried), null);
+check("relative image made absolute", resolveArticleImage("/vendetta-hero.png"), "https://riftcompare.com/vendetta-hero.png");
+check("non-https image dropped", resolveArticleImage("http://example.com/x.png"), null);
+check(
+  "cards found by name, in order, sub-names not double-counted",
+  cardsMentioned("**Sett, Kingpin** and Aphelios, Exalted. Later: Ahri, Nine-Tailed Fox and Nine-Tailed Fox again."),
+  ["Sett, Kingpin", "Aphelios, Exalted", "Ahri, Nine-Tailed Fox"],
+);
+check("one-word names need bold", cardsMentioned("a Flash of insight, then **Scrapheap**"), ["Scrapheap"]);
 
 console.log(`\n${failures === 0 ? "All logic checks passed." : `${failures} CHECK(S) FAILED.`}`);
 process.exit(failures === 0 ? 0 : 1);
