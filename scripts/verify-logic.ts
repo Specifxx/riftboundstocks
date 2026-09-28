@@ -17,6 +17,8 @@ import { DOMAIN_KEYS } from "../src/lib/riftbound";
 import { BANS, banFor } from "../src/lib/banlist";
 import { championOf, cardsForChampion } from "../src/lib/champions";
 import { postsMentioning, type RcPost } from "../src/lib/riftcompare-feed";
+import { riftcompareSlugCandidates } from "../src/lib/prices/riftcompare";
+import { cardBySlug } from "../src/lib/catalog";
 
 let failures = 0;
 function check(label: string, actual: unknown, expected: unknown) {
@@ -117,6 +119,21 @@ check("Nine-Tailed Fox (Legend, no champion in name) → Ahri", championOf(CARDS
 check("\"Yi, Meditative\" aliases to Master Yi", championOf(CARDS.find((c) => c.name === "Yi, Meditative")!)?.slug, "master-yi");
 ok("battlefields are not champions", CARDS.filter((c) => c.type === "Battlefield").every((c) => !championOf(c)));
 ok("Master Yi collects promos and Legends", cardsForChampion("master-yi").some((c) => c.kind === "promo") && cardsForChampion("master-yi").some((c) => c.type === "Legend"));
+
+// ── RiftCompare slug candidates ──────────────────────────────────────────────
+// Each expectation below is a real riftcompare.com/card/<slug> URL, checked
+// by hand against RiftCompare's card sitemap.
+console.log("\nriftcompare slug candidates");
+const cand = (slug: string) => {
+  const c = cardBySlug(slug)!;
+  return riftcompareSlugCandidates(c, championOf(c)?.name);
+};
+check("exact slug comes first", cand("blazing-scorcher-ogn-1")[0], { slug: "blazing-scorcher-ogn-001-298", tier: 0 });
+ok("Legend gets its champion prefix", cand("daughter-of-the-void-ogn-299s").some((k) => k.slug === "kai-sa-daughter-of-the-void-ogn-299s-298"));
+ok("Vendetta drops the set total", cand("rogue-assassin-ven-189").slice(0, 4).some((k) => k.slug === "akali-rogue-assassin-ven-189"));
+ok("Proving Grounds pads the denominator", cand("annie-stubborn-ogs-10").some((k) => k.slug === "annie-stubborn-ogs-010-024"));
+ok("never guesses a Signature star for an unstarred printing", cand("swift-scout-ogn-307").every((k) => !/307s/.test(k.slug)));
+ok("tiers ascend", cand("daughter-of-the-void-ogn-299").every((k, i, a) => i === 0 || k.tier >= a[i - 1].tier));
 
 // ── RiftCompare post matching ────────────────────────────────────────────────
 console.log("\nriftcompare post matching");
