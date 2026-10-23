@@ -19,6 +19,15 @@ const RETIRED_ARTICLES = [
   "speculation-the-charizard-case-for-nine-tailed-fox",
 ];
 
+// Detail pages rendered per request (force-dynamic) and cached by Vercel's CDN
+// instead of ISR, so a crawl of 1,400 card pages writes nothing to the ISR
+// cache. Six hours fresh, a day stale-while-revalidate; a deploy (the daily
+// price snapshot) starts a fresh CDN cache anyway. See DECISIONS.md, "Detail
+// pages leave ISR for the CDN". Every page listed must read no cookie, header
+// or session (scripts/verify-cdn-pages.ts).
+const CDN_PAGES = ["/card/:slug", "/champions/:slug", "/news/:slug"];
+const CDN_CACHE = "public, s-maxage=21600, stale-while-revalidate=86400";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -31,8 +40,17 @@ const nextConfig = {
     // Lint is a separate `npm run lint` step; a style nit shouldn't fail a deploy.
     ignoreDuringBuilds: true,
   },
+  images: {
+    // next/image is not used today (card art is a plain <img>, see
+    // components/CardImage.tsx); if it ever is, cache optimised images a month.
+    minimumCacheTTL: 2678400,
+  },
   async headers() {
     return [
+      ...CDN_PAGES.map((source) => ({
+        source,
+        headers: [{ key: "Vercel-CDN-Cache-Control", value: CDN_CACHE }],
+      })),
       {
         source: "/:path*",
         headers: [

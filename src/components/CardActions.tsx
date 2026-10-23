@@ -11,9 +11,8 @@ import { SITE_NAME } from "@/lib/site";
 // state — two buttons doing the same thing would just be confusing.
 //
 // Fetching watch-state happens client-side (like NavUser's /api/me) rather
-// than as a server prop, so the card page itself stays static/ISR
-// (revalidate: 3600, generateStaticParams) instead of being forced dynamic
-// per signed-in visitor.
+// than as a server prop, so the card page stays identical for every visitor
+// and cacheable on the CDN (CDN_PAGES in next.config.js).
 export function CardActions({ cardId, cardName }: { cardId: string; cardName: string }) {
   const { user, loaded } = useMe();
   const pathname = usePathname();

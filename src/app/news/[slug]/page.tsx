@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ARTICLES, articleBySlug, sortedArticles } from "@/lib/content/articles";
+import { articleBySlug, sortedArticles } from "@/lib/content/articles";
 import { authorOr } from "@/lib/content/authors";
 import { cardBySlug } from "@/lib/catalog";
 import { formatDate } from "@/lib/format";
@@ -14,14 +14,12 @@ import { RelatedReading } from "@/components/RiftComparePosts";
 import { SyndicatedArticle } from "@/components/SyndicatedArticle";
 import { rcPostBySlug } from "@/lib/riftcompare-feed";
 
-// Two kinds of page live here: our data reports (prerendered below), and
-// RiftCompare's articles, published here too and rendered on first request
-// (see lib/riftcompare-feed.ts). Refreshed hourly, like the feed.
-export const revalidate = 3600;
-
-export function generateStaticParams() {
-  return ARTICLES.map((a) => ({ slug: a.slug }));
-}
+// Two kinds of page live here: our data reports and RiftCompare's articles,
+// published here too (see lib/riftcompare-feed.ts).
+// Rendered per request and cached by Vercel's CDN, not ISR: see CDN_PAGES in
+// next.config.js and DECISIONS.md, "Detail pages leave ISR for the CDN". This
+// tree must read no cookie, header or session (scripts/verify-cdn-pages.ts).
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const article = articleBySlug(params.slug);

@@ -14,7 +14,8 @@ import { Delta, SectionTitle } from "@/components/Bits";
 import { DemoPricesNotice, HistoryNotice } from "@/components/Notices";
 import { BrandLogo } from "@/components/BrandLogo";
 
-export const revalidate = 3600;
+// Six hours: prices change once a day (DECISIONS.md, "Landing pages revalidate every six hours").
+export const revalidate = 21600;
 
 export const metadata: Metadata = {
   alternates: { canonical: SITE_URL },

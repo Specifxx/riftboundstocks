@@ -7,7 +7,6 @@ import {
   cardStats,
   priceHistory,
   latestQuote,
-  topByMarket,
   primaryPrice,
   quoteDaysAgo,
   pctChange,
@@ -36,14 +35,10 @@ import { AffiliateDisclosure } from "@/components/AffiliateDisclosure";
 import { JsonLd, breadcrumbLd } from "@/components/JsonLd";
 import { RelatedReading } from "@/components/RiftComparePosts";
 
-// Pre-render the most valuable cards at build time and stream the rest on first
-// request. Building all 1,180 would multiply build time for pages nobody opens.
-export function generateStaticParams() {
-  return topByMarket(120).map(({ card }) => ({ slug: card.slug }));
-}
-
-export const dynamicParams = true;
-export const revalidate = 3600;
+// Rendered per request and cached by Vercel's CDN, not ISR: see CDN_PAGES in
+// next.config.js and DECISIONS.md, "Detail pages leave ISR for the CDN". This
+// tree must read no cookie, header or session (scripts/verify-cdn-pages.ts).
+export const dynamic = "force-dynamic";
 
 export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
   const card = cardBySlug(params.slug);

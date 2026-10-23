@@ -8,7 +8,8 @@ import { Money } from "@/components/Prefs";
 import { DemoPricesNotice } from "@/components/Notices";
 import { JsonLd, breadcrumbLd } from "@/components/JsonLd";
 
-export const revalidate = 3600;
+// Six hours: prices change once a day (DECISIONS.md, "Landing pages revalidate every six hours").
+export const revalidate = 21600;
 
 export const metadata: Metadata = {
   title: "Riftbound Champions — Cards & Prices by Champion",

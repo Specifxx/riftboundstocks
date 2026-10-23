@@ -10,7 +10,8 @@ import { SectionTitle } from "@/components/Bits";
 import { JsonLd, breadcrumbLd } from "@/components/JsonLd";
 
 // Static and refreshed hourly: the RiftCompare feed is the only moving part.
-export const revalidate = 3600;
+// Six hours: prices change once a day (DECISIONS.md, "Landing pages revalidate every six hours").
+export const revalidate = 21600;
 
 export const metadata: Metadata = {
   title: "Riftbound News, Guides & Market Reports",
