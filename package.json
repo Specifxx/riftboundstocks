@@ -20,6 +20,7 @@
     "seed:sealed": "tsx scripts/build-sealed.ts",
     "verify:reports": "tsx scripts/verify-reports.ts",
     "verify:logic": "tsx scripts/verify-logic.ts",
+    "verify:cdn": "tsx scripts/verify-cdn-pages.ts",
     "seed:icons": "tsx scripts/gen-icons.ts"
   },
   "dependencies": {

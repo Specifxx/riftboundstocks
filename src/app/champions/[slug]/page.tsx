@@ -16,12 +16,10 @@ import { DemoPricesNotice } from "@/components/Notices";
 import { JsonLd, breadcrumbLd } from "@/components/JsonLd";
 import { RelatedReading } from "@/components/RiftComparePosts";
 
-export const revalidate = 3600;
-
-export function generateStaticParams() {
-  return allChampions().map((c) => ({ slug: c.slug }));
-}
-export const dynamicParams = false;
+// Rendered per request and cached by Vercel's CDN, not ISR: see CDN_PAGES in
+// next.config.js and DECISIONS.md, "Detail pages leave ISR for the CDN". This
+// tree must read no cookie, header or session (scripts/verify-cdn-pages.ts).
+export const dynamic = "force-dynamic";
 
 // RiftCompare slugs champions with every non-alphanumeric run → "-", so
 // "Kai'Sa" is "kai-sa" there (and "kaisa" here).
