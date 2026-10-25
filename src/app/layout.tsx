@@ -10,7 +10,7 @@ import { CookieNotice } from "@/components/CookieNotice";
 import { THEME_STORAGE_KEY } from "@/lib/currency";
 import { SITE_NAME, SITE_TAGLINE, SITE_URL } from "@/lib/site";
 import { IMPACT_SITE_VERIFICATION } from "@/lib/affiliate";
-import { Analytics } from "@vercel/analytics/next";
+import { SiteAnalytics } from "@/components/SiteAnalytics";
 import { JsonLd, siteLd } from "@/components/JsonLd";
 
 // Body/UI: a clean humanist sans, for readability. Section titles: Cinzel, an
@@ -91,7 +91,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Footer />
           <CookieNotice />
         </PrefsProvider>
-        <Analytics />
+        <SiteAnalytics />
       </body>
     </html>
   );
