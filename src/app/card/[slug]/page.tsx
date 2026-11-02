@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CARDS, cardBySlug } from "@/lib/catalog";
+import { cardIndexable } from "@/lib/indexable";
 import {
   activeSource,
   cardStats,
@@ -43,7 +44,9 @@ export function generateStaticParams() {
 }
 
 export const dynamicParams = true;
-export const revalidate = 3600;
+// Prices change only with the daily snapshot commit, which rebuilds the site;
+// an hourly ISR life only bought rewrites of unchanged pages.
+export const revalidate = 86400;
 
 export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
   const card = cardBySlug(params.slug);
@@ -73,6 +76,8 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
     title,
     description,
     alternates: { canonical: `${SITE_URL}/card/${card.slug}` },
+    // Bulk printings stay linked but out of the index (lib/indexable.ts).
+    ...(cardIndexable(card) ? {} : { robots: { index: false, follow: true } }),
     openGraph: {
       title,
       description,

@@ -5,6 +5,7 @@ import { ARTICLES } from "@/lib/content/articles";
 import { SITE_URL } from "@/lib/site";
 import { allChampions } from "@/lib/champions";
 import { HISTORY_DAYS } from "@/lib/prices";
+import { cardIndexable } from "@/lib/indexable";
 
 export const dynamic = "force-static";
 
@@ -53,9 +54,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "monthly" as const,
       priority: 0.6,
     })),
-    // Every card gets an entry — these are the pages the site exists to serve,
-    // and at ~1,400 URLs the file stays far inside the 50k/50MB sitemap limits.
-    ...CARDS.map((c) => ({
+    // Cards worth US$1+ only: the rest are noindex (lib/indexable.ts), and
+    // listing 1,400 near-identical pages left 1,391 of them "Discovered – not indexed".
+    ...CARDS.filter(cardIndexable).map((c) => ({
       url: `${SITE_URL}/card/${c.slug}`,
       lastModified: now,
       changeFrequency: "daily" as const,
