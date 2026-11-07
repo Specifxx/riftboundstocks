@@ -1,0 +1,79 @@
+name: IndexNow (Bing, Yandex, Seznam, Naver)
+
+# Tells Bing and the other IndexNow engines about pages that are NEW since the
+# last run, in small batches (SEO audit, 2026-11-07: Bing listed "Set up
+# IndexNow" for this site, and flags whole-sitemap daily submissions as batch
+# mode). Every sitemap lastmod here is the build time, so lastmod cannot say what
+# changed: the job keeps the list of URLs it has already submitted in the Actions
+# cache and sends only the ones it has not. The first run sends every URL once.
+# The key file is public/<key>.txt, IndexNow's standard root location.
+on:
+  schedule:
+    # After the 06:10 price refresh has committed and Vercel has redeployed.
+    - cron: "40 7 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: indexnow
+  cancel-in-progress: false
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Restore the list of URLs already submitted
+        uses: actions/cache/restore@v4
+        with:
+          path: submitted.txt
+          key: indexnow-submitted-${{ github.run_id }}
+          restore-keys: indexnow-submitted-
+      - name: Submit new sitemap URLs
+        run: |
+          python3 - <<'PY'
+          import json, os, re, sys, time, urllib.request, urllib.error
+          HOST = "riftboundstocks.com"
+          KEY = "e95c4728ff434544a713db89a648af5a"
+          KEYLOC = f"https://{HOST}/{KEY}.txt"
+          UA = {"User-Agent": "riftboundstocks-indexnow"}
+          def get(url):
+              return urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=30).read().decode("utf-8", "replace")
+          try:
+              if get(KEYLOC).strip() != KEY:
+                  print("Key file serves something else: nothing submitted."); sys.exit(0)
+          except Exception as e:
+              print("Key file not live yet:", e); sys.exit(0)
+          locs = lambda xml: re.findall(r"<loc>\s*(.*?)\s*</loc>", xml)
+          root = get(f"https://{HOST}/sitemap.xml")
+          urls = set()
+          for u in locs(root):
+              if u.endswith(".xml"):
+                  urls |= {x for x in locs(get(u)) if not x.endswith(".xml")}
+              else:
+                  urls.add(u)
+          urls = {u for u in urls if u.startswith(f"https://{HOST}")}
+          done = set(open("submitted.txt").read().split()) if os.path.exists("submitted.txt") else set()
+          new = sorted(urls - done)
+          print(f"Sitemap lists {len(urls)} URLs; {len(new)} not submitted before.")
+          ok = set()
+          for i in range(0, len(new), 500):
+              batch = new[i:i + 500]
+              body = json.dumps({"host": HOST, "key": KEY, "keyLocation": KEYLOC, "urlList": batch}).encode()
+              req = urllib.request.Request("https://api.indexnow.org/indexnow", data=body,
+                                           headers={"Content-Type": "application/json; charset=utf-8", **UA})
+              try:
+                  r = urllib.request.urlopen(req, timeout=30)
+                  print(f"batch {i // 500}: HTTP {r.status} ({len(batch)} URLs)")
+                  ok |= set(batch)
+              except urllib.error.HTTPError as e:
+                  print(f"batch {i // 500}: HTTP {e.code} ({len(batch)} URLs) {e.read().decode('utf-8', 'replace')[:200]}")
+              time.sleep(5)
+          # Only URLs still in the sitemap are remembered, so a removed page that returns is submitted again.
+          open("submitted.txt", "w").write("\n".join(sorted((done & urls) | ok)))
+          PY
+      - name: Save the list
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: submitted.txt
+          key: indexnow-submitted-${{ github.run_id }}
